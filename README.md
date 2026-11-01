@@ -1,5 +1,7 @@
 # CIFRA
 
+> **El producto real está en [`web/`](web/README.md)** (Next.js + Postgres, cuentas, extractos, API para entidades y landing con analítica). Lo que sigue describe el prototipo de demostración que se usó en las entrevistas.
+
 Prototipo interactivo de alta fidelidad de un ecosistema financiero hiperlocal para Bogotá, con dos lados:
 
 - **Consumidor** (`/user/*`): una sola respuesta clara sobre cuánto puede gastar, sin tableros financieros.

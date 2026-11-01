@@ -31,9 +31,9 @@ export function SignupForm() {
       <label className="flex items-start gap-3 text-[14.5px] leading-snug text-ink-muted">
         <input type="checkbox" name="consent" className="mt-0.5 h-5 w-5 shrink-0 accent-[#0E6E63]" aria-describedby="consent-err" />
         <span>
-          Autorizo a CIFRA a tratar los movimientos que yo comparta solo para calcular mi cifra, según la{' '}
+          Soy mayor de edad y autorizo a CIFRA a tratar los movimientos que yo comparta solo para calcular mi cifra, según la{' '}
           <a href="/privacidad" target="_blank" className="font-semibold text-ink underline">política de tratamiento de datos</a>{' '}
-          (Ley 1581 de 2012). Puedo borrar todo cuando quiera.
+          (Ley 1581 de 2012), y acepto los <a href="/terminos" target="_blank" className="font-semibold text-ink underline">términos de uso</a>. Puedo borrar todo cuando quiera.
         </span>
       </label>
       <FieldError id="consent-err" message={f.consent} />

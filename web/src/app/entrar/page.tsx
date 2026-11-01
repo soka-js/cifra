@@ -8,8 +8,9 @@ export const metadata = { title: 'Entrar' };
 
 const contact = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   if (await getCurrentUser()) redirect('/app');
+  const { enlace } = await searchParams;
   return (
     <AuthShell
       title="Entra a tu cifra"
@@ -30,6 +31,13 @@ export default async function LoginPage() {
         </div>
       }
     >
+      {enlace && (
+        <p role="status" className="mb-6 rounded-xl bg-warn-light px-4 py-3 text-[14px] text-warn">
+          {enlace === 'vencido'
+            ? 'Ese enlace ya se usó o venció. Vuelve a abrir CIFRA desde la app de tu entidad.'
+            : 'Ese enlace no es válido. Vuelve a abrir CIFRA desde la app de tu entidad.'}
+        </p>
+      )}
       <LoginForm />
     </AuthShell>
   );

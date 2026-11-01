@@ -9,6 +9,9 @@ const securityHeaders = [
 
 const config: NextConfig = {
   poweredByHeader: false,
+  // El repo tiene el prototipo en la raíz; la app vive en web/.
+  turbopack: { root: process.cwd() },
+  outputFileTracingRoot: process.cwd(),
   serverExternalPackages: ['@node-rs/argon2'],
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];

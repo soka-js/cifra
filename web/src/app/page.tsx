@@ -1,4 +1,5 @@
 import { cookies, headers } from 'next/headers';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { Faq } from '@/components/landing/faq';
@@ -136,7 +137,7 @@ export default async function Landing() {
 
         {/* Qué cambia: el producto, mostrado tal cual. */}
         <section className="bg-primary-dark text-white">
-          <div className="mx-auto grid max-w-6xl gap-14 px-4 py-20 sm:px-6 md:grid-cols-2 md:py-28">
+          <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 py-20 sm:px-6 md:grid-cols-[1fr_1fr] md:py-28">
             <div>
               <h2 className="font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
                 Llegas al día de pago sabiendo cuánto te queda.
@@ -145,32 +146,49 @@ export default async function Landing() {
                 Sin anotar gastos y sin gráficas. Abres CIFRA, ves tu cifra y decides. Si un gasto no cabe, lo sabes antes de
                 hacerlo, no cuando ya pasó.
               </p>
+              <ul className="mt-10 space-y-6">
+                {[
+                  {
+                    t: 'La cifra, con la resta a la vista',
+                    d: 'Saldo, menos los cobros fijos que faltan, menos tu gasto normal hasta el próximo pago. Ves cada parte y de dónde sale.',
+                  },
+                  {
+                    t: '¿Puedo hacer este gasto?',
+                    d: 'Escribes el monto y CIFRA te dice si cabe, cuánto te quedaría y cuánto tendrías por día.',
+                  },
+                  {
+                    t: 'Cobros que se repiten',
+                    d: 'Netflix, el gimnasio, el plan del celular, la app que ya no usas. CIFRA los encuentra en tus movimientos y suma lo que pagas al mes.',
+                  },
+                  {
+                    t: 'Tus datos, a la vista',
+                    d: 'Qué entidad, qué cuenta, qué datos y desde cuándo. Borras una fuente o toda tu cuenta con un botón.',
+                  },
+                ].map((f) => (
+                  <li key={f.t} className="border-l-2 border-primary-soft pl-5">
+                    <h3 className="font-display text-[20px] font-bold">{f.t}</h3>
+                    <p className="mt-1.5 text-[15.5px] leading-relaxed text-white/75">{f.d}</p>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-6">
-              {[
-                {
-                  t: 'La cifra, con la resta a la vista',
-                  d: 'Saldo, menos los cobros fijos que faltan, menos tu gasto normal hasta el próximo pago. Ves cada parte y de dónde sale.',
-                },
-                {
-                  t: '¿Puedo hacer este gasto?',
-                  d: 'Escribes el monto y CIFRA te dice si cabe, cuánto te quedaría y cuánto tendrías por día.',
-                },
-                {
-                  t: 'Cobros que se repiten',
-                  d: 'Netflix, el gimnasio, el plan del celular, la app que ya no usas. CIFRA los encuentra en tus movimientos y suma lo que pagas al mes.',
-                },
-                {
-                  t: 'Tus datos, a la vista',
-                  d: 'Qué entidad, qué cuenta, qué datos y desde cuándo. Borras una fuente o toda tu cuenta con un botón.',
-                },
-              ].map((f) => (
-                <li key={f.t} className="border-l-2 border-primary-soft pl-5">
-                  <h3 className="font-display text-[20px] font-bold">{f.t}</h3>
-                  <p className="mt-1.5 text-[15.5px] leading-relaxed text-white/75">{f.d}</p>
-                </li>
-              ))}
-            </ul>
+            <figure className="relative mx-auto h-[520px] w-full max-w-[460px] sm:h-[600px]">
+              <Image
+                src="/producto-cobros.webp"
+                alt="Pantalla de cobros que se repiten en CIFRA"
+                width={390}
+                height={780}
+                className="absolute right-0 top-10 w-[58%] rounded-[28px] border-[6px] border-white/10 shadow-2xl"
+              />
+              <Image
+                src="/producto-hoy.webp"
+                alt="Pantalla principal de CIFRA con la cifra y su resta"
+                width={390}
+                height={780}
+                className="absolute left-0 top-0 w-[62%] rounded-[28px] border-[6px] border-white/15 shadow-2xl"
+              />
+              <figcaption className="absolute -bottom-2 left-0 text-[13px] text-white/60">La app real, con un extracto de prueba.</figcaption>
+            </figure>
           </div>
         </section>
 
