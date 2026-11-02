@@ -25,9 +25,9 @@ export default async function GastoPage() {
         </>
       ) : (
         <p className="mt-4 text-[16px] text-ink-muted">
-          Primero necesitamos {c.missing.includes('movimientos') ? 'tus movimientos' : 'tu saldo'}.{' '}
-          <Link href={c.missing.includes('movimientos') ? '/app/datos/importar' : '/app/datos'} className="font-semibold text-primary-dark underline">
-            {c.missing.includes('movimientos') ? 'Subir extracto' : 'Escribir saldo'}
+          Primero necesitamos {c.missing.includes('saldo') ? 'tu saldo de hoy' : 'tu gasto del día a día'}.{' '}
+          <Link href={c.missing.includes('saldo') ? '/app' : '/app/bienvenida'} className="font-semibold text-primary-dark underline">
+            {c.missing.includes('saldo') ? 'Escribir saldo' : 'Calcular mi cifra en un minuto'}
           </Link>
         </p>
       )}

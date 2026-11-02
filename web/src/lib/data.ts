@@ -19,7 +19,7 @@ export async function loadCifra(user: User): Promise<CifraResult> {
   const since = addDays(today, -HISTORY_DAYS);
   const [accts, txs, comms, marks] = await Promise.all([
     db
-      .select({ account: accounts, status: dataSources.status })
+      .select({ account: accounts, status: dataSources.status, kind: dataSources.kind })
       .from(accounts)
       .innerJoin(dataSources, eq(dataSources.id, accounts.sourceId))
       .where(eq(accounts.userId, user.id)),
@@ -38,20 +38,22 @@ export async function loadCifra(user: User): Promise<CifraResult> {
     db.select().from(commitments).where(eq(commitments.userId, user.id)),
     db.select().from(recurringMarks).where(eq(recurringMarks.userId, user.id)),
   ]);
-  const active = accts.filter((a) => a.status === 'activa').map((a) => a.account);
+  const active = accts.filter((a) => a.status === 'activa');
   return computeCifra({
     today,
-    accounts: active.map((a) => ({
+    accounts: active.map(({ account: a, kind }) => ({
       accountId: a.id,
       name: a.name,
       balanceMinor: a.balanceMinor,
       balanceOn: a.balanceAt ? bogotaDate(a.balanceAt) : null,
       includeInCifra: a.includeInCifra && a.kind !== 'tarjeta_credito',
+      editable: kind !== 'entidad_aliada',
     })),
     transactions: txs,
     income: { frequency: (user.incomeFrequency as IncomeFrequency | null) ?? null, days: user.incomeDays ?? null },
     bufferMinor: user.bufferMinor,
-    commitments: comms.map((c) => ({ id: c.id, name: c.name, amountMinor: c.amountMinor, dayOfMonth: c.dayOfMonth })),
+    declaredDailyMinor: user.dailySpendMinor ?? null,
+    commitments: comms.map((c) => ({ id: c.id, name: c.name, amountMinor: c.amountMinor, dayOfMonth: c.dayOfMonth, notSameAs: c.notSameAs })),
     marks: Object.fromEntries(marks.map((m) => [m.merchantKey, m.mark as RecurringMarkValue])),
   });
 }

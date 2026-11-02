@@ -9,6 +9,8 @@ export const EVENT_NAMES = [
   'sign_up',
   'begin_import',
   'import_statement',
+  'quick_start',
+  'update_balance',
   'view_cifra',
   'ask_spend',
   'begin_lead',
@@ -16,6 +18,9 @@ export const EVENT_NAMES = [
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];
+
+/** Eventos que en GA4 están marcados como eventos clave. */
+export type GaKeyEvent = 'sign_up' | 'generate_lead' | 'import_statement' | 'quick_start';
 
 export const VISITOR_COOKIE = 'cf_vid';
 export const VARIANT_COOKIE = 'cf_ab';

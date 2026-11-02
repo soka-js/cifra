@@ -2,9 +2,10 @@
 
 import { useEffect } from 'react';
 import { gaEvent } from '@/lib/analytics/client';
+import type { GaKeyEvent } from '@/lib/analytics/shared';
 
 /** Dispara un evento de GA4 una sola vez al montar (por ejemplo, sign_up al llegar a la bienvenida). */
-export function GaOnce({ name }: { name: 'sign_up' | 'generate_lead' | 'import_statement' }) {
+export function GaOnce({ name }: { name: GaKeyEvent }) {
   useEffect(() => {
     const key = `ga-once-${name}`;
     try {

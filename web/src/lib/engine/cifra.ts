@@ -1,6 +1,6 @@
 import { addDays, daysBetween, nextDayOfMonth, shortDate, toDayNumber } from './dates';
 import { nextIncomeDate, resolveIncome, type IncomeEstimate } from './income';
-import { flowOf, identifyMerchant } from './merchant';
+import { flowOf, identifyMerchant, stripAccents, type Category } from './merchant';
 import { detectRecurring, type RecurringSeries } from './recurring';
 import { splitInternalTransfers } from './transfers';
 import type { AccountBalance, Commitment, IncomeSettings, Tx } from './types';
@@ -15,6 +15,8 @@ export interface CifraInput {
   bufferMinor: number;
   commitments: Commitment[];
   marks: Record<string, RecurringMarkValue>;
+  /** Gasto del día a día que la persona escribió (modo rápido), en centavos. */
+  declaredDailyMinor?: number | null;
 }
 
 export interface PendingCharge {
@@ -52,7 +54,40 @@ export interface CifraResult {
   historyDays: number;
   /** Movimientos excluidos por ser transferencias entre cuentas propias. */
   internalTransfers: number;
+  /**
+   * De dónde sale el gasto del día a día: de los movimientos (tres semanas o más), de lo que la persona
+   * escribió en el modo rápido, o de ningún lado todavía.
+   */
+  dailySource: 'movimientos' | 'declarado' | 'sin_datos';
+  declaredDailyMinor: number | null;
+  /** Días desde el saldo más viejo usado (0 = de hoy). */
+  balanceAgeDays: number | null;
+  /** Cuentas que entran en la cifra, con su saldo. */
+  accounts: AccountBalance[];
+  /** Cobros fijos escritos a mano (todos, incluidos los que ya aparecen en los movimientos). */
+  commitments: Commitment[];
+  /** Compromisos escritos a mano que ya aparecen como cobro en los movimientos: no se cuentan dos veces. */
+  matchedCommitments: string[];
+  /**
+   * Compromisos que se parecen a un cobro detectado sin ser idénticos (otro monto u otro día). No se quitan solos:
+   * se le pregunta a la persona si es el mismo.
+   */
+  commitmentSuggestions: CommitmentSuggestion[];
 }
+
+export interface CommitmentSuggestion {
+  commitmentId: string;
+  seriesKey: string;
+  seriesName: string;
+  seriesAmountMinor: number;
+  seriesDay: number;
+}
+
+/** Inicio del aviso de saldo viejo, para que la pantalla de inicio lo reemplace por el formulario. */
+export const STALE_BALANCE_WARNING = 'Tu saldo es del';
+
+/** Días de movimientos desde los que el gasto diario se calcula con ellos en vez de con lo que la persona escribió. */
+export const MIN_HISTORY_DAYS = 21;
 
 /** Días hacia atrás que se miran para estimar el gasto del día a día. */
 const VARIABLE_WINDOW = 56;
@@ -103,6 +138,75 @@ function commitmentDates(c: Commitment, fromExclusive: string, toInclusive: stri
   return out;
 }
 
+/**
+ * Un compromiso escrito a mano es el mismo cobro que una serie detectada si es el mismo comercio, o si es
+ * mensual, cuesta parecido (10 %) y cae a tres días o menos del mismo día del mes.
+ */
+export function sameCharge(c: Commitment, r: RecurringSeries): boolean {
+  if (identifyMerchant(c.name).key === r.merchantKey) return true;
+  if (r.cadence !== 'mensual' || r.typicalMinor <= 0) return false;
+  const ratio = c.amountMinor / r.typicalMinor;
+  const day = Number(r.nextDate.slice(8, 10));
+  const diff = Math.abs(day - c.dayOfMonth);
+  return ratio >= 0.9 && ratio <= 1.1 && Math.min(diff, 31 - diff) <= 3;
+}
+
+/** Qué categorías de cobro detectado puede ser un compromiso, según cómo lo nombró la persona. */
+const NAME_HINTS: Array<[RegExp, Category[]]> = [
+  [/ARRIENDO|ALQUILER|RENTA|ADMINISTRACION|CANON/, ['transferencias', 'otros']],
+  [/CELULAR|TELEFONO|PLAN|INTERNET|WIFI|CLARO|MOVISTAR|TIGO|WOM|ETB/, ['telefonia_internet']],
+  [/SERVICIO|LUZ|AGUA|GAS|ENERGIA|ENEL|VANTI|ACUEDUCTO|EPM/, ['servicios_hogar']],
+  [/GIMNASIO|GYM|SMART ?FIT|BODYTECH/, ['gimnasio']],
+  [/SUSCRIPCION|NETFLIX|SPOTIFY|DISNEY|HBO|\bMAX\b|PRIME|YOUTUBE|STREAMING|ICLOUD|GOOGLE ONE|CHATGPT/, ['suscripciones']],
+  [/UNIVERSIDAD|COLEGIO|SEMESTRE|MATRICULA|CURSO|PENSION ESCOLAR/, ['educacion']],
+  [/SEGURO|EPS|PREPAGADA|MEDICINA/, ['salud']],
+];
+
+function dayGap(a: number, b: number): number {
+  const d = Math.abs(a - b);
+  return Math.min(d, 31 - d);
+}
+
+/**
+ * Para cada compromiso, el cobro detectado que más se le parece si el nombre apunta a esa categoría
+ * (monto entre la mitad y el doble, hasta 6 días de diferencia) o, sin pista en el nombre, si el monto
+ * es casi el mismo (20 %) y cae a 5 días o menos. Cada cobro se sugiere para un solo compromiso.
+ */
+export function suggestSameCharges(commitments: Commitment[], series: RecurringSeries[], exclude: Set<string>): CommitmentSuggestion[] {
+  const monthly = series.filter((r) => r.active && r.cadence === 'mensual' && r.typicalMinor > 0 && r.category !== 'efectivo' && r.category !== 'pagos_tarjeta');
+  const used = new Set<string>();
+  const out: CommitmentSuggestion[] = [];
+  for (const c of commitments) {
+    if (exclude.has(c.id)) continue;
+    const name = stripAccents(c.name).toUpperCase();
+    const hinted = NAME_HINTS.filter(([re]) => re.test(name)).flatMap(([, cats]) => cats);
+    let best: { r: RecurringSeries; score: number } | null = null;
+    for (const r of monthly) {
+      if (used.has(r.merchantKey) || c.notSameAs?.includes(r.merchantKey)) continue;
+      const ratio = c.amountMinor / r.typicalMinor;
+      const day = Number(r.nextDate.slice(8, 10));
+      const gap = dayGap(day, c.dayOfMonth);
+      const ok = hinted.length
+        ? hinted.includes(r.category) && ratio >= 0.5 && ratio <= 2 && gap <= 6
+        : ratio >= 0.8 && ratio <= 1.25 && gap <= 5;
+      if (!ok) continue;
+      const score = Math.abs(Math.log(ratio)) + gap / 10;
+      if (!best || score < best.score) best = { r, score };
+    }
+    if (best) {
+      used.add(best.r.merchantKey);
+      out.push({
+        commitmentId: c.id,
+        seriesKey: best.r.merchantKey,
+        seriesName: best.r.name,
+        seriesAmountMinor: best.r.typicalMinor,
+        seriesDay: Number(best.r.nextDate.slice(8, 10)),
+      });
+    }
+  }
+  return out;
+}
+
 export function computeCifra(input: CifraInput): CifraResult {
   const { today } = input;
   const warnings: string[] = [];
@@ -115,7 +219,8 @@ export function computeCifra(input: CifraInput): CifraResult {
   const included = input.accounts.filter((a) => a.includeInCifra);
   const withBalance = included.filter((a) => a.balanceMinor !== null && a.balanceOn);
   const missing: CifraResult['missing'] = [];
-  if (!input.transactions.length) missing.push('movimientos');
+  const declared = input.declaredDailyMinor ?? null;
+  if (!input.transactions.length && declared === null) missing.push('movimientos');
   if (!withBalance.length) missing.push('saldo');
   if (included.length > withBalance.length && withBalance.length) {
     warnings.push('Una de tus cuentas no tiene saldo. La cifra solo cuenta las que sí lo tienen.');
@@ -126,8 +231,9 @@ export function computeCifra(input: CifraInput): CifraResult {
     ? withBalance.reduce((min, a) => (a.balanceOn! < min ? a.balanceOn! : min), withBalance[0]!.balanceOn!)
     : null;
   const anchor = balanceOn && balanceOn < today ? balanceOn : today;
+  const balanceAgeDays = balanceOn ? Math.max(0, daysBetween(balanceOn, today)) : null;
   if (balanceOn && daysBetween(balanceOn, today) > 3) {
-    warnings.push(`Tu saldo es del ${shortDate(balanceOn)}. Actualízalo para que la cifra sea precisa.`);
+    warnings.push(`${STALE_BALANCE_WARNING} ${shortDate(balanceOn)}. Actualízalo para que la cifra sea precisa.`);
   }
 
   const recurring = detectRecurring(transactions, today).filter((r) => input.marks[r.merchantKey] !== 'no_es_fijo');
@@ -158,7 +264,13 @@ export function computeCifra(input: CifraInput): CifraResult {
       date = addDays(date, step);
     }
   }
+  const activeRecurring = recurring.filter((r) => r.active);
+  const matchedCommitments: string[] = [];
   for (const c of input.commitments) {
+    if (activeRecurring.some((r) => sameCharge(c, r))) {
+      matchedCommitments.push(c.id);
+      continue;
+    }
     for (const date of commitmentDates(c, anchor, nextIncomeOn)) {
       pending.push({ key: `compromiso:${c.id}`, name: c.name, date, amountMinor: c.amountMinor, estimated: false, origin: 'compromiso' });
     }
@@ -169,9 +281,23 @@ export function computeCifra(input: CifraInput): CifraResult {
   const lastTx = transactions.reduce<string | null>((max, t) => (!max || t.postedOn > max ? t.postedOn : max), null);
   const firstTx = transactions.reduce<string | null>((min, t) => (!min || t.postedOn < min ? t.postedOn : min), null);
   const historyDays = firstTx && lastTx ? daysBetween(firstTx, lastTx) + 1 : 0;
-  const { daily } = estimateDailyVariable(transactions, fixedKeys, lastTx ?? today);
-  if (transactions.length && historyDays < 21) {
+  const estimated = estimateDailyVariable(transactions, fixedKeys, lastTx ?? today).daily;
+  // Con tres semanas de movimientos manda lo que muestran; antes, lo que la persona escribió (si lo escribió).
+  let dailySource: CifraResult['dailySource'];
+  let daily: number;
+  if (transactions.length && historyDays >= MIN_HISTORY_DAYS) {
+    dailySource = 'movimientos';
+    daily = estimated;
+  } else if (declared !== null) {
+    dailySource = 'declarado';
+    daily = declared;
+  } else if (transactions.length) {
+    dailySource = 'movimientos';
+    daily = estimated;
     warnings.push('Hay menos de tres semanas de movimientos. El gasto del día a día es un estimado preliminar.');
+  } else {
+    dailySource = 'sin_datos';
+    daily = 0;
   }
 
   // El gasto normal se proyecta desde la fecha del saldo: lo que se gastó desde entonces ya no está.
@@ -204,6 +330,13 @@ export function computeCifra(input: CifraInput): CifraResult {
     warnings,
     historyDays,
     internalTransfers: internal.length,
+    dailySource,
+    declaredDailyMinor: declared,
+    balanceAgeDays,
+    accounts: included,
+    commitments: input.commitments,
+    matchedCommitments,
+    commitmentSuggestions: suggestSameCharges(input.commitments, recurring, new Set(matchedCommitments)),
   };
 }
 

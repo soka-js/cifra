@@ -1,6 +1,6 @@
 'use client';
 
-import type { EventName } from './shared';
+import type { EventName, GaKeyEvent } from './shared';
 
 declare global {
   interface Window {
@@ -11,10 +11,10 @@ declare global {
 type Props = Record<string, string | number | boolean | null>;
 
 /**
- * Solo a GA4, para eventos que la analítica propia ya registra en el servidor (registro, contacto, extracto)
+ * Solo a GA4, para eventos que la analítica propia ya registra en el servidor (registro, contacto, extracto, modo rápido)
  * y que en GA4 se marcan como eventos clave.
  */
-export function gaEvent(name: 'sign_up' | 'generate_lead' | 'import_statement', props: Props = {}): void {
+export function gaEvent(name: GaKeyEvent, props: Props = {}): void {
   try {
     window.gtag?.('event', name, props);
   } catch {

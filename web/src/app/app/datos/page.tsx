@@ -5,7 +5,7 @@ import { bogotaDate, loadAccessLog, loadSources } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
 import { toggleAccount } from '../actions';
-import { BalanceForm, DeleteSource } from './forms';
+import { BalanceForm, DeleteSource, ManualAccountForm } from './forms';
 
 export const metadata = { title: 'Tus datos' };
 
@@ -44,7 +44,9 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
       </div>
 
       {sources.length === 0 && (
-        <p className="rounded-2xl border border-line bg-white p-5 text-[15px] text-ink-muted">Todavía no hay fuentes. Sube un extracto para empezar.</p>
+        <p className="rounded-2xl border border-line bg-white p-5 text-[15px] text-ink-muted">
+          Todavía no hay fuentes. Sube un extracto o escribe tu saldo a mano para empezar.
+        </p>
       )}
 
       <ul className="space-y-4">
@@ -104,6 +106,11 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
                           Subir extracto más reciente
                         </Link>
                       )}
+                      {s.kind === 'manual' && (
+                        <Link href="/app/datos/importar" className="text-[13.5px] font-semibold text-primary-dark underline-offset-2 hover:underline">
+                          Cambiar por su extracto
+                        </Link>
+                      )}
                       {s.kind !== 'entidad_aliada' && <BalanceForm accountId={a.id} current={a.balanceMinor === null ? '' : String(Math.round(a.balanceMinor / 100))} />}
                       <form action={toggleAccount}>
                         <input type="hidden" name="accountId" value={a.id} />
@@ -128,6 +135,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
         <Link href="/app/datos/importar" className="btn-ghost w-full">
           <Plus size={18} aria-hidden="true" /> Subir extracto de otra cuenta
         </Link>
+        <ManualAccountForm />
         <section className="rounded-2xl bg-paper-deep px-5 py-4 text-[14px] leading-relaxed text-ink-muted">
           <h2 className="text-[15px] font-semibold text-ink">¿Y conectar mi banco directo?</h2>
           <p className="mt-1">

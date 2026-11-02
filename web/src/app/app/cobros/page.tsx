@@ -1,12 +1,13 @@
+import Link from 'next/link';
 import { requireUser } from '@/lib/auth/session';
 import { loadCifra, loadMarks } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
 import { CATEGORY_LABEL } from '@/lib/engine/merchant';
 import type { RecurringSeries } from '@/lib/engine/recurring';
 import { cop } from '@/lib/format';
-import { markRecurring } from '../actions';
+import { keepCommitment, markRecurring, removeCommitment } from '../actions';
 
-export const metadata = { title: 'Cobros que se repiten' };
+export const metadata = { title: 'Cobros fijos' };
 
 const CADENCE: Record<RecurringSeries['cadence'], string> = {
   semanal: 'cada semana',
@@ -49,15 +50,22 @@ export default async function CobrosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">Cobros que se repiten</h1>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">Cobros fijos</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
-          Los encontramos en tus movimientos: mismo comercio, montos parecidos y cada cierto tiempo.
+          Los que encontramos en tus movimientos (mismo comercio, montos parecidos, cada cierto tiempo) y los que escribiste tú.
         </p>
       </div>
 
       {active.length === 0 ? (
         <p className="rounded-2xl border border-line bg-white p-5 text-[15px] text-ink-muted">
-          Todavía no vemos cobros que se repitan. Con dos o tres meses de movimientos aparecen solos.
+          {c.historyDays > 0
+            ? 'Todavía no vemos cobros que se repitan en tus movimientos. Con dos o tres meses aparecen solos.'
+            : 'Cuando subas un extracto, aquí aparecen los cobros que se repiten en tus movimientos, también los que no recordabas.'}{' '}
+          {c.historyDays === 0 && (
+            <Link href="/app/datos/importar" className="font-semibold text-primary-dark underline underline-offset-2">
+              Subir extracto
+            </Link>
+          )}
         </p>
       ) : (
         <>
@@ -94,6 +102,59 @@ export default async function CobrosPage() {
             ))}
           </ul>
         </>
+      )}
+
+      {c.commitments.length > 0 && (
+        <section id="escritos" className="scroll-mt-6">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-[15px] font-semibold">Los que escribiste</h2>
+            <Link href="/app/ajustes#cobros-fijos" className="text-[13.5px] font-semibold text-primary-dark underline-offset-2 hover:underline">
+              Editar
+            </Link>
+          </div>
+          <ul className="mt-2 divide-y divide-line rounded-2xl border border-line bg-white text-[14.5px]">
+            {c.commitments.map((x) => {
+              const sug = c.commitmentSuggestions.find((g) => g.commitmentId === x.id);
+              return (
+                <li key={x.id} className="px-5 py-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="font-semibold">{x.name}</span>{' '}
+                      <span className="text-ink-muted">el {x.dayOfMonth} de cada mes</span>
+                      {c.matchedCommitments.includes(x.id) && (
+                        <span className="block text-[12.5px] text-ink-faint">Ya aparece en tus movimientos: lo contamos una sola vez.</span>
+                      )}
+                    </span>
+                    <span className="tnum shrink-0 font-semibold">{cop(x.amountMinor)}</span>
+                  </div>
+                  {sug && (
+                    <div className="mt-2.5 rounded-xl bg-warn-light px-3.5 py-3 text-[14px] text-warn">
+                      <p>
+                        ¿Es el mismo cobro que <strong>{sug.seriesName}</strong> ({cop(sug.seriesAmountMinor)}, el {sug.seriesDay})? Mientras no
+                        nos digas, contamos los dos.
+                      </p>
+                      <div className="mt-2.5 flex flex-wrap gap-2">
+                        <form action={removeCommitment}>
+                          <input type="hidden" name="id" value={x.id} />
+                          <button type="submit" className="rounded-full bg-ink px-3.5 py-1.5 text-[13px] font-semibold text-white">
+                            Sí, quitar el mío
+                          </button>
+                        </form>
+                        <form action={keepCommitment}>
+                          <input type="hidden" name="id" value={x.id} />
+                          <input type="hidden" name="key" value={sug.seriesKey} />
+                          <button type="submit" className="rounded-full border border-warn/40 bg-white px-3.5 py-1.5 text-[13px] font-semibold text-ink">
+                            No, son distintos
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
       {inactive.length > 0 && (

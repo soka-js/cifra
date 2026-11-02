@@ -32,6 +32,8 @@ export const users = pgTable(
     /** Días del mes en que entra el ingreso: [30] mensual, [15, 30] quincenal. Para semanal, día de la semana 1-7. */
     incomeDays: integer('income_days').array(),
     bufferMinor: money('buffer_minor').notNull().default(0),
+    /** Gasto del día a día que la persona escribió (modo rápido). Se usa mientras no haya tres semanas de movimientos. */
+    dailySpendMinor: money('daily_spend_minor'),
     onboardedAt: timestamp('onboarded_at', { withTimezone: true }),
     consentVersion: text('consent_version'),
     consentAt: timestamp('consent_at', { withTimezone: true }),
@@ -206,6 +208,8 @@ export const commitments = pgTable(
     name: text('name').notNull(),
     amountMinor: money('amount_minor').notNull(),
     dayOfMonth: integer('day_of_month').notNull(),
+    /** Cobros detectados que la persona dijo que no son este compromiso (para no volver a preguntar). */
+    notSameAs: text('not_same_as').array().notNull().default(sql`'{}'::text[]`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('commitments_user_idx').on(t.userId)],

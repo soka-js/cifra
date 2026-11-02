@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "daily_spend_minor" bigint;

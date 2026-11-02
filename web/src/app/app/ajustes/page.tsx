@@ -5,7 +5,8 @@ import { commitments } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
 import { cop } from '@/lib/format';
 import { removeCommitment } from '../actions';
-import { BufferForm, CommitmentForm, DeleteAccountForm, IncomeForm } from './forms';
+import { loadCifra } from '@/lib/data';
+import { BufferForm, CommitmentForm, DailySpendForm, DeleteAccountForm, IncomeForm } from './forms';
 
 export const metadata = { title: 'Ajustes' };
 
@@ -20,7 +21,8 @@ function Section({ id, title, children }: { id?: string; title: string; children
 
 export default async function AjustesPage() {
   const user = await requireUser();
-  const comms = await db.select().from(commitments).where(eq(commitments.userId, user.id));
+  const [comms, cifra] = await Promise.all([db.select().from(commitments).where(eq(commitments.userId, user.id)), loadCifra(user)]);
+  const matched = new Set(cifra.matchedCommitments);
   return (
     <div className="space-y-5">
       <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">Ajustes</h1>
@@ -29,18 +31,28 @@ export default async function AjustesPage() {
         <IncomeForm frequency={user.incomeFrequency ?? null} days={user.incomeDays ?? null} />
       </Section>
 
+      <Section id="dia-a-dia" title="Tu gasto del día a día">
+        <DailySpendForm
+          current={user.dailySpendMinor == null ? '' : String(Math.round(user.dailySpendMinor / 100))}
+          fromMovements={cifra.dailySource === 'movimientos'}
+        />
+      </Section>
+
       <Section title="Colchón">
         <BufferForm current={String(Math.round(user.bufferMinor / 100))} />
       </Section>
 
-      <Section title="Compromisos que no salen en tus movimientos">
-        <p className="-mt-1 mb-4 text-[14px] text-ink-muted">Por ejemplo, un arriendo que pagas en efectivo o una cuota que paga otra persona por ti.</p>
+      <Section id="cobros-fijos" title="Cobros fijos que escribiste">
+        <p className="-mt-1 mb-4 text-[14px] text-ink-muted">
+          Arriendo, servicios, cuotas. Si uno de estos ya aparece en tus movimientos, lo contamos una sola vez.
+        </p>
         {comms.length > 0 && (
           <ul className="mb-5 divide-y divide-line rounded-xl border border-line">
             {comms.map((c) => (
               <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-3 text-[14.5px]">
                 <span>
                   <span className="font-semibold">{c.name}</span> <span className="text-ink-muted">el {c.dayOfMonth} de cada mes</span>
+                  {matched.has(c.id) && <span className="block text-[12.5px] text-ink-faint">Ya aparece en tus movimientos</span>}
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="tnum font-semibold">{cop(c.amountMinor)}</span>

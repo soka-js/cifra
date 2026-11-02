@@ -14,6 +14,8 @@ export interface AccountBalance {
   /** Fecha (AAAA-MM-DD) a la que corresponde el saldo. */
   balanceOn: string | null;
   includeInCifra: boolean;
+  /** La persona puede escribir este saldo (no lo trae una entidad aliada). */
+  editable?: boolean;
 }
 
 export type IncomeFrequency = 'mensual' | 'quincenal' | 'semanal' | 'irregular';
@@ -29,4 +31,6 @@ export interface Commitment {
   name: string;
   amountMinor: number;
   dayOfMonth: number;
+  /** Claves de cobros detectados que la persona dijo que no son este compromiso. */
+  notSameAs?: string[];
 }

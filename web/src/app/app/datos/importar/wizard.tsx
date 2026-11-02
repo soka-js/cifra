@@ -64,7 +64,13 @@ async function readRows(file: File): Promise<Cell[][]> {
   throw new Error('Sube un archivo .csv, .xlsx o .pdf.');
 }
 
-export function ImportWizard({ preset, first }: { preset?: PresetAccount; first: boolean }) {
+export interface ManualBalance {
+  id: string;
+  entityName: string;
+  balanceMinor: number | null;
+}
+
+export function ImportWizard({ preset, first, manual = [] }: { preset?: PresetAccount; first: boolean; manual?: ManualBalance[] }) {
   const router = useRouter();
   const presetEntity = preset?.entityName;
   const [accountId, setAccountId] = useState<string | null>(preset?.accountId ?? null);
@@ -81,7 +87,9 @@ export function ImportWizard({ preset, first }: { preset?: PresetAccount; first:
   const [balance, setBalance] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ inserted: number; duplicates: number } | null>(null);
+  const [result, setResult] = useState<{ inserted: number; duplicates: number; replaced: string | null } | null>(null);
+  // Si hay un solo saldo escrito a mano, lo normal es que el extracto sea de esa misma plata.
+  const [replaceId, setReplaceId] = useState<string>(manual.length === 1 ? manual[0]!.id : '');
   const started = useRef(false);
 
   const entityName = entity === 'otra' ? otherEntity.trim() : entity;
@@ -139,12 +147,13 @@ export function ImportWizard({ preset, first }: { preset?: PresetAccount; first:
           accountName: accountName.trim() || 'Cuenta',
           mask: /^\d{4}$/.test(mask) ? mask : null,
           balanceMinor: neg ? -minor : minor,
+          replaceManualAccountId: replaceId || null,
           transactions: parsed.txs.slice(-5000).map(({ postedOn, description, amountMinor }) => ({ postedOn, description, amountMinor })),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'No pudimos guardar los movimientos.');
-      setResult({ inserted: data.inserted, duplicates: data.duplicates });
+      setResult({ inserted: data.inserted, duplicates: data.duplicates, replaced: data.replaced ?? null });
       gaEvent('import_statement', { rows: parsed.txs.length });
       setStep('listo');
       router.refresh();
@@ -175,10 +184,11 @@ export function ImportWizard({ preset, first }: { preset?: PresetAccount; first:
         <p className="mt-3 text-[16px] text-ink-muted">
           Guardamos {result.inserted} movimientos nuevos de {entityName}
           {result.duplicates > 0 ? ` y omitimos ${result.duplicates} que ya estaban` : ''}. El archivo no salió de tu dispositivo.
+          {result.replaced ? ` Quitamos el saldo que habías escrito a mano en ${result.replaced}.` : ''}
         </p>
         <div className="mt-7 space-y-3">
           <button type="button" className="btn-primary w-full" onClick={() => router.push('/app')}>Ver mi cifra</button>
-          <button type="button" className="btn-ghost w-full" onClick={() => { setRows(null); setMap(null); setResult(null); setAccountId(null); setStep('cuenta'); setEntity(''); setMask(''); }}>
+          <button type="button" className="btn-ghost w-full" onClick={() => { setRows(null); setMap(null); setResult(null); setAccountId(null); setReplaceId(''); setStep('cuenta'); setEntity(''); setMask(''); }}>
             Subir otra cuenta
           </button>
         </div>
@@ -358,6 +368,25 @@ export function ImportWizard({ preset, first }: { preset?: PresetAccount; first:
                     : 'Míralo en la app de tu banco. Es la base de tu cifra.'}
                 </p>
               </div>
+              {manual.length > 0 && !accountId && (
+                <fieldset>
+                  <legend className="label">¿Esta cuenta reemplaza un saldo que escribiste a mano?</legend>
+                  <p className="-mt-0.5 mb-2 text-[13px] text-ink-faint">Así no contamos la misma plata dos veces.</p>
+                  <div className="space-y-2">
+                    {manual.map((m) => (
+                      <label key={m.id} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[14.5px] ${replaceId === m.id ? 'border-primary bg-primary-light font-semibold' : 'border-line bg-white'}`}>
+                        <input type="radio" name="replace" checked={replaceId === m.id} onChange={() => setReplaceId(m.id)} className="accent-[#0E6E63]" />
+                        <span className="min-w-0 flex-1">Sí, reemplaza {m.entityName}</span>
+                        {m.balanceMinor !== null && <span className="tnum text-ink-muted">{cop(m.balanceMinor)}</span>}
+                      </label>
+                    ))}
+                    <label className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[14.5px] ${replaceId === '' ? 'border-primary bg-primary-light font-semibold' : 'border-line bg-white'}`}>
+                      <input type="radio" name="replace" checked={replaceId === ''} onChange={() => setReplaceId('')} className="accent-[#0E6E63]" />
+                      No, es otra plata
+                    </label>
+                  </div>
+                </fieldset>
+              )}
               {error && <p role="alert" className="text-sm text-neg">{error}</p>}
               <button type="button" disabled={busy} onClick={submit} className="btn-primary w-full">
                 {busy ? 'Guardando...' : `Guardar ${parsed.txs.length} movimientos`}

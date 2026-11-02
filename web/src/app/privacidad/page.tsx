@@ -27,7 +27,7 @@ export default function PrivacyPage() {
           <strong>Movimientos:</strong> fecha, descripción y valor de los movimientos que tú subes en un extracto o que comparte la
           entidad donde tienes tu cuenta, si activaste CIFRA allí. También el saldo que escribes o que comparte esa entidad.
         </li>
-        <li><strong>Ajustes:</strong> frecuencia y días de tu ingreso, colchón, compromisos que escribas y tus marcas sobre cobros que se repiten.</li>
+        <li><strong>Lo que escribes:</strong> frecuencia y días de tu ingreso, saldos que escribas a mano, tu gasto aproximado del día a día, cobros fijos, colchón y tus marcas sobre cobros que se repiten.</li>
         <li>
           <strong>Uso de la página:</strong> un identificador anónimo por navegador, las páginas vistas y acciones como clics en botones,
           para medir qué partes del sitio sirven. Si aceptas cookies de medición, también Google Analytics.

@@ -1,18 +1,21 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { accounts, dataSources } from '@/lib/db/schema';
+import { accounts, dataSources, users } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/auth/session';
 import { ingestTransactions, setBalance } from '@/lib/ingest';
 import { logAccess } from '@/lib/data';
 import { recordEvent } from '@/lib/analytics/server';
 import { allow } from '@/lib/rate-limit';
+import { removeManualAccount } from '@/lib/manual';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const Body = z.object({
   accountId: z.string().uuid().nullable().optional(),
+  /** Saldo escrito a mano que esta cuenta reemplaza (para no contar la misma plata dos veces). */
+  replaceManualAccountId: z.string().uuid().nullable().optional(),
   entityName: z.string().trim().min(2).max(80),
   accountKind: z.enum(['ahorros', 'corriente', 'billetera', 'tarjeta_credito', 'otra']),
   accountName: z.string().trim().min(1).max(60),
@@ -103,6 +106,13 @@ async function finish(
     movimientos_nuevos: result.inserted,
     repetidos: result.duplicates,
   });
+  // Quien entra directo por el extracto también terminó la bienvenida.
+  await db.update(users).set({ onboardedAt: new Date() }).where(and(eq(users.id, userId), isNull(users.onboardedAt)));
+  let replaced: string | null = null;
+  if (body.replaceManualAccountId) {
+    replaced = await removeManualAccount(userId, body.replaceManualAccountId);
+    if (replaced) await logAccess(userId, 'tú', 'reemplazaste un saldo escrito a mano por un extracto', { antes: replaced, ahora: source.entityName });
+  }
   await recordEvent('import_statement', { path: '/app/datos/importar', rows: body.transactions.length, inserted: result.inserted }, userId);
-  return NextResponse.json({ ok: true, ...result });
+  return NextResponse.json({ ok: true, ...result, replaced });
 }

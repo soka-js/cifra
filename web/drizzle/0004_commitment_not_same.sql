@@ -1,0 +1,1 @@
+ALTER TABLE "commitments" ADD COLUMN "not_same_as" text[] DEFAULT '{}'::text[] NOT NULL;

@@ -43,6 +43,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         bool_or(name = 'begin_signup') as begin_signup,
         bool_or(name = 'sign_up') as sign_up,
         bool_or(name = 'import_statement') as imported,
+        bool_or(name = 'quick_start') as quick,
         bool_or(name = 'generate_lead') as lead,
         bool_or(name in ('click_cta','scroll_depth','faq_open','ask_spend','begin_lead')) as interacted,
         max(case when name = 'engaged_time' and path = '/' then (props->>'seconds')::int end) as seconds,
@@ -54,6 +55,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       count(*) filter (where a.cta) as cta,
       count(*) filter (where a.begin_signup) as begin_signup,
       count(*) filter (where a.sign_up) as sign_up,
+      count(*) filter (where a.imported or a.quick) as activated,
+      count(*) filter (where a.quick) as quick,
       count(*) filter (where a.imported) as imported,
       count(*) filter (where a.lead) as leads,
       count(*) filter (where not coalesce(a.interacted, false) and coalesce(a.seconds, 0) < 10) as bounced,
@@ -123,7 +126,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <table className="tnum w-full text-left text-[14px]">
           <thead className="border-b border-line text-ink-muted">
             <tr>
-              {['Variante', 'Visitantes', 'Clic en CTA', 'Inició registro', 'Se registró (principal)', 'Subió extracto', 'Rebote', 'Tiempo mediano', 'Scroll 50 %', 'Demo'].map((h) => (
+              {['Variante', 'Visitantes', 'Clic en CTA', 'Inició registro', 'Se registró (principal)', 'Calculó su cifra', 'Rebote', 'Tiempo mediano', 'Scroll 50 %', 'Demo'].map((h) => (
                 <th key={h} className="px-4 py-3 font-semibold">{h}</th>
               ))}
             </tr>
@@ -138,7 +141,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                   <td className="px-4 py-3">{num(r.cta)} ({pct(num(r.cta), v)})</td>
                   <td className="px-4 py-3">{num(r.begin_signup)} ({pct(num(r.begin_signup), v)})</td>
                   <td className="px-4 py-3 font-semibold">{num(r.sign_up)} ({pct(num(r.sign_up), v)})</td>
-                  <td className="px-4 py-3">{num(r.imported)} ({pct(num(r.imported), v)})</td>
+                  <td className="px-4 py-3">
+                    {num(r.activated)} ({pct(num(r.activated), v)})
+                    <span className="block text-[12px] text-ink-faint">
+                      {num(r.quick)} rápido, {num(r.imported)} extracto
+                    </span>
+                  </td>
                   <td className="px-4 py-3">{pct(num(r.bounced), v)}</td>
                   <td className="px-4 py-3">{r.median_seconds == null ? 'sin datos' : `${Math.round(num(r.median_seconds))} s`}</td>
                   <td className="px-4 py-3">{pct(num(r.depth50), v)}</td>

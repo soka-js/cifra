@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { accounts, dataSources } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
+import { listManualAccounts } from '@/lib/manual';
 import { ImportWizard, type PresetAccount } from './wizard';
 
 export const metadata = { title: 'Subir extracto' };
@@ -21,5 +22,6 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
       preset = { accountId: row.account.id, entityName: row.entityName, kind: row.account.kind, name: row.account.name, mask: row.account.mask };
     }
   }
-  return <ImportWizard preset={preset} first={sp.primera === '1'} />;
+  const manual = (await listManualAccounts(user.id)).map((m) => ({ id: m.id, entityName: m.entityName, balanceMinor: m.balanceMinor }));
+  return <ImportWizard preset={preset} first={sp.primera === '1'} manual={manual} />;
 }

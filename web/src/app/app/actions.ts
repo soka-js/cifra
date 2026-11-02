@@ -1,6 +1,6 @@
 'use server';
 
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -8,8 +8,10 @@ import { db } from '@/lib/db';
 import { accounts, commitments, dataSources, recurringMarks, transactions, users } from '@/lib/db/schema';
 import { requireUser, destroySession } from '@/lib/auth/session';
 import { logAccess } from '@/lib/data';
-import { parsePesosInput } from '@/lib/format';
+import { parseBalanceInput, parsePesosInput, toDailyMinor } from '@/lib/format';
 import { setBalance } from '@/lib/ingest';
+import { createManualAccount, listManualAccounts } from '@/lib/manual';
+import { recordEvent } from '@/lib/analytics/server';
 
 export type FormState = { status: 'idle' } | { status: 'ok'; message?: string } | { status: 'error'; message: string };
 
@@ -97,6 +99,19 @@ export async function removeCommitment(form: FormData): Promise<void> {
   revalidatePath('/app', 'layout');
 }
 
+/** "No, son distintos": el compromiso escrito no es ese cobro detectado. No se vuelve a preguntar. */
+export async function keepCommitment(form: FormData): Promise<void> {
+  const user = await requireUser();
+  const id = String(form.get('id') ?? '');
+  const key = String(form.get('key') ?? '').slice(0, 120);
+  if (!id || !key) return;
+  await db
+    .update(commitments)
+    .set({ notSameAs: sql`array_append(${commitments.notSameAs}, ${key})` })
+    .where(and(eq(commitments.id, id), eq(commitments.userId, user.id)));
+  revalidatePath('/app', 'layout');
+}
+
 export async function markRecurring(form: FormData): Promise<void> {
   const user = await requireUser();
   const key = String(form.get('key') ?? '').slice(0, 120);
@@ -168,4 +183,153 @@ export async function toggleExcluded(form: FormData): Promise<void> {
     .set({ excluded: exclude })
     .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
   revalidatePath('/app', 'layout');
+}
+
+// ---------------------------------------------------------------------------------------------
+// Modo rápido: la cifra en un minuto con lo que la persona escribe. El extracto llega después,
+// como mejora de precisión.
+
+export type QuickState = { status: 'idle' } | { status: 'error'; step: number; message: string };
+
+const Period = z.enum(['dia', 'semana', 'mes']);
+
+function quickError(step: number, message: string): QuickState {
+  return { status: 'error', step, message };
+}
+
+/** Lee el gasto del día a día escrito (monto y periodo). 0 vale. Devuelve centavos por día o null. */
+function readDailySpend(form: FormData): number | null {
+  const raw = String(form.get('daily') ?? '').trim();
+  const period = Period.safeParse(form.get('period'));
+  if (!raw || !period.success) return null;
+  const amount = /^[$\s]*0+$/.test(raw) ? 0 : parsePesosInput(raw);
+  if (amount === null) return null;
+  return toDailyMinor(amount, period.data);
+}
+
+export async function saveQuickStart(_prev: QuickState, form: FormData): Promise<QuickState> {
+  const user = await requireUser();
+
+  const income = formIncome(form);
+  if (!income.success) return quickError(0, 'Elige cada cuánto te pagan.');
+  const days = incomeDaysFrom(income.data);
+  if (income.data.frequency !== 'irregular' && !days) return quickError(0, 'Elige el día o los días en que te pagan.');
+
+  const balance = parseBalanceInput(String(form.get('balance') ?? ''));
+  if (balance === null) return quickError(1, 'Escribe cuánto tienes hoy, por ejemplo 1.250.000. Si no tienes nada, escribe 0.');
+  const where = String(form.get('where') ?? '').trim().slice(0, 60);
+
+  const names = form.getAll('fixedName').map((v) => String(v).trim().slice(0, 60));
+  const amounts = form.getAll('fixedAmount').map((v) => String(v).trim());
+  const dayValues = form.getAll('fixedDay').map((v) => String(v).trim());
+  const fixed: Array<{ name: string; amountMinor: number; dayOfMonth: number }> = [];
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i] ?? '';
+    const amountRaw = amounts[i] ?? '';
+    const dayRaw = dayValues[i] ?? '';
+    if (!name && !amountRaw) continue;
+    const amountMinor = parsePesosInput(amountRaw);
+    const day = Number(dayRaw);
+    if (!name || amountMinor === null || !Number.isInteger(day) || day < 1 || day > 31) {
+      return quickError(2, `Revisa "${name || `el cobro ${i + 1}`}": necesita nombre, monto y día del mes.`);
+    }
+    fixed.push({ name, amountMinor, dayOfMonth: day });
+  }
+  if (fixed.length > 15) return quickError(2, 'Escribe hasta 15 cobros fijos. Los demás los agregas después en Ajustes.');
+
+  const dailyMinor = readDailySpend(form);
+  if (dailyMinor === null) return quickError(3, 'Escribe cuánto gastas en el día a día, por ejemplo 30.000 al día.');
+
+  await db
+    .update(users)
+    .set({ incomeFrequency: income.data.frequency, incomeDays: days, dailySpendMinor: dailyMinor, onboardedAt: user.onboardedAt ?? new Date() })
+    .where(eq(users.id, user.id));
+
+  // Un solo saldo escrito por el modo rápido: si ya existe (volvió a esta pantalla), se actualiza.
+  const [manual] = await listManualAccounts(user.id);
+  if (manual) {
+    await setBalance(user.id, manual.id, balance);
+    if (where) await db.update(dataSources).set({ entityName: where, lastSyncAt: new Date() }).where(eq(dataSources.id, manual.sourceId));
+  } else {
+    await createManualAccount(user.id, { entityName: where || 'Tus cuentas', name: 'Saldo escrito a mano', balanceMinor: balance });
+  }
+
+  const existing = await db.select().from(commitments).where(eq(commitments.userId, user.id));
+  const seen = new Set(existing.map((c) => `${c.name.toLowerCase()}|${c.dayOfMonth}`));
+  const fresh = fixed.filter((f) => !seen.has(`${f.name.toLowerCase()}|${f.dayOfMonth}`)).slice(0, Math.max(0, 20 - existing.length));
+  if (fresh.length) await db.insert(commitments).values(fresh.map((f) => ({ userId: user.id, ...f })));
+
+  await logAccess(user.id, 'tú', 'escribiste tu saldo, tus cobros fijos y tu gasto del día a día', { cobros_fijos: fixed.length });
+  await recordEvent('quick_start', { path: '/app/bienvenida', fixed: fixed.length, period: String(form.get('period')) }, user.id);
+  revalidatePath('/app', 'layout');
+  redirect('/app?listo=rapido');
+}
+
+export async function saveDailySpend(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const raw = String(form.get('daily') ?? '').trim();
+  if (!raw) {
+    await db.update(users).set({ dailySpendMinor: null }).where(eq(users.id, user.id));
+    revalidatePath('/app', 'layout');
+    return { status: 'ok', message: 'Listo. Lo calculamos solo con tus movimientos.' };
+  }
+  const dailyMinor = readDailySpend(form);
+  if (dailyMinor === null) return { status: 'error', message: 'Escribe un monto en pesos, por ejemplo 30.000.' };
+  await db.update(users).set({ dailySpendMinor: dailyMinor }).where(eq(users.id, user.id));
+  revalidatePath('/app', 'layout');
+  return { status: 'ok', message: 'Guardado.' };
+}
+
+/**
+ * "¿Cuánto tienes hoy?" desde la pantalla de inicio: uno o varios saldos a la vez (campos bal:<id>).
+ * Sin cuentas todavía, el campo bal:nueva crea un saldo escrito a mano. Los saldos que trae una entidad no se tocan.
+ */
+export async function updateBalances(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const entries = [...form.entries()].filter(([k, v]) => k.startsWith('bal:') && String(v).trim() !== '');
+  if (!entries.length) return { status: 'error', message: 'Escribe al menos un saldo.' };
+  const parsed: Array<{ key: string; minor: number }> = [];
+  for (const [k, v] of entries) {
+    const minor = parseBalanceInput(String(v));
+    if (minor === null) return { status: 'error', message: 'Escribe el saldo en pesos, por ejemplo 1.250.000.' };
+    parsed.push({ key: k.slice(4), minor });
+  }
+  const own = await db
+    .select({ id: accounts.id, name: accounts.name, kind: dataSources.kind })
+    .from(accounts)
+    .innerJoin(dataSources, eq(dataSources.id, accounts.sourceId))
+    .where(eq(accounts.userId, user.id));
+  let updated = 0;
+  for (const p of parsed) {
+    if (p.key === 'nueva') {
+      if (own.length) continue;
+      await createManualAccount(user.id, { entityName: 'Tus cuentas', name: 'Saldo escrito a mano', balanceMinor: p.minor });
+      updated++;
+      continue;
+    }
+    const acct = own.find((a) => a.id === p.key);
+    if (!acct || acct.kind === 'entidad_aliada') continue;
+    await setBalance(user.id, acct.id, p.minor);
+    updated++;
+  }
+  if (!updated) return { status: 'error', message: 'No encontramos esa cuenta.' };
+  await logAccess(user.id, 'tú', 'actualizaste el saldo', { cuentas: updated });
+  await recordEvent('update_balance', { path: '/app', accounts: updated }, user.id);
+  revalidatePath('/app', 'layout');
+  return { status: 'ok', message: 'Listo, tu cifra quedó con el saldo de hoy.' };
+}
+
+/** Un saldo escrito a mano desde "Tus datos" (efectivo, una billetera sin extracto). */
+export async function addManualAccount(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const entityName = String(form.get('entity') ?? '').trim().slice(0, 60);
+  const balance = parseBalanceInput(String(form.get('balance') ?? ''));
+  if (entityName.length < 2) return { status: 'error', message: 'Escribe dónde está esa plata, por ejemplo Nequi o Efectivo.' };
+  if (balance === null) return { status: 'error', message: 'Escribe el saldo en pesos, por ejemplo 250.000.' };
+  const count = await db.select({ id: dataSources.id }).from(dataSources).where(and(eq(dataSources.userId, user.id), eq(dataSources.kind, 'manual')));
+  if (count.length >= 10) return { status: 'error', message: 'Puedes tener hasta 10 saldos escritos a mano.' };
+  await createManualAccount(user.id, { entityName, name: 'Saldo escrito a mano', balanceMinor: balance });
+  await logAccess(user.id, 'tú', 'escribiste un saldo a mano', { entidad: entityName });
+  revalidatePath('/app', 'layout');
+  return { status: 'ok', message: `Agregamos ${entityName}.` };
 }

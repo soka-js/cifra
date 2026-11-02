@@ -22,6 +22,20 @@
       "when": 1793580657204,
       "tag": "0002_excluded",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793585076838,
+      "tag": "0003_daily_spend",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793585795081,
+      "tag": "0004_commitment_not_same",
+      "breakpoints": true
     }
   ]
 }
