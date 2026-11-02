@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { accounts, commitments, dataSources, recurringMarks, users } from '@/lib/db/schema';
+import { accounts, commitments, dataSources, recurringMarks, transactions, users } from '@/lib/db/schema';
 import { requireUser, destroySession } from '@/lib/auth/session';
 import { logAccess } from '@/lib/data';
 import { parsePesosInput } from '@/lib/format';
@@ -157,4 +157,15 @@ export async function deleteAccount(_prev: FormState, form: FormData): Promise<F
   // La cascada elimina sesiones, fuentes, cuentas, movimientos, marcas, compromisos y registro de acceso.
   await db.delete(users).where(eq(users.id, user.id));
   redirect('/?cuenta=borrada');
+}
+
+export async function toggleExcluded(form: FormData): Promise<void> {
+  const user = await requireUser();
+  const id = String(form.get('id') ?? '');
+  const exclude = form.get('exclude') === 'si';
+  await db
+    .update(transactions)
+    .set({ excluded: exclude })
+    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
+  revalidatePath('/app', 'layout');
 }

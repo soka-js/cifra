@@ -32,7 +32,9 @@ export async function loadCifra(user: User): Promise<CifraResult> {
       })
       .from(transactions)
       .innerJoin(accounts, eq(accounts.id, transactions.accountId))
-      .where(and(eq(transactions.userId, user.id), gte(transactions.postedOn, since), eq(accounts.includeInCifra, true))),
+      .where(
+        and(eq(transactions.userId, user.id), gte(transactions.postedOn, since), eq(accounts.includeInCifra, true), eq(transactions.excluded, false)),
+      ),
     db.select().from(commitments).where(eq(commitments.userId, user.id)),
     db.select().from(recurringMarks).where(eq(recurringMarks.userId, user.id)),
   ]);

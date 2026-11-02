@@ -169,6 +169,8 @@ export const transactions = pgTable(
     amountMinor: money('amount_minor').notNull(),
     /** Huella para no duplicar al volver a subir el mismo extracto. */
     dedupeKey: text('dedupe_key').notNull(),
+    /** La persona decidió que este movimiento no cuente en la cifra (por ejemplo, una compra única que ya pasó). */
+    excluded: boolean('excluded').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

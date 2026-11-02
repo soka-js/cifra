@@ -17,7 +17,8 @@ export const metadata: Metadata = {
     locale: 'es_CO',
     type: 'website',
   },
-  icons: { icon: '/icon.svg' },
+  icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
+  appleWebApp: { capable: true, title: 'CIFRA', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

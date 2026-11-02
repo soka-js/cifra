@@ -2,6 +2,7 @@ import { addDays, daysBetween, nextDayOfMonth, shortDate, toDayNumber } from './
 import { nextIncomeDate, resolveIncome, type IncomeEstimate } from './income';
 import { flowOf, identifyMerchant } from './merchant';
 import { detectRecurring, type RecurringSeries } from './recurring';
+import { splitInternalTransfers } from './transfers';
 import type { AccountBalance, Commitment, IncomeSettings, Tx } from './types';
 
 export type RecurringMarkValue = 'lo_uso' | 'no_lo_uso' | 'no_es_fijo';
@@ -49,6 +50,8 @@ export interface CifraResult {
   recurring: RecurringSeries[];
   warnings: string[];
   historyDays: number;
+  /** Movimientos excluidos por ser transferencias entre cuentas propias. */
+  internalTransfers: number;
 }
 
 /** Días hacia atrás que se miran para estimar el gasto del día a día. */
@@ -101,8 +104,10 @@ function commitmentDates(c: Commitment, fromExclusive: string, toInclusive: stri
 }
 
 export function computeCifra(input: CifraInput): CifraResult {
-  const { today, transactions } = input;
+  const { today } = input;
   const warnings: string[] = [];
+  // Lo que se mueve entre tus propias cuentas no es ingreso ni gasto: se saca antes de todo lo demás.
+  const { external: transactions, internal } = splitInternalTransfers(input.transactions);
   const income = resolveIncome(input.income, transactions);
   const nextIncomeOn = nextIncomeDate(income, today);
   const daysLeft = Math.max(1, daysBetween(today, nextIncomeOn));
@@ -110,7 +115,7 @@ export function computeCifra(input: CifraInput): CifraResult {
   const included = input.accounts.filter((a) => a.includeInCifra);
   const withBalance = included.filter((a) => a.balanceMinor !== null && a.balanceOn);
   const missing: CifraResult['missing'] = [];
-  if (!transactions.length) missing.push('movimientos');
+  if (!input.transactions.length) missing.push('movimientos');
   if (!withBalance.length) missing.push('saldo');
   if (included.length > withBalance.length && withBalance.length) {
     warnings.push('Una de tus cuentas no tiene saldo. La cifra solo cuenta las que sí lo tienen.');
@@ -198,6 +203,7 @@ export function computeCifra(input: CifraInput): CifraResult {
     recurring,
     warnings,
     historyDays,
+    internalTransfers: internal.length,
   };
 }
 

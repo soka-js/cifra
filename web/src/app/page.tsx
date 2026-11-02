@@ -114,7 +114,7 @@ export default async function Landing() {
               { t: 'Crea tu cuenta', d: 'Con tu correo y una contraseña. Toma un minuto y dices cada cuánto te pagan.' },
               {
                 t: 'Sube el extracto de tu banco',
-                d: 'El archivo CSV o Excel que descargas de la sucursal virtual. Se lee en tu teléfono o computador: el archivo no se sube y nunca te pedimos la clave del banco.',
+                d: 'El CSV, Excel o PDF que descargas de la sucursal virtual o la app. Se lee en tu teléfono o computador: el archivo no se sube y nunca te pedimos la clave del banco.',
               },
               {
                 t: 'Mira tu cifra y pregunta antes de pagar',
@@ -268,7 +268,7 @@ export default async function Landing() {
                 { q: '¿Cuánto cuesta?', a: 'Nada. CIFRA es gratis para las personas. Lo pagan las entidades que lo ofrecen dentro de su app.' },
                 {
                   q: '¿Con qué bancos funciona?',
-                  a: 'Con cualquier banco o billetera que te deje descargar tus movimientos en CSV o Excel desde su sucursal virtual. Si el tuyo solo entrega PDF, escríbenos: estamos agregando lectores para los extractos en PDF más comunes.',
+                  a: 'Con cualquier banco o billetera que te deje descargar tus movimientos en CSV, Excel o PDF digital desde su sucursal virtual o su app. Antes de guardar ves los movimientos leídos para confirmar que quedaron bien.',
                 },
                 {
                   q: '¿Por qué no se conecta directo a mi banco?',

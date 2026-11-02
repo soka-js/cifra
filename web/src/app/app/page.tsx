@@ -121,7 +121,13 @@ export default async function HoyPage() {
             <span>{cop(c.availableMinor)}</span>
           </div>
         </div>
-        <p className="mt-3 text-[12.5px] text-ink-faint">Esto no es tu saldo. Es lo que queda libre después de lo comprometido.</p>
+        <p className="mt-3 text-[12.5px] text-ink-faint">
+          Esto no es tu saldo. Es lo que queda libre después de lo comprometido.
+          {c.internalTransfers > 0 && ` No contamos ${c.internalTransfers} movimientos entre tus propias cuentas.`}
+        </p>
+        <Link href="/app/movimientos" className="mt-3 inline-block text-[13.5px] font-semibold text-primary-dark underline-offset-2 hover:underline">
+          Ver movimientos
+        </Link>
       </section>
 
       <section className="divide-y divide-line rounded-2xl border border-line bg-white">

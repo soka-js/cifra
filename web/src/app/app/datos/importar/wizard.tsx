@@ -57,8 +57,11 @@ async function readRows(file: File): Promise<Cell[][]> {
     return res.data as Cell[][];
   }
   if (name.endsWith('.xls')) throw new Error('Ese es el formato viejo de Excel (.xls). Ábrelo y guárdalo como .xlsx o .csv, y súbelo otra vez.');
-  if (name.endsWith('.pdf')) throw new Error('Por ahora leemos CSV y Excel. Si tu banco solo entrega PDF, escríbenos y lo agregamos.');
-  throw new Error('Sube un archivo .csv o .xlsx.');
+  if (name.endsWith('.pdf') || file.type === 'application/pdf') {
+    const { readPdfRows } = await import('@/lib/import/pdf');
+    return readPdfRows(file);
+  }
+  throw new Error('Sube un archivo .csv, .xlsx o .pdf.');
 }
 
 export function ImportWizard({ preset, first }: { preset?: PresetAccount; first: boolean }) {
@@ -261,8 +264,8 @@ export function ImportWizard({ preset, first }: { preset?: PresetAccount; first:
           <label className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-line bg-white px-6 py-10 text-center hover:border-primary">
             <FileUp size={30} className="text-primary" aria-hidden="true" />
             <span className="text-[16px] font-semibold">Elige el archivo de movimientos</span>
-            <span className="text-[13.5px] text-ink-muted">CSV o Excel (.xlsx). Descárgalo desde la sucursal virtual o la app de tu banco, idealmente de los últimos tres meses.</span>
-            <input type="file" accept=".csv,.xlsx,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="sr-only" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
+            <span className="text-[13.5px] text-ink-muted">CSV, Excel (.xlsx) o PDF digital. Descárgalo desde la sucursal virtual o la app de tu banco, idealmente de los últimos tres meses. El PDF es nuevo: revisa los movimientos antes de guardar.</span>
+            <input type="file" accept=".csv,.xlsx,.pdf,.txt,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="sr-only" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
           </label>
           {error && <p role="alert" className="text-sm text-neg">{error}</p>}
         </div>

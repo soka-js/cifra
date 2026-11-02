@@ -92,3 +92,26 @@ describe('¿puedo hacer este gasto?', () => {
     expect(a.verdict).toBe('justo');
   });
 });
+
+describe('transferencias entre cuentas propias', () => {
+  it('no cuentan como gasto ni como ingreso', () => {
+    const txs = ledger().filter((t) => t.postedOn <= '2026-10-31');
+    const moved = [
+      { accountId: 'a1', postedOn: '2026-10-15', description: 'TRANSFERENCIA A NEQUI', amountMinor: -400_000_00 },
+      { accountId: 'nequi', postedOn: '2026-10-15', description: 'Recibiste de Bancolombia', amountMinor: 400_000_00 },
+      { accountId: 'a1', postedOn: '2026-09-15', description: 'TRANSFERENCIA A NEQUI', amountMinor: -400_000_00 },
+      { accountId: 'nequi', postedOn: '2026-09-16', description: 'Recibiste de Bancolombia', amountMinor: 400_000_00 },
+    ];
+    const plain = computeCifra(base({ transactions: txs }));
+    const withMoves = computeCifra(base({ transactions: [...txs, ...moved] }));
+    expect(withMoves.internalTransfers).toBe(4);
+    expect(withMoves.dailyVariableMinor).toBe(plain.dailyVariableMinor);
+    expect(withMoves.income.typicalMinor).toBe(plain.income.typicalMinor);
+  });
+  it('una transferencia a otra persona sí es gasto', () => {
+    const txs = ledger().filter((t) => t.postedOn <= '2026-10-31');
+    const paid = [{ accountId: 'a1', postedOn: '2026-10-20', description: 'TRANSFERENCIA A MARIA LOPEZ', amountMinor: -300_000_00 }];
+    const r = computeCifra(base({ transactions: [...txs, ...paid] }));
+    expect(r.internalTransfers).toBe(0);
+  });
+});

@@ -3,3 +3,4 @@ Allow: /
 Disallow: /app
 Disallow: /admin
 Disallow: /api
+Disallow: /e/
