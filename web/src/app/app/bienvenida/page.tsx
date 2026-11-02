@@ -1,13 +1,16 @@
 import { requireUser } from '@/lib/auth/session';
 import { IncomeFields } from '@/components/app/income-fields';
 import { saveOnboarding } from '../actions';
+import { GaOnce } from '@/components/app/ga-once';
 
 export const metadata = { title: 'Bienvenida' };
 
-export default async function WelcomePage() {
+export default async function WelcomePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
+  const { nuevo } = await searchParams;
   return (
     <div>
+      {nuevo === '1' && <GaOnce name="sign_up" />}
       <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">
         {user.name ? `${user.name.split(' ')[0]}, ` : ''}¿cada cuánto te pagan?
       </h1>

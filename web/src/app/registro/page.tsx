@@ -21,7 +21,7 @@ export default async function SignupPage() {
       }
     >
       <p className="-mt-4 mb-7 text-[16px] leading-relaxed text-ink-muted">
-        Después te pedimos el extracto de tu banco en CSV o Excel. Tenlo a la mano.
+        Después te pedimos el extracto de tu banco en CSV, Excel o PDF. Tenlo a la mano.
       </p>
       <SignupForm />
     </AuthShell>

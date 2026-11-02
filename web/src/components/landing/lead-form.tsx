@@ -1,7 +1,7 @@
 'use client';
 
-import { useActionState, useRef } from 'react';
-import { track } from '@/lib/analytics/client';
+import { useActionState, useEffect, useRef } from 'react';
+import { gaEvent, track } from '@/lib/analytics/client';
 import { submitLead, type LeadState } from '@/app/actions/leads';
 
 const initial: LeadState = { status: 'idle' };
@@ -9,6 +9,9 @@ const initial: LeadState = { status: 'idle' };
 export function LeadForm() {
   const [state, action, pending] = useActionState(submitLead, initial);
   const started = useRef(false);
+  useEffect(() => {
+    if (state.status === 'ok') gaEvent('generate_lead');
+  }, [state.status]);
 
   if (state.status === 'ok') {
     return (

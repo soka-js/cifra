@@ -29,7 +29,7 @@ export default async function HoyPage() {
       <section className="pt-6">
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">Falta tu extracto para calcular tu cifra.</h1>
         <p className="mt-3 text-[16px] leading-relaxed text-ink-muted">
-          Descarga los movimientos de tu cuenta en CSV o Excel desde la sucursal virtual de tu banco y súbelos aquí. Con dos o
+          Descarga los movimientos de tu cuenta en CSV, Excel o PDF desde la sucursal virtual o la app de tu banco y súbelos aquí. Con dos o
           tres meses la cifra sale mejor.
         </p>
         <Link href="/app/datos/importar" className="btn-primary mt-7 w-full">

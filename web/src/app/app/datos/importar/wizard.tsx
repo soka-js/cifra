@@ -7,7 +7,7 @@ import { FileUp, ShieldCheck } from 'lucide-react';
 import { buildTransactions, detectColumns, type Cell, type ColumnMapping } from '@/lib/import/parse';
 import { shortDate } from '@/lib/engine/dates';
 import { cop, parsePesosInput } from '@/lib/format';
-import { track } from '@/lib/analytics/client';
+import { gaEvent, track } from '@/lib/analytics/client';
 
 const ENTITIES = [
   'Bancolombia',
@@ -145,6 +145,7 @@ export function ImportWizard({ preset, first }: { preset?: PresetAccount; first:
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'No pudimos guardar los movimientos.');
       setResult({ inserted: data.inserted, duplicates: data.duplicates });
+      gaEvent('import_statement', { rows: parsed.txs.length });
       setStep('listo');
       router.refresh();
     } catch (e) {

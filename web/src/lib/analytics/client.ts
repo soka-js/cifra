@@ -10,6 +10,18 @@ declare global {
 
 type Props = Record<string, string | number | boolean | null>;
 
+/**
+ * Solo a GA4, para eventos que la analítica propia ya registra en el servidor (registro, contacto, extracto)
+ * y que en GA4 se marcan como eventos clave.
+ */
+export function gaEvent(name: 'sign_up' | 'generate_lead' | 'import_statement', props: Props = {}): void {
+  try {
+    window.gtag?.('event', name, props);
+  } catch {
+    // Silencioso a propósito.
+  }
+}
+
 /** Envía un evento a la analítica propia y, si la persona aceptó cookies y hay GA4, también a GA4. */
 export function track(name: EventName, props: Props = {}): void {
   try {

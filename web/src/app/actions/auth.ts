@@ -62,7 +62,7 @@ export async function signup(_prev: AuthState, form: FormData): Promise<AuthStat
     .returning({ id: users.id });
   await createSession(user!.id);
   await recordEvent('sign_up', { path: '/registro' }, user!.id);
-  redirect('/app/bienvenida');
+  redirect('/app/bienvenida?nuevo=1');
 }
 
 const Login = z.object({
