@@ -39,9 +39,22 @@ export default async function Landing() {
           <a href="#cooperativas" className="hidden rounded-lg px-3 py-2 text-ink-muted hover:text-ink sm:inline">
             Para cooperativas
           </a>
-          <Link href={user ? '/app' : '/entrar'} className="rounded-lg px-3 py-2 font-semibold text-primary-dark hover:bg-primary-light">
-            {user ? 'Ir a mi cifra' : 'Entrar'}
-          </Link>
+          {user ? (
+            <TrackedLink href="/app" location="header" className="btn-primary ml-1 sm:ml-2">
+              Ir a mi cifra
+            </TrackedLink>
+          ) : (
+            <>
+              <Link href="/entrar" className="rounded-lg px-3 py-2 font-semibold text-primary-dark hover:bg-primary-light">
+                Entrar
+              </Link>
+              {/* CTA principal arriba a la derecha; texto corto donde no cabe el largo, pero siempre visible. */}
+              <TrackedLink href="/registro" location="header" className="btn-primary ml-1 px-4 sm:ml-2 lg:px-5">
+                <span className="lg:hidden">Empieza gratis</span>
+                <span className="hidden lg:inline">Calcula tu cifra gratis</span>
+              </TrackedLink>
+            </>
+          )}
         </nav>
       </header>
 
@@ -229,39 +242,6 @@ export default async function Landing() {
           </div>
         </section>
 
-        {/* Para entidades. */}
-        <section id="cooperativas" className="scroll-mt-8 bg-ink text-white">
-          <div className="mx-auto grid max-w-6xl gap-14 px-4 py-20 sm:px-6 md:grid-cols-[1fr_1.1fr] md:py-28">
-            <div>
-              <p className="text-[15px] font-semibold text-primary-soft">Para cooperativas y entidades financieras</p>
-              <h2 className="mt-3 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
-                Dale a tus asociados la cifra dentro de tu app.
-              </h2>
-              <ul className="mt-8 space-y-5 text-[16px] leading-relaxed text-white/80">
-                <li>
-                  <strong className="text-white">Empiezas con los datos que ya tienes.</strong> Tus asociados ya confían en ti y
-                  sus movimientos ya están contigo. No hace falta esperar a finanzas abiertas.
-                </li>
-                <li>
-                  <strong className="text-white">Se integra con una API.</strong> Envías cuentas y movimientos, y CIFRA se abre
-                  dentro de tu app con un enlace seguro de un solo uso.
-                </li>
-                <li>
-                  <strong className="text-white">Pagas por usuario activo.</strong> Una licencia mensual por asociado que usa
-                  CIFRA. El asociado no paga nada.
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-display text-[22px] font-bold">Pide una demo</h3>
-              <p className="mt-1.5 text-white/70">Te mostramos CIFRA con datos de prueba y la API.</p>
-              <div className="mt-6">
-                <LeadForm />
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Objeciones. */}
         <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 md:py-28">
           <h2 className="font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">Preguntas frecuentes</h2>
@@ -294,6 +274,39 @@ export default async function Landing() {
               Calcula tu cifra gratis
             </TrackedLink>
             <span className="text-[14px] text-ink-faint">Toma unos cinco minutos con tu extracto a la mano.</span>
+          </div>
+        </section>
+
+        {/* Para entidades. */}
+        <section id="cooperativas" className="scroll-mt-8 bg-ink text-white">
+          <div className="mx-auto grid max-w-6xl gap-14 px-4 py-20 sm:px-6 md:grid-cols-[1fr_1.1fr] md:py-28">
+            <div>
+              <p className="text-[15px] font-semibold text-primary-soft">Para cooperativas y entidades financieras</p>
+              <h2 className="mt-3 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
+                Dale a tus asociados la cifra dentro de tu app.
+              </h2>
+              <ul className="mt-8 space-y-5 text-[16px] leading-relaxed text-white/80">
+                <li>
+                  <strong className="text-white">Empiezas con los datos que ya tienes.</strong> Tus asociados ya confían en ti y
+                  sus movimientos ya están contigo. No hace falta esperar a finanzas abiertas.
+                </li>
+                <li>
+                  <strong className="text-white">Se integra con una API.</strong> Envías cuentas y movimientos, y CIFRA se abre
+                  dentro de tu app con un enlace seguro de un solo uso.
+                </li>
+                <li>
+                  <strong className="text-white">Pagas por usuario activo.</strong> Una licencia mensual por asociado que usa
+                  CIFRA. El asociado no paga nada.
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-display text-[22px] font-bold">Pide una demo</h3>
+              <p className="mt-1.5 text-white/70">Te mostramos CIFRA con datos de prueba y la API.</p>
+              <div className="mt-6">
+                <LeadForm />
+              </div>
+            </div>
           </div>
         </section>
       </main>
