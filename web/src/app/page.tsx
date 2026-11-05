@@ -5,6 +5,7 @@ import { Logo } from '@/components/logo';
 import { Faq } from '@/components/landing/faq';
 import { LeadForm } from '@/components/landing/lead-form';
 import { Receipt } from '@/components/landing/receipt';
+import { Testimonios } from '@/components/landing/testimonios';
 import { TrackedLink } from '@/components/landing/tracked-link';
 import { getCurrentUser } from '@/lib/auth/session';
 
@@ -191,6 +192,8 @@ export default async function Landing() {
             </figure>
           </div>
         </section>
+
+        <Testimonios />
 
         {/* Confianza. */}
         <section id="tus-datos" className="mx-auto max-w-6xl scroll-mt-8 px-4 py-20 sm:px-6 md:py-28">
