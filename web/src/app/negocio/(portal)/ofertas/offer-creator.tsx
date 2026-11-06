@@ -1,9 +1,10 @@
 'use client';
 
-import { CheckCircle2, Sparkles, Tag } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Sparkles, Tag, Zap } from 'lucide-react';
 import { useActionState, useState } from 'react';
 import { createMerchantOffer, type MerchantActionState } from '@/app/actions/merchant';
 import { computeRedemptionSplit } from '@/lib/engine/attribution';
+import { computeHonestMerchantMargin } from '@/lib/engine/crossref';
 import { cop, parsePesosInput } from '@/lib/format';
 
 const INITIAL: MerchantActionState = { status: 'idle' };
@@ -11,7 +12,7 @@ const INITIAL: MerchantActionState = { status: 'idle' };
 const TEMPLATES = [
   {
     id: 'bienvenida-10',
-    badge: 'Recomendada · G.10',
+    badge: 'Recomendada · 1ra visita',
     title: '10 % de descuento en tu primera compra',
     description: 'Para vecinos de la zona que aún no conocen nuestro local.',
     kind: 'percent' as const,
@@ -19,19 +20,43 @@ const TEMPLATES = [
     fixedPesos: '3000',
     minPesos: '12000',
     newOnly: true,
+    isFlash: false,
+    startHour: '14',
+    endHour: '18',
+    stock: '10',
     hours: '',
   },
   {
-    id: 'tarde-15',
-    badge: 'Horas tranquilas',
-    title: '15 % de descuento en tardes (2 p. m. a 5 p. m.)',
-    description: 'Ideal para mover el local en las horas de menor tráfico.',
+    id: 'relampago-merma',
+    badge: '⚡ Relámpago · Cero merma',
+    title: '25 % OFF en horneados y productos frescos de la tarde',
+    description: 'Saca el inventario del día antes del cierre con cupos contados.',
     kind: 'percent' as const,
-    percent: 15,
+    percent: 25,
     fixedPesos: '3000',
-    minPesos: '15000',
-    newOnly: true,
-    hours: 'Lun a Vie 2:00 p. m. – 5:00 p. m.',
+    minPesos: '0',
+    newOnly: false,
+    isFlash: true,
+    startHour: '16',
+    endHour: '19',
+    stock: '8',
+    hours: '4:00 p. m. a 7:00 p. m.',
+  },
+  {
+    id: 'relampago-tarde',
+    badge: '⚡ Horas muertas (2–5 p. m.)',
+    title: '20 % de descuento en hora tranquila de la tarde',
+    description: 'Llena mesas o mostrador en las horas de menor movimiento.',
+    kind: 'percent' as const,
+    percent: 20,
+    fixedPesos: '3000',
+    minPesos: '10000',
+    newOnly: false,
+    isFlash: true,
+    startHour: '14',
+    endHour: '17',
+    stock: '12',
+    hours: '2:00 p. m. a 5:00 p. m.',
   },
   {
     id: 'bono-fijo',
@@ -43,6 +68,10 @@ const TEMPLATES = [
     fixedPesos: '3000',
     minPesos: '20000',
     newOnly: true,
+    isFlash: false,
+    startHour: '14',
+    endHour: '18',
+    stock: '10',
     hours: '',
   },
 ];
@@ -63,6 +92,13 @@ export function OfferCreator({
   const [discountFixed, setDiscountFixed] = useState('3000');
   const [minPurchase, setMinPurchase] = useState('12000');
   const [maxDiscount, setMaxDiscount] = useState('');
+  const [isFlash, setIsFlash] = useState(false);
+  const [startHour, setStartHour] = useState('15');
+  const [endHour, setEndHour] = useState('19');
+  const [stockLimit, setStockLimit] = useState('10');
+  const [unitCost, setUnitCost] = useState(
+    String(Math.round(((typicalTicketMinor || 2_000_000) * 0.36) / 100)),
+  );
   const [newCustomersOnly, setNewCustomersOnly] = useState(true);
   const [monthlyCap, setMonthlyCap] = useState('40');
   const [durationDays, setDurationDays] = useState('30');
@@ -76,6 +112,10 @@ export function OfferCreator({
     setDiscountPercent(tpl.percent);
     setDiscountFixed(tpl.fixedPesos);
     setMinPurchase(tpl.minPesos);
+    setIsFlash(tpl.isFlash);
+    setStartHour(tpl.startHour);
+    setEndHour(tpl.endHour);
+    setStockLimit(tpl.stock);
     setNewCustomersOnly(tpl.newOnly);
     setActiveHoursText(tpl.hours);
   }
@@ -84,6 +124,7 @@ export function OfferCreator({
     typicalTicketMinor || 2_000_000,
     parsePesosInput(minPurchase) ?? 0,
   );
+  const parsedCostMinor = parsePesosInput(unitCost) ?? Math.round(sampleGrossMinor * 0.36);
 
   const previewSplit = computeRedemptionSplit({
     grossAmountMinor: sampleGrossMinor,
@@ -95,15 +136,24 @@ export function OfferCreator({
     commissionBps,
   });
 
+  const honestMargin = computeHonestMerchantMargin({
+    salePriceMinor: sampleGrossMinor,
+    unitCostMinor: parsedCostMinor,
+    discountKind,
+    discountPercent,
+    discountFixedMinor: parsePesosInput(discountFixed) ?? 300_000,
+    commissionBps,
+  });
+
   return (
     <form action={action} className="surface-card space-y-6 p-5 sm:p-7">
       <div>
         <span className="badge-terra">
           <Sparkles size={12} aria-hidden="true" />
-          Creador guiado en 3 pasos
+          Creador guiado con protección de margen
         </span>
         <h2 className="mt-2 font-display text-[22px] font-bold text-ink">
-          Publica una nueva oferta para vecinos de tu barrio
+          Publica una campaña permanente o una Oferta Relámpago de cero merma
         </h2>
       </div>
 
@@ -116,9 +166,9 @@ export function OfferCreator({
       {/* Paso 1 */}
       <div className="space-y-3">
         <p className="text-[14px] font-bold text-ink">
-          Paso 1 · Elige una idea base o escríbela a tu gusto
+          Paso 1 · Elige una plantilla probada o escríbela a tu gusto
         </p>
-        <div className="grid gap-2.5 sm:grid-cols-3">
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           {TEMPLATES.map((tpl) => {
             const active = selectedTpl === tpl.id;
             return (
@@ -135,11 +185,82 @@ export function OfferCreator({
                 <span className="text-[11px] font-bold uppercase tracking-wider text-terra-dark">
                   {tpl.badge}
                 </span>
-                <p className="mt-1 text-[13.5px] font-semibold leading-snug text-ink">{tpl.title}</p>
+                <p className="mt-1 text-[13px] font-semibold leading-snug text-ink">{tpl.title}</p>
               </button>
             );
           })}
         </div>
+
+        {/* Selector de Oferta Relámpago con ventana horaria y cupos */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50/70 p-4">
+          <input
+            type="checkbox"
+            name="isFlash"
+            checked={isFlash}
+            onChange={(e) => {
+              setIsFlash(e.target.checked);
+              if (e.target.checked) setNewCustomersOnly(false);
+            }}
+            className="mt-1 h-5 w-5 rounded border-amber-400 text-terra focus:ring-terra"
+          />
+          <span className="text-[13.5px] leading-relaxed text-ink-soft">
+            <strong className="flex items-center gap-1 font-semibold text-ink">
+              <Zap size={15} className="text-amber-600" aria-hidden="true" />
+              Activar como Oferta Relámpago por horas y con cupos vivos
+            </strong>
+            Sale destacada con rayo ⚡ en el mapa del barrio durante tu ventana horaria elegida y descuenta cupos automáticamente en Caja.
+          </span>
+        </label>
+
+        {isFlash && (
+          <div className="grid gap-3 rounded-2xl border border-amber-200 bg-white p-4 sm:grid-cols-3">
+            <div>
+              <label htmlFor="startHour" className="label">
+                Hora inicio (0–23)
+              </label>
+              <input
+                id="startHour"
+                name="startHour"
+                type="number"
+                min={0}
+                max={23}
+                value={startHour}
+                onChange={(e) => setStartHour(e.target.value)}
+                className="field tnum"
+              />
+            </div>
+            <div>
+              <label htmlFor="endHour" className="label">
+                Hora cierre (0–23)
+              </label>
+              <input
+                id="endHour"
+                name="endHour"
+                type="number"
+                min={0}
+                max={23}
+                value={endHour}
+                onChange={(e) => setEndHour(e.target.value)}
+                className="field tnum"
+              />
+            </div>
+            <div>
+              <label htmlFor="stockLimit" className="label">
+                Cupos disponibles
+              </label>
+              <input
+                id="stockLimit"
+                name="stockLimit"
+                type="number"
+                min={1}
+                max={200}
+                value={stockLimit}
+                onChange={(e) => setStockLimit(e.target.value)}
+                className="field tnum"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-3.5 pt-1 sm:grid-cols-2">
           <div>
@@ -173,13 +294,13 @@ export function OfferCreator({
         </div>
       </div>
 
-      {/* Paso 2 + Calculadora transparente en vivo */}
+      {/* Paso 2 + Calculadora Honesta de Margen Real */}
       <div className="space-y-4 border-t border-line pt-5">
         <p className="text-[14px] font-bold text-ink">
-          Paso 2 · Define el beneficio y revisa tus cuentas en pesos
+          Paso 2 · Define el beneficio y compara tu ganancia limpia frente a apps del 28 %
         </p>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-4">
           <div>
             <label htmlFor="discountKind" className="label">
               Tipo de descuento
@@ -192,14 +313,14 @@ export function OfferCreator({
               className="field"
             >
               <option value="percent">Porcentaje (%)</option>
-              <option value="fixed">Valor fijo en pesos ($)</option>
+              <option value="fixed">Valor fijo ($)</option>
             </select>
           </div>
 
           {discountKind === 'percent' ? (
             <div>
               <label htmlFor="discountPercent" className="label">
-                Porcentaje de descuento
+                Porcentaje
               </label>
               <select
                 id="discountPercent"
@@ -208,7 +329,7 @@ export function OfferCreator({
                 onChange={(e) => setDiscountPercent(Number(e.target.value))}
                 className="field tnum"
               >
-                {[5, 8, 10, 12, 15, 20, 25].map((pct) => (
+                {[5, 8, 10, 12, 15, 20, 25, 30, 35].map((pct) => (
                   <option key={pct} value={pct}>
                     {pct} %
                   </option>
@@ -218,7 +339,7 @@ export function OfferCreator({
           ) : (
             <div>
               <label htmlFor="discountFixed" className="label">
-                Descuento en pesos ($)
+                Descuento ($)
               </label>
               <input
                 id="discountFixed"
@@ -234,7 +355,7 @@ export function OfferCreator({
 
           <div>
             <label htmlFor="minPurchase" className="label">
-              Compra mínima para aplicar ($)
+              Compra mínima ($)
             </label>
             <input
               id="minPurchase"
@@ -246,38 +367,79 @@ export function OfferCreator({
               className="field tnum"
             />
           </div>
+
+          <div>
+            <label htmlFor="unitCost" className="label">
+              Costo insumos ($)
+            </label>
+            <input
+              id="unitCost"
+              name="unitCost"
+              type="text"
+              inputMode="numeric"
+              value={unitCost}
+              onChange={(e) => setUnitCost(e.target.value)}
+              className="field tnum"
+            />
+          </div>
         </div>
 
-        {/* Simulación exacta G.10 */}
-        <div className="rounded-2xl border border-primary/25 bg-primary-pale/70 p-4">
+        {/* Calculadora Honesta: Mostrador CIFRA vs Apps del 28 % vs 2da Visita */}
+        <div
+          className={`rounded-2xl border p-4 ${
+            honestMargin.isLosingMoney
+              ? 'border-neg/35 bg-neg-light/70'
+              : 'border-primary/25 bg-primary-pale/70'
+          }`}
+        >
           <p className="text-[12.5px] font-bold uppercase tracking-wider text-primary-dark">
-            Así te salen las cuentas en una venta de {cop(sampleGrossMinor)}
+            Calculadora honesta en pedido de {cop(sampleGrossMinor)} (descontando {cop(parsedCostMinor)} de insumos)
           </p>
-          <div className="mt-2.5 grid gap-2 text-[13.5px] sm:grid-cols-4">
-            <div className="rounded-xl bg-white p-3">
-              <p className="text-[11.5px] text-ink-muted">Valor del pedido</p>
-              <p className="tnum mt-0.5 text-[16px] font-bold text-ink">{cop(previewSplit.grossAmountMinor)}</p>
+
+          <div className="tnum mt-3 grid gap-2.5 text-[13px] sm:grid-cols-3">
+            <div className="rounded-xl border border-line bg-white p-3">
+              <p className="font-semibold text-ink-muted">App de domicilio (~28 %)</p>
+              <p className="mt-1 font-display text-[20px] font-extrabold text-ink">
+                {cop(honestMargin.deliveryAppProfitMinor)}
+              </p>
+              <p className="text-[11.5px] text-ink-faint">Ganancia limpia tras comisión de app</p>
             </div>
-            <div className="rounded-xl bg-white p-3">
-              <p className="text-[11.5px] text-ink-muted">El cliente te paga</p>
-              <p className="tnum mt-0.5 text-[16px] font-bold text-ink">{cop(previewSplit.netPaidByUserMinor)}</p>
-            </div>
-            <div className="rounded-xl bg-white p-3">
-              <p className="text-[11.5px] text-ink-muted">Comisión CIFRA (5 %)</p>
-              <p className="tnum mt-0.5 text-[16px] font-bold text-ink">{cop(previewSplit.cifraCommissionMinor)}</p>
-            </div>
-            <div className="rounded-xl bg-white p-3">
-              <p className="text-[11.5px] text-primary-dark">Te quedan libres</p>
-              <p className="tnum mt-0.5 text-[16px] font-bold text-primary-dark">
-                {cop(previewSplit.merchantNetKeepMinor)}
+
+            <div className="rounded-xl border border-primary/40 bg-white p-3 ring-1 ring-primary/20">
+              <p className="font-semibold text-primary-dark">Mostrador CIFRA (1ra visita)</p>
+              <p
+                className={`mt-1 font-display text-[20px] font-extrabold ${
+                  honestMargin.cifraFirstVisitProfitMinor < 0 ? 'text-neg' : 'text-primary-dark'
+                }`}
+              >
+                {cop(honestMargin.cifraFirstVisitProfitMinor)}
+              </p>
+              <p className="text-[11.5px] text-ink-muted">
+                Cobras {cop(previewSplit.netPaidByUserMinor)} · Comisión 5 % ({cop(previewSplit.cifraCommissionMinor)})
               </p>
             </div>
+
+            <div className="rounded-xl border border-line bg-white p-3">
+              <p className="font-semibold text-ink">Cuando el vecino vuelve (2da+)</p>
+              <p className="mt-1 font-display text-[20px] font-extrabold text-primary-dark">
+                {cop(honestMargin.repeatOrganicProfitMinor)}
+              </p>
+              <p className="text-[11.5px] text-primary-dark">$0 descuento · $0 comisión CIFRA</p>
+            </div>
           </div>
-          <p className="mt-2 text-[12.5px] text-ink-soft">
-            Tu inversión total por traer ese cliente (descuento + comisión) es{' '}
-            <strong className="tnum text-ink">{cop(previewSplit.totalMerchantCacMinor)}</strong> (
-            {previewSplit.effectiveCacPercent.toString().replace('.', ',')} % del pedido), y solo ocurre cuando ya cobraste en tu caja.
-          </p>
+
+          {honestMargin.isLosingMoney ? (
+            <p className="mt-2.5 flex items-center gap-1.5 text-[13px] font-semibold text-neg-dark">
+              <AlertTriangle size={15} aria-hidden="true" />
+              Cuidado: con este descuento no cubres el costo de tus insumos. Baja el porcentaje antes de publicar.
+            </p>
+          ) : (
+            <p className="mt-2.5 text-[12.5px] text-ink-soft">
+              {honestMargin.advantageVsDeliveryMinor >= 0
+                ? `Incluso dando el descuento de bienvenida, te quedan +${cop(honestMargin.advantageVsDeliveryMinor)} más limpios que en una app de domicilios, y el cliente conoce tu local en persona.`
+                : `Inviertes ${cop(previewSplit.totalMerchantCacMinor)} una sola vez para traer al vecino; desde su segunda compra te queda el 100 % (${cop(honestMargin.repeatOrganicProfitMinor)} limpios).`}
+            </p>
+          )}
         </div>
       </div>
 
@@ -287,21 +449,23 @@ export function OfferCreator({
           Paso 3 · Protege tu clientela actual y pon límites claros
         </p>
 
-        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-paper p-4">
-          <input
-            type="checkbox"
-            name="newCustomersOnly"
-            checked={newCustomersOnly}
-            onChange={(e) => setNewCustomersOnly(e.target.checked)}
-            className="mt-1 h-5 w-5 rounded border-line-strong text-primary focus:ring-primary"
-          />
-          <span className="text-[13.5px] leading-relaxed text-ink-soft">
-            <strong className="block font-semibold text-ink">
-              Solo para clientes nuevos (recomendado)
-            </strong>
-            Solo ven tu oferta vecinos que no registran compras recientes en tu negocio. Así no regalas margen a quienes ya te compran siempre.
-          </span>
-        </label>
+        {!isFlash && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-paper p-4">
+            <input
+              type="checkbox"
+              name="newCustomersOnly"
+              checked={newCustomersOnly}
+              onChange={(e) => setNewCustomersOnly(e.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-line-strong text-primary focus:ring-primary"
+            />
+            <span className="text-[13.5px] leading-relaxed text-ink-soft">
+              <strong className="block font-semibold text-ink">
+                Solo para clientes nuevos (recomendado en campañas permanentes)
+              </strong>
+              Solo ven tu oferta vecinos que no registran compras recientes en tu negocio.
+            </span>
+          </label>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-4">
           <div>
@@ -332,6 +496,7 @@ export function OfferCreator({
               onChange={(e) => setDurationDays(e.target.value)}
               className="field tnum"
             >
+              <option value="7">7 días</option>
               <option value="15">15 días</option>
               <option value="30">30 días</option>
               <option value="60">60 días</option>
@@ -357,7 +522,7 @@ export function OfferCreator({
 
           <div>
             <label htmlFor="activeHoursText" className="label">
-              Horario específico (opc.)
+              Horario visible (opc.)
             </label>
             <input
               id="activeHoursText"
@@ -372,9 +537,9 @@ export function OfferCreator({
         </div>
       </div>
 
-      <button type="submit" disabled={pending} className="btn-terra w-full sm:w-auto">
+      <button type="submit" disabled={pending || honestMargin.isLosingMoney} className="btn-terra w-full sm:w-auto">
         <Tag size={17} aria-hidden="true" />
-        {pending ? 'Publicando oferta...' : 'Publicar oferta ahora'}
+        {pending ? 'Publicando oferta...' : isFlash ? 'Encender Oferta Relámpago ahora' : 'Publicar oferta ahora'}
         <CheckCircle2 size={17} aria-hidden="true" />
       </button>
     </form>

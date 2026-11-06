@@ -3,13 +3,18 @@ import { requireUser } from '@/lib/auth/session';
 import { loadCifra, loadRankedOffersForUser } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
+import { loadSmartMapBundle } from '@/lib/v3-data';
 import { Ask } from './ask';
 
 export const metadata = { title: '¿Puedo hacer este gasto?' };
 
 export default async function GastoPage() {
   const user = await requireUser();
-  const [c, offers] = await Promise.all([loadCifra(user), loadRankedOffersForUser(user, 3)]);
+  const [c, offers, smartMap] = await Promise.all([
+    loadCifra(user),
+    loadRankedOffersForUser(user, 3),
+    loadSmartMapBundle(user),
+  ]);
   return (
     <div className="space-y-5">
       <div>
@@ -17,7 +22,7 @@ export default async function GastoPage() {
         {c.ready && (
           <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
             Lo cruzamos al instante con tus <span className="tnum font-semibold text-ink">{cop(c.availableMinor)}</span> libres hasta el{' '}
-            {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'}).
+            {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'}), simulamos qué pasa si lo difieres a cuotas y te mostramos alternativas más baratas en tu cuadra.
           </p>
         )}
       </div>
@@ -38,6 +43,7 @@ export default async function GastoPage() {
             neighborhood: o.offer.neighborhood,
             estimatedSavingsMinor: o.estimatedSavingsMinor,
           }))}
+          smartMapBundle={smartMap}
         />
       ) : (
         <div className="surface-card p-6">

@@ -17,8 +17,11 @@ import {
 import { randomToken, sha256 } from '@/lib/crypto';
 import { db } from '@/lib/db';
 import {
+  accounts,
+  dataSources,
   merchantInvites,
   merchantInvoices,
+  merchantLedgerEntries,
   merchantMembers,
   merchantPayments,
   merchants,
@@ -36,9 +39,11 @@ import {
   generateRedemptionCode,
   type CandidateOffer,
 } from '@/lib/engine/attribution';
+import { computeHonestMerchantMargin } from '@/lib/engine/crossref';
 import { addDays, todayInBogota } from '@/lib/engine/dates';
 import { CONSENT_VERSION, cop, parsePesosInput } from '@/lib/format';
 import { getPartnerShareBps, syncMerchantInvoice } from '@/lib/merchant-data';
+import { currentBogotaHour } from '@/lib/v3-data';
 import { getZoneBySlug } from '@/lib/zones';
 
 export type MerchantActionState =
@@ -94,6 +99,7 @@ export async function claimOfferCode(formData: FormData): Promise<void> {
     .limit(1);
 
   if (!row) return;
+  if (row.offer.stockRemaining !== null && row.offer.stockRemaining <= 0) return;
 
   const today = todayInBogota();
   const monthStart = new Date(`${today.slice(0, 7)}-01T00:00:00-05:00`);
@@ -150,7 +156,7 @@ export async function claimOfferCode(formData: FormData): Promise<void> {
     minPurchaseMinor: row.offer.minPurchaseMinor,
     newCustomersOnly: row.offer.newCustomersOnly,
     exclusivityDays: row.offer.exclusivityDays,
-    holdoutPercent: row.offer.holdoutPercent,
+    holdoutPercent: row.offer.isFlash ? 0 : row.offer.holdoutPercent,
     monthlyCapRedemptions: row.offer.monthlyCapRedemptions,
     monthlyRedemptionsUsed: countRow?.n ?? 0,
     validFrom: row.offer.validFrom,
@@ -165,7 +171,7 @@ export async function claimOfferCode(formData: FormData): Promise<void> {
     offer: candidate,
     userTransactions: recentTxs,
     priorMerchantRedemptionDates: priorRedeems.map((r) => todayInBogota(r.redeemedAt)),
-    bypassHoldoutForDemo: user.isDemo,
+    bypassHoldoutForDemo: user.isDemo || row.offer.isFlash,
   });
 
   if (!elig.eligible) return;
@@ -500,14 +506,46 @@ export async function createMerchantOffer(_prev: MerchantActionState, formData: 
     discountKind === 'fixed' ? (parsePesosInput(String(formData.get('discountFixed') ?? '')) ?? 300000) : null;
   const minPurchaseMinor = parsePesosInput(String(formData.get('minPurchase') ?? '0')) ?? 0;
   const maxDiscountMinor = parsePesosInput(String(formData.get('maxDiscount') ?? '')) ?? null;
-  const newCustomersOnly = formData.get('newCustomersOnly') === 'on';
+  const isFlash = formData.get('isFlash') === 'on';
+  const newCustomersOnly = isFlash ? false : formData.get('newCustomersOnly') === 'on';
   const capRaw = Number(formData.get('monthlyCap') ?? 0);
   const monthlyCapRedemptions = Number.isInteger(capRaw) && capRaw > 0 ? capRaw : null;
-  const durationDays = Math.min(90, Math.max(7, Number(formData.get('durationDays') ?? 30)));
+  const durationDays = Math.min(90, Math.max(1, Number(formData.get('durationDays') ?? (isFlash ? 14 : 30))));
+
+  const startHourRaw = formData.get('startHour');
+  const endHourRaw = formData.get('endHour');
+  const startHour =
+    isFlash && startHourRaw !== null && String(startHourRaw) !== ''
+      ? Math.min(23, Math.max(0, Number(startHourRaw)))
+      : null;
+  const endHour =
+    isFlash && endHourRaw !== null && String(endHourRaw) !== ''
+      ? Math.min(23, Math.max(0, Number(endHourRaw)))
+      : null;
+  const stockRaw = Number(formData.get('stockLimit') ?? 0);
+  const stockLimit = isFlash && Number.isInteger(stockRaw) && stockRaw > 0 ? stockRaw : null;
+  const unitCostMinor = parsePesosInput(String(formData.get('unitCost') ?? '')) ?? null;
   const activeHoursText = String(formData.get('activeHoursText') ?? '').trim().slice(0, 60) || null;
 
   if (title.length < 4) {
     return { status: 'error', message: 'Ponle un título claro a tu oferta, por ejemplo: «10 % en panadería artesanal».' };
+  }
+
+  if (unitCostMinor && unitCostMinor > 0) {
+    const margin = computeHonestMerchantMargin({
+      salePriceMinor: Math.max(minPurchaseMinor, access.merchant.typicalTicketMinor),
+      unitCostMinor,
+      discountKind,
+      discountPercent,
+      discountFixedMinor,
+      commissionBps: access.merchant.commissionBps,
+    });
+    if (margin.isLosingMoney) {
+      return {
+        status: 'error',
+        message: `Cuidado: con ese descuento y un costo de insumos de ${cop(unitCostMinor)} perderías plata por venta. Ajusta el descuento para proteger tu ganancia.`,
+      };
+    }
   }
 
   const today = todayInBogota();
@@ -524,9 +562,15 @@ export async function createMerchantOffer(_prev: MerchantActionState, formData: 
     maxDiscountMinor,
     minPurchaseMinor,
     newCustomersOnly,
-    exclusivityDays: 60,
-    holdoutPercent: 10,
+    exclusivityDays: isFlash ? 30 : 60,
+    holdoutPercent: isFlash ? 0 : 10,
     monthlyCapRedemptions,
+    isFlash,
+    startHour,
+    endHour,
+    stockLimit,
+    stockRemaining: stockLimit,
+    unitCostMinor,
     validFrom: today,
     validUntil,
     activeHoursText,
@@ -539,7 +583,8 @@ export async function createMerchantOffer(_prev: MerchantActionState, formData: 
     .where(eq(merchants.id, access.merchant.id));
 
   revalidatePath('/negocio', 'layout');
-  revalidatePath('/app/ofertas');
+  revalidatePath('/app', 'layout');
+  revalidatePath(`/b/${access.merchant.slug}`);
   redirect('/negocio?oferta=publicada');
 }
 
@@ -769,7 +814,73 @@ export async function completeRedemption(_prev: PosRedeemState, formData: FormDa
     })
     .returning({ id: redemptions.id });
 
-  // Suma inmediata al contador verificable "Pesos ahorrados con CIFRA" de la persona
+  // 1) Descuenta cupo relámpago vivo si la oferta tiene cupos contados
+  if (row.offer.stockRemaining !== null) {
+    await db
+      .update(offers)
+      .set({
+        stockRemaining: sql`greatest(0, ${offers.stockRemaining} - 1)`,
+        updatedAt: now,
+      })
+      .where(eq(offers.id, row.offer.id));
+  }
+
+  // 2) Suma automáticamente la venta al Cuadre Diario del negocio (/negocio/cuadre)
+  await db
+    .insert(merchantLedgerEntries)
+    .values({
+      merchantId: access.merchant.id,
+      entryOn: today,
+      kind: 'venta_cifra',
+      categoryLabel: row.offer.title,
+      amountMinor: split.netPaidByUserMinor,
+      note: `Código ${row.offerCode.code} en caja`,
+      refRedemptionId: redemption!.id,
+    })
+    .onConflictDoNothing();
+
+  // 3) Sincroniza el gasto neto en la CIFRA de la persona sin que tenga que escribir nada
+  const customerAccounts = await db
+    .select({ account: accounts, status: dataSources.status, sourceKind: dataSources.kind })
+    .from(accounts)
+    .innerJoin(dataSources, eq(dataSources.id, accounts.sourceId))
+    .where(eq(accounts.userId, row.offerCode.userId));
+  const primaryLiquid = customerAccounts.find(
+    (a) => a.status === 'activa' && a.sourceKind !== 'entidad_aliada' && a.account.kind !== 'tarjeta_credito',
+  )?.account;
+
+  if (primaryLiquid) {
+    const insertedTx = await db
+      .insert(transactions)
+      .values({
+        userId: row.offerCode.userId,
+        accountId: primaryLiquid.id,
+        postedOn: today,
+        description: `${access.merchant.name} (código CIFRA)`,
+        amountMinor: -Math.abs(split.netPaidByUserMinor),
+        merchantKey: access.merchant.slug.replace(/-/g, '_'),
+        merchantName: access.merchant.name,
+        category: row.offer.targetCategory || access.merchant.targetSpendCategory || 'comida',
+        categorySource: 'auto',
+        spentHour: currentBogotaHour(now),
+        captureMethod: 'caja_cifra',
+        dedupeKey: sha256(`pos_redeem:${redemption!.id}`),
+      })
+      .onConflictDoNothing()
+      .returning({ id: transactions.id });
+
+    if (insertedTx.length > 0 && primaryLiquid.balanceMinor !== null) {
+      await db
+        .update(accounts)
+        .set({
+          balanceMinor: primaryLiquid.balanceMinor - Math.abs(split.netPaidByUserMinor),
+          balanceAt: now,
+        })
+        .where(eq(accounts.id, primaryLiquid.id));
+    }
+  }
+
+  // 4) Suma inmediata al contador verificable "Pesos ahorrados con CIFRA" de la persona
   await db
     .insert(savingsEvents)
     .values({
@@ -787,7 +898,7 @@ export async function completeRedemption(_prev: PosRedeemState, formData: FormDa
     userId: row.offerCode.userId,
     kind: 'redencion_confirmada',
     title: `Ahorraste ${cop(split.discountMinor)} en ${access.merchant.name}`,
-    body: `Pagaste ${cop(split.netPaidByUserMinor)} en vez de ${cop(split.grossAmountMinor)}. Toca para confirmar que todo salió bien.`,
+    body: `Pagaste ${cop(split.netPaidByUserMinor)} en vez de ${cop(split.grossAmountMinor)}. Ya actualizamos tu tope de hoy automáticamente.`,
     actionUrl: '/app/ofertas#recientes',
     dedupeKey: `redeem:${redemption!.id}`,
   });
@@ -806,6 +917,7 @@ export async function completeRedemption(_prev: PosRedeemState, formData: FormDa
 
   revalidatePath('/negocio', 'layout');
   revalidatePath('/app', 'layout');
+  revalidatePath(`/b/${access.merchant.slug}`);
 
   return {
     status: 'ok',

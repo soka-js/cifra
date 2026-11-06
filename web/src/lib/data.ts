@@ -10,6 +10,7 @@ import {
   merchants,
   notifications,
   offers,
+  paidCycleCharges,
   recurringMarks,
   redemptions,
   savingsEvents,
@@ -53,7 +54,7 @@ const HISTORY_DAYS = 400;
 export async function loadCifra(user: User): Promise<CifraResult> {
   const today = todayInBogota();
   const since = addDays(today, -HISTORY_DAYS);
-  const [accts, txs, comms, marks, categoryOverrides] = await Promise.all([
+  const [accts, txs, comms, marks, categoryOverrides, paidRows] = await Promise.all([
     db
       .select({ account: accounts, status: dataSources.status, kind: dataSources.kind })
       .from(accounts)
@@ -79,9 +80,10 @@ export async function loadCifra(user: User): Promise<CifraResult> {
     db.select().from(commitments).where(eq(commitments.userId, user.id)),
     db.select().from(recurringMarks).where(eq(recurringMarks.userId, user.id)),
     loadCategoryOverrides(user.id),
+    db.select().from(paidCycleCharges).where(eq(paidCycleCharges.userId, user.id)),
   ]);
   const active = accts.filter((a) => a.status === 'activa');
-  const result = computeCifra({
+  const rawResult = computeCifra({
     today,
     accounts: active.map(({ account: a, kind }) => ({
       accountId: a.id,
@@ -105,6 +107,34 @@ export async function loadCifra(user: User): Promise<CifraResult> {
     marks: Object.fromEntries(marks.map((m) => [m.merchantKey, m.mark as RecurringMarkValue])),
     categoryOverrides,
   });
+
+  // Si la persona ya marcó cobros fijos como pagados en este ciclo, los sacamos de pendientes para no descontarlos dos veces.
+  const settledKeys = new Set(
+    paidRows.filter((p) => p.cycleEnd === rawResult.nextIncomeOn).map((p) => p.chargeKey),
+  );
+  let result = rawResult;
+  if (settledKeys.size > 0 && rawResult.pending.some((p) => settledKeys.has(p.key))) {
+    const remainingPending = rawResult.pending.filter((p) => !settledKeys.has(p.key));
+    const pendingMinor = remainingPending.reduce((s, p) => s + p.amountMinor, 0);
+    const availableMinor =
+      rawResult.balanceMinor - pendingMinor - rawResult.projectedVariableMinor - rawResult.bufferMinor;
+    const daysLeft = Math.max(1, rawResult.daysLeft);
+    const perDayMinor = Math.max(0, Math.floor(availableMinor / daysLeft));
+    const status: CifraResult['status'] =
+      availableMinor < 0
+        ? 'en_rojo'
+        : availableMinor < rawResult.dailyVariableMinor * Math.min(7, daysLeft)
+          ? 'justo'
+          : 'holgado';
+    result = {
+      ...rawResult,
+      pending: remainingPending,
+      pendingMinor,
+      availableMinor,
+      perDayMinor,
+      status,
+    };
+  }
 
   // Registra la primera vez que la persona tiene su cifra lista (métrica "< 5 minutos", H.1.1) y su actividad reciente.
   const now = new Date();

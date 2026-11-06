@@ -1,13 +1,16 @@
 'use client';
 
+import { CheckCircle2, Clock, CreditCard, Sparkles, Tag, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
-import { CheckCircle2, Clock, Sparkles, Tag, TriangleAlert } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
+import { track } from '@/lib/analytics/client';
 import { canISpend, type CifraResult } from '@/lib/engine/cifra';
+import { simulateCreditInstallments } from '@/lib/engine/daily-value';
 import { shortDate } from '@/lib/engine/dates';
 import { parseNaturalSpendQuery } from '@/lib/engine/insights';
 import { cop, parsePesosInput } from '@/lib/format';
-import { track } from '@/lib/analytics/client';
+import type { SmartMapBundle } from '@/lib/v3-data';
 
 type Slim = Pick<CifraResult, 'availableMinor' | 'perDayMinor' | 'dailyVariableMinor' | 'daysLeft' | 'nextIncomeOn'>;
 
@@ -20,15 +23,24 @@ interface NearbyOfferHint {
 }
 
 const QUICK_EXAMPLES = [
-  '¿Puedo gastar 45 mil en almuerzo con amigos?',
+  '¿Puedo pedir domicilio de 38 mil hoy?',
   '120 mil salida del viernes',
-  '280 mil unos tenis',
+  '280 mil unos tenis a cuotas',
 ];
 
-export function Ask({ cifra, nearbyOffers = [] }: { cifra: Slim; nearbyOffers?: NearbyOfferHint[] }) {
+export function Ask({
+  cifra,
+  nearbyOffers = [],
+  smartMapBundle,
+}: {
+  cifra: Slim;
+  nearbyOffers?: NearbyOfferHint[];
+  smartMapBundle?: SmartMapBundle;
+}) {
   const [naturalText, setNaturalText] = useState('');
   const [raw, setRaw] = useState('');
   const [what, setWhat] = useState('');
+  const [eaRate, setEaRate] = useState<number>(30.8);
   const [answer, setAnswer] = useState<ReturnType<typeof canISpend> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +70,16 @@ export function Ask({ cifra, nearbyOffers = [] }: { cifra: Slim; nearbyOffers?: 
     answer && cifra.availableMinor > 0
       ? Math.min(100, Math.max(4, Math.round((answer.amountMinor / cifra.availableMinor) * 100)))
       : 100;
+
+  const creditSim = useMemo(
+    () => (answer ? simulateCreditInstallments(answer.amountMinor, eaRate, [1, 3, 6, 12]) : null),
+    [answer, eaRate],
+  );
+
+  const isLocalConsumption = useMemo(() => {
+    const combined = `${what} ${naturalText}`.toLowerCase();
+    return /(almuerzo|cena|comida|domicilio|rappi|didi|cafe|pan|onces|mercado|fruver|postre|salida)/i.test(combined);
+  }, [what, naturalText]);
 
   return (
     <div className="space-y-5">
@@ -149,7 +171,7 @@ export function Ask({ cifra, nearbyOffers = [] }: { cifra: Slim; nearbyOffers?: 
             id="what"
             value={what}
             onChange={(e) => setWhat(e.target.value)}
-            placeholder="Unos tenis, cena, regalo..."
+            placeholder="Unos tenis, domicilio cena, regalo..."
             className="field"
             maxLength={60}
           />
@@ -159,7 +181,7 @@ export function Ask({ cifra, nearbyOffers = [] }: { cifra: Slim; nearbyOffers?: 
         </button>
       </form>
 
-      {/* Respuesta empática con impacto diario y alternativas accionables (I.5 #3) */}
+      {/* Respuesta empática con impacto diario y alternativas accionables */}
       {answer && (
         <section
           aria-live="polite"
@@ -279,6 +301,86 @@ export function Ask({ cifra, nearbyOffers = [] }: { cifra: Slim; nearbyOffers?: 
             </div>
           )}
         </section>
+      )}
+
+      {/* Simulador colombiano de Tarjeta de Crédito: Contado / 1 cuota vs 3, 6 y 12 cuotas */}
+      {creditSim && answer && answer.amountMinor >= 20_000_00 && (
+        <section className="surface-card p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CreditCard size={19} className="text-terra-dark" aria-hidden="true" />
+              <h3 className="font-display text-[19px] font-bold text-ink">
+                ¿Y si lo pasas con tarjeta a cuotas?
+              </h3>
+            </div>
+            <label className="flex items-center gap-1.5 text-[12.5px] text-ink-muted">
+              <span>Tasa E.A.:</span>
+              <select
+                value={eaRate}
+                onChange={(e) => setEaRate(Number(e.target.value))}
+                className="rounded-lg border border-line bg-paper px-2 py-1 text-[12.5px] font-semibold text-ink"
+              >
+                <option value={30.8}>30,8 % E.A. (promedio TC Colombia)</option>
+                <option value={26.5}>26,5 % E.A. (tasa preferencial)</option>
+                <option value={33.9}>33,9 % E.A. (cerca a usura)</option>
+              </select>
+            </label>
+          </div>
+
+          <p className="mt-1.5 text-[13.5px] text-ink-muted">
+            Equivale a <strong className="tnum text-ink">{creditSim.monthlyRatePct} % mes vencido</strong>. Mira cuánto terminas pagando de verdad:
+          </p>
+
+          <div className="tnum mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+            {creditSim.options.map((opt) => (
+              <div
+                key={opt.installments}
+                className={`rounded-2xl border p-3.5 ${
+                  opt.installments === 1
+                    ? 'border-primary/35 bg-primary-pale/55'
+                    : 'border-line bg-paper/70'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[12.5px] font-bold text-ink">{opt.label}</span>
+                </div>
+                <p className="mt-1.5 font-display text-[20px] font-extrabold text-ink">
+                  {cop(opt.monthlyPaymentMinor)}
+                  {opt.installments > 1 ? <span className="text-[12px] font-normal text-ink-faint">/mes</span> : null}
+                </p>
+                <p className="mt-1 text-[12px] text-ink-muted">Total: {cop(opt.totalPaidMinor)}</p>
+                <p
+                  className={`mt-0.5 text-[12px] font-semibold ${
+                    opt.interestLostMinor === 0 ? 'text-primary-dark' : 'text-neg'
+                  }`}
+                >
+                  {opt.interestLostMinor === 0
+                    ? '$0 en intereses'
+                    : `+${cop(opt.interestLostMinor)} en intereses`}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-3 rounded-xl bg-paper px-3.5 py-2.5 text-[13px] text-ink-soft">
+            {creditSim.plainAdvice}
+          </p>
+        </section>
+      )}
+
+      {/* Puente directo al barrio cuando consulta comida, domicilio, café o mercado */}
+      {smartMapBundle && smartMapBundle.offers.length > 0 && (
+        <ExpandableSmartMap
+          bundle={smartMapBundle}
+          defaultExpanded={Boolean(answer && isLocalConsumption)}
+          initialCategoryFilter={isLocalConsumption ? 'comida' : null}
+          compactTitle={
+            isLocalConsumption
+              ? 'En vez de pagar recargos de app: locales a minutos de ti con descuento activo'
+              : '¿Prefieres resolverlo caminando en tu barrio y ahorrando?'
+          }
+          compactSubtitle="Compara cuánto te cuesta a pie en comercios independientes verificados frente a pedir por aplicación."
+        />
       )}
     </div>
   );

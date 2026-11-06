@@ -12,6 +12,8 @@ export interface MapOfferPin {
   title: string;
   badgeText: string;
   neighborhood: string;
+  isFlash?: boolean;
+  distanceText?: string;
 }
 
 export interface NeighborhoodMapProps {
@@ -27,14 +29,23 @@ export interface NeighborhoodMapProps {
   heightClassName?: string;
 }
 
-function makePinIcon(active: boolean, color: 'terra' | 'primary') {
-  const bg = color === 'terra' ? (active ? '#8E3B10' : '#B94E18') : '#0B6B58';
-  const size = active ? 32 : 26;
+function makePinIcon(active: boolean, color: 'terra' | 'primary', isFlash = false) {
+  const bg = isFlash
+    ? active
+      ? '#9A3412'
+      : '#D97706'
+    : color === 'terra'
+      ? active
+        ? '#8E3B10'
+        : '#B94E18'
+      : '#0B6B58';
+  const size = active ? 34 : isFlash ? 30 : 26;
+  const glyph = isFlash ? '⚡' : '●';
   return L.divIcon({
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<span style="display:grid;place-items:center;width:${size}px;height:${size}px;border-radius:999px;background:${bg};border:3px solid #ffffff;box-shadow:0 4px 12px rgba(16,29,26,0.28);color:#fff;font-weight:800;font-size:11px;">●</span>`,
+    html: `<span style="display:grid;place-items:center;width:${size}px;height:${size}px;border-radius:999px;background:${bg};border:3px solid #ffffff;box-shadow:0 4px 14px rgba(16,29,26,0.32);color:#fff;font-weight:800;font-size:${isFlash ? 13 : 11}px;">${glyph}</span>`,
   });
 }
 
@@ -107,26 +118,28 @@ export default function NeighborhoodMap({
       return;
     }
 
-    // Punto de referencia de la zona de la persona
+    map.setView([centerLat, centerLng], map.getZoom());
+
+    // Punto de referencia de la zona / GPS de la persona
     L.circleMarker([centerLat, centerLng], {
-      radius: 7,
+      radius: 8,
       color: '#0B6B58',
       fillColor: '#DDF2EC',
-      fillOpacity: 0.9,
-      weight: 2,
+      fillOpacity: 0.95,
+      weight: 2.5,
     })
-      .bindTooltip('Tu zona de referencia', { direction: 'top' })
+      .bindTooltip('Tu ubicación de referencia', { direction: 'top' })
       .addTo(group);
 
     for (const pin of pins) {
       const active = pin.id === selectedId;
-      const m = L.marker([pin.lat, pin.lng], { icon: makePinIcon(active, 'terra') });
+      const m = L.marker([pin.lat, pin.lng], { icon: makePinIcon(active, 'terra', Boolean(pin.isFlash)) });
       m.bindPopup(
-        `<div style="font-family:system-ui,sans-serif;min-width:170px;">
-          <div style="font-size:11px;font-weight:700;color:#B94E18;">${escapeHtml(pin.badgeText)}</div>
+        `<div style="font-family:system-ui,sans-serif;min-width:185px;">
+          <div style="font-size:11px;font-weight:700;color:${pin.isFlash ? '#B45309' : '#B94E18'};">${escapeHtml(pin.badgeText)}</div>
           <div style="font-size:14px;font-weight:700;color:#101D1A;margin-top:2px;">${escapeHtml(pin.merchantName)}</div>
           <div style="font-size:12.5px;color:#4A5B56;margin-top:2px;">${escapeHtml(pin.title)}</div>
-          <div style="font-size:11.5px;color:#758580;margin-top:3px;">${escapeHtml(pin.neighborhood)}</div>
+          <div style="font-size:11.5px;color:#758580;margin-top:3px;">${escapeHtml(pin.distanceText ? `${pin.distanceText} · ${pin.neighborhood}` : pin.neighborhood)}</div>
         </div>`,
       );
       m.on('click', () => onSelectPin?.(pin.id));

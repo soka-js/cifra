@@ -1,11 +1,13 @@
 'use client';
 
 import {
+  Calculator,
   FileText,
   Home,
   QrCode,
   Receipt,
   Settings,
+  Share2,
   Shield,
   Store,
   Tag,
@@ -20,15 +22,17 @@ import { LogoMark } from '@/components/logo';
 const MOBILE_ITEMS = [
   { href: '/negocio', label: 'Resumen', icon: Home, exact: true },
   { href: '/negocio/caja', label: 'Caja', icon: QrCode },
+  { href: '/negocio/cuadre', label: 'Cuadre', icon: Calculator },
   { href: '/negocio/ofertas', label: 'Ofertas', icon: Tag },
-  { href: '/negocio/informe', label: 'Informe', icon: FileText },
-  { href: '/negocio/cuenta', label: 'Cuenta', icon: Receipt },
+  { href: '/negocio/vitrina', label: 'Vitrina', icon: Share2 },
 ];
 
 const SIDEBAR_ITEMS = [
   { href: '/negocio', label: 'Resumen del mes', icon: Home, exact: true },
   { href: '/negocio/caja', label: 'Caja · Cobrar código', icon: QrCode },
-  { href: '/negocio/ofertas', label: 'Mis ofertas', icon: Tag },
+  { href: '/negocio/cuadre', label: 'Cuadre diario e insumos', icon: Calculator },
+  { href: '/negocio/ofertas', label: 'Mis ofertas y relámpago', icon: Tag },
+  { href: '/negocio/vitrina', label: 'Mi vitrina y afiche QR', icon: Share2 },
   { href: '/negocio/informe', label: 'Informe de 1 página', icon: FileText },
   { href: '/negocio/cuenta', label: 'Comisiones y pagos', icon: Receipt },
   { href: '/negocio/perfil', label: 'Datos del negocio', icon: Settings },

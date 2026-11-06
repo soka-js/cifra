@@ -10,6 +10,7 @@ import {
   cycleSnapshots,
   dataSources,
   merchantInvoices,
+  merchantLedgerEntries,
   merchantMembers,
   merchantPayments,
   merchants,
@@ -86,6 +87,11 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       existingEspiga.id,
       existingCamila?.id ?? existingMariana.id,
     );
+    await ensureV3DemoData({
+      marianaUserId: existingMariana.id,
+      rosaUserId: existingRosa.id,
+      espigaMerchantId: existingEspiga.id,
+    });
     return {
       marianaUserId: existingMariana.id,
       rosaUserId: existingRosa.id,
@@ -822,6 +828,11 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
   ]);
 
   const samplePendingCode = await ensureFreshDemoPosCode(laEspiga!.id, camila!.id);
+  await ensureV3DemoData({
+    marianaUserId: mariana!.id,
+    rosaUserId: rosa!.id,
+    espigaMerchantId: laEspiga!.id,
+  });
 
   return {
     marianaUserId: mariana!.id,
@@ -897,4 +908,336 @@ async function ensureFreshDemoPosCode(merchantId: string, customerUserId: string
     }
   }
   return DEMO_POS_CODE;
+}
+
+/**
+ * Asegura de forma idempotente que el entorno piloto contenga los datos de CIFRA v3:
+ * - Horas de consumo en transacciones de Mariana + fugas (cuota de manejo, 4x1000, Rappi noche)
+ * - Punto de equilibrio diario y vitrina con productos destacados para La Espiga y aliados
+ * - Libro diario en /negocio/cuadre con brecha y alerta de inflación en harina (+26 %)
+ * - Ofertas Relámpago con horas muertas y cupos contados
+ */
+async function ensureV3DemoData(params: {
+  marianaUserId: string;
+  rosaUserId: string;
+  espigaMerchantId: string;
+}): Promise<void> {
+  const today = todayInBogota();
+
+  // 1. Horas de consumo en movimientos de Mariana + transacciones para activar Radiografía de Fugas
+  const [marianaAcct] = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(eq(accounts.userId, params.marianaUserId))
+    .limit(1);
+
+  if (marianaAcct) {
+    const existingTxs = await db
+      .select({
+        id: transactions.id,
+        description: transactions.description,
+        spentHour: transactions.spentHour,
+        dedupeKey: transactions.dedupeKey,
+      })
+      .from(transactions)
+      .where(eq(transactions.userId, params.marianaUserId));
+
+    for (const t of existingTxs) {
+      if (t.spentHour === null) {
+        let hr: number | null = null;
+        const upper = t.description.toUpperCase();
+        if (upper.includes('JUAN VALDEZ')) hr = 8;
+        else if (upper.includes('D1') || upper.includes('ARA')) hr = 18;
+        else if (upper.includes('RAPPI')) hr = 20;
+        else if (upper.includes('UBER')) hr = 21;
+        else if (upper.includes('TULLAVE') || upper.includes('TRANSMILENIO')) hr = 7;
+        else if (upper.includes('CRUZ VERDE')) hr = 16;
+        else if (upper.includes('NETFLIX') || upper.includes('DISNEY')) hr = 22;
+
+        if (hr !== null) {
+          await db
+            .update(transactions)
+            .set({ spentHour: hr })
+            .where(eq(transactions.id, t.id));
+        }
+      }
+    }
+
+    const existingKeys = new Set(existingTxs.map((t) => t.dedupeKey));
+    const leakSeeds: Array<{ desc: string; daysAgo: number; minor: number; spentHour: number; key: string }> = [
+      {
+        desc: 'CUOTA DE MANEJO TARJETA VISA CLASICA',
+        daysAgo: 12,
+        minor: -18_900_00,
+        spentHour: 3,
+        key: 'demo-mariana-v3-leak-cuota',
+      },
+      {
+        desc: 'GRAVAMEN MOV FINANCIERO 4X1000 PSE',
+        daysAgo: 3,
+        minor: -10_600_00,
+        spentHour: 11,
+        key: 'demo-mariana-v3-leak-4x1000',
+      },
+      {
+        desc: 'COMPRA RAPPI RESTAURANTES NOCHE',
+        daysAgo: 3,
+        minor: -34_500_00,
+        spentHour: 21,
+        key: 'demo-mariana-v3-leak-rappi-noche',
+      },
+      {
+        desc: 'UBER TRIP FIN DE SEMANA NOCHE',
+        daysAgo: 5,
+        minor: -24_000_00,
+        spentHour: 22,
+        key: 'demo-mariana-v3-leak-uber-noche',
+      },
+    ];
+
+    for (const lk of leakSeeds) {
+      if (!existingKeys.has(lk.key)) {
+        await db.insert(transactions).values({
+          userId: params.marianaUserId,
+          accountId: marianaAcct.id,
+          postedOn: addDays(today, -lk.daysAgo),
+          description: lk.desc,
+          amountMinor: lk.minor,
+          spentHour: lk.spentHour,
+          captureMethod: 'extracto',
+          dedupeKey: lk.key,
+        });
+      }
+    }
+  }
+
+  // 2. Metas de punto de equilibrio y vitrinas destacadas para los comercios
+  await db
+    .update(merchants)
+    .set({
+      dailyBreakEvenMinor: 450_000_00,
+      monthlyFixedCostMinor: 4_200_000_00,
+      featuredItems: [
+        { name: 'Pan de masa madre 650g', priceMinor: 12_000_00, tag: 'Horneado cada mañana' },
+        { name: 'Almojábanas calientes (x4)', priceMinor: 8_000_00, tag: '7:00 a. m. y 4:00 p. m.' },
+        { name: 'Combo croissant artesanal + capuchino', priceMinor: 14_500_00, tag: 'Favorito del barrio' },
+        { name: 'Café de origen huilense 340g grano', priceMinor: 22_000_00, tag: 'Tueste medio artesanal' },
+      ],
+    })
+    .where(eq(merchants.id, params.espigaMerchantId));
+
+  await db
+    .update(merchants)
+    .set({
+      dailyBreakEvenMinor: 380_000_00,
+      monthlyFixedCostMinor: 3_500_000_00,
+      featuredItems: [
+        { name: 'Café filtrado V60 de origen', priceMinor: 7_500_00, tag: 'Caldas y Huila' },
+        { name: 'Torta artesanal de zanahoria', priceMinor: 8_500_00, tag: 'Horneada en casa' },
+        { name: 'Capuchino doble + galleta avena', priceMinor: 11_000_00, tag: 'Media tarde' },
+      ],
+    })
+    .where(eq(merchants.slug, 'demo-cafe-las-aguas'));
+
+  await db
+    .update(merchants)
+    .set({
+      dailyBreakEvenMinor: 520_000_00,
+      monthlyFixedCostMinor: 3_900_000_00,
+      featuredItems: [
+        { name: 'Canasta semanal fruta seleccionada', priceMinor: 28_000_00, tag: 'Corabastos fresco' },
+        { name: 'Kilo aguacate Hass maduro', priceMinor: 9_500_00, tag: 'Listo para hoy' },
+        { name: 'Bolsa verdura limpia y picada', priceMinor: 6_500_00, tag: 'Práctica para sopa' },
+      ],
+    })
+    .where(eq(merchants.slug, 'demo-fruver-el-parque'));
+
+  // 3. Libro diario de Panadería La Espiga (/negocio/cuadre)
+  const existingLedger = await db
+    .select({ id: merchantLedgerEntries.id })
+    .from(merchantLedgerEntries)
+    .where(eq(merchantLedgerEntries.merchantId, params.espigaMerchantId))
+    .limit(1);
+
+  if (existingLedger.length === 0) {
+    await db.insert(merchantLedgerEntries).values([
+      // Ventas de hoy: $340.000 (brecha de $110.000 para llegar a $450.000)
+      {
+        merchantId: params.espigaMerchantId,
+        entryOn: today,
+        kind: 'venta_mostrador',
+        categoryLabel: 'Ventas de mostrador (efectivo / Nequi / datáfono)',
+        amountMinor: 340_000_00,
+        note: 'Corte de caja de mostrador 2:30 p. m.',
+      },
+      // Insumo pagado hoy
+      {
+        merchantId: params.espigaMerchantId,
+        entryOn: today,
+        kind: 'insumos',
+        categoryLabel: 'Harina, mantequilla y panadería',
+        supplierName: 'Molinos del Sol',
+        amountMinor: 85_000_00,
+        note: 'Bulto de harina especial trigo y levadura fresca',
+      },
+      // Historial últimos 30 días
+      {
+        merchantId: params.espigaMerchantId,
+        entryOn: addDays(today, -10),
+        kind: 'insumos',
+        categoryLabel: 'Harina, mantequilla y panadería',
+        supplierName: 'Molinos del Sol',
+        amountMinor: 530_000_00,
+        note: 'Harina fortificada y mantequilla industrial',
+      },
+      {
+        merchantId: params.espigaMerchantId,
+        entryOn: addDays(today, -12),
+        kind: 'insumos',
+        categoryLabel: 'Empaques y servilletas',
+        supplierName: 'Distribuidora Papelera Andina',
+        amountMinor: 115_000_00,
+        note: 'Bolsas de papel kraft y servilletas',
+      },
+      {
+        merchantId: params.espigaMerchantId,
+        entryOn: addDays(today, -15),
+        kind: 'venta_mostrador',
+        categoryLabel: 'Ventas de mostrador',
+        amountMinor: 480_000_00,
+      },
+      {
+        merchantId: params.espigaMerchantId,
+        entryOn: addDays(today, -20),
+        kind: 'venta_mostrador',
+        categoryLabel: 'Ventas de mostrador',
+        amountMinor: 430_000_00,
+      },
+      // Historial mes anterior (para que salte alerta de inflación en harina: 420k -> 530k = +26 %)
+      {
+        merchantId: params.espigaMerchantId,
+        entryOn: addDays(today, -40),
+        kind: 'insumos',
+        categoryLabel: 'Harina, mantequilla y panadería',
+        supplierName: 'Molinos del Sol',
+        amountMinor: 420_000_00,
+        note: 'Pedido mensual harina',
+      },
+      {
+        merchantId: params.espigaMerchantId,
+        entryOn: addDays(today, -42),
+        kind: 'insumos',
+        categoryLabel: 'Empaques y servilletas',
+        supplierName: 'Distribuidora Papelera Andina',
+        amountMinor: 110_000_00,
+      },
+    ]);
+  }
+
+  // 4. Ofertas Relámpago con horas muertas y cero merma
+  const [existingFlash] = await db
+    .select({ id: offers.id })
+    .from(offers)
+    .where(and(eq(offers.merchantId, params.espigaMerchantId), eq(offers.isFlash, true)))
+    .limit(1);
+
+  if (!existingFlash) {
+    await db.insert(offers).values({
+      merchantId: params.espigaMerchantId,
+      title: '25 % OFF en horneados de la tarde (cero merma)',
+      description: 'Pan de masa madre y hojaldres recién horneados para cerrar la tarde sin merma.',
+      targetCategory: 'comida',
+      discountKind: 'percent',
+      discountPercent: 25,
+      minPurchaseMinor: 10_000_00,
+      isFlash: true,
+      startHour: 15,
+      endHour: 20,
+      stockLimit: 8,
+      stockRemaining: 8,
+      unitCostMinor: 4_500_00,
+      newCustomersOnly: false,
+      holdoutPercent: 0,
+      exclusivityDays: 30,
+      validFrom: addDays(today, -1),
+      validUntil: addDays(today, 14),
+      status: 'activa',
+    });
+  }
+
+  const [cafeAguas] = await db
+    .select({ id: merchants.id })
+    .from(merchants)
+    .where(eq(merchants.slug, 'demo-cafe-las-aguas'))
+    .limit(1);
+
+  if (cafeAguas) {
+    const [existingCafeFlash] = await db
+      .select({ id: offers.id })
+      .from(offers)
+      .where(and(eq(offers.merchantId, cafeAguas.id), eq(offers.isFlash, true)))
+      .limit(1);
+
+    if (!existingCafeFlash) {
+      await db.insert(offers).values({
+        merchantId: cafeAguas.id,
+        title: '20 % en café filtrado + torta de media tarde',
+        description: 'Tardes tranquilas en Las Aguas entre 2:00 y 6:00 p. m.',
+        targetCategory: 'comida',
+        discountKind: 'percent',
+        discountPercent: 20,
+        minPurchaseMinor: 12_000_00,
+        isFlash: true,
+        startHour: 14,
+        endHour: 18,
+        stockLimit: 12,
+        stockRemaining: 12,
+        unitCostMinor: 3_800_00,
+        newCustomersOnly: false,
+        holdoutPercent: 0,
+        exclusivityDays: 30,
+        validFrom: addDays(today, -1),
+        validUntil: addDays(today, 14),
+        status: 'activa',
+      });
+    }
+  }
+
+  const [fruverParque] = await db
+    .select({ id: merchants.id })
+    .from(merchants)
+    .where(eq(merchants.slug, 'demo-fruver-el-parque'))
+    .limit(1);
+
+  if (fruverParque) {
+    const [existingFruverFlash] = await db
+      .select({ id: offers.id })
+      .from(offers)
+      .where(and(eq(offers.merchantId, fruverParque.id), eq(offers.isFlash, true)))
+      .limit(1);
+
+    if (!existingFruverFlash) {
+      await db.insert(offers).values({
+        merchantId: fruverParque.id,
+        title: 'Canasta cierre de tarde: 30 % en fruta seleccionada',
+        description: 'Fruta fresca de Corabastos antes del cierre. Ayúdanos a tener cero merma.',
+        targetCategory: 'mercado',
+        discountKind: 'percent',
+        discountPercent: 30,
+        minPurchaseMinor: 15_000_00,
+        isFlash: true,
+        startHour: 17,
+        endHour: 21,
+        stockLimit: 6,
+        stockRemaining: 6,
+        unitCostMinor: 6_500_00,
+        newCustomersOnly: false,
+        holdoutPercent: 0,
+        exclusivityDays: 30,
+        validFrom: addDays(today, -1),
+        validUntil: addDays(today, 14),
+        status: 'activa',
+      });
+    }
+  }
 }

@@ -3,7 +3,6 @@ import {
   CalendarCheck2,
   ChevronRight,
   CircleHelp,
-  MapPin,
   PencilLine,
   PiggyBank,
   Repeat,
@@ -12,19 +11,25 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { BalancePrompt, BalanceRow } from '@/components/app/balance-editor';
+import { DailyPulseCard } from '@/components/app/daily-pulse-card';
 import { GaOnce } from '@/components/app/ga-once';
 import { TrackView } from '@/components/app/track-view';
+import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
 import { requireUser } from '@/lib/auth/session';
 import {
   loadCifra,
   loadMarksDetailed,
-  loadRankedOffersForUser,
   loadSavingsSummary,
   loadSpendDeviation,
 } from '@/lib/data';
 import { STALE_BALANCE_WARNING } from '@/lib/engine/cifra';
-import { shortDate } from '@/lib/engine/dates';
+import { shortDate, todayInBogota } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
+import {
+  currentBogotaHour,
+  loadPersonaDailyValueBundle,
+  loadSmartMapBundle,
+} from '@/lib/v3-data';
 
 function Row({ label, hint, value }: { label: string; hint: React.ReactNode; value: string }) {
   return (
@@ -48,14 +53,16 @@ function ageNote(days: number | null, on: string | null): string {
 
 export default async function HoyPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
-  const [c, marksDetail, savings, topOffers, sp] = await Promise.all([
+  const [c, marksDetail, savings, smartMap, sp] = await Promise.all([
     loadCifra(user),
     loadMarksDetailed(user.id),
     loadSavingsSummary(user.id),
-    loadRankedOffersForUser(user, 2),
+    loadSmartMapBundle(user),
     searchParams,
   ]);
-  const deviation = c.ready ? await loadSpendDeviation(user, c) : null;
+  const [deviation, dailyBundle] = c.ready
+    ? await Promise.all([loadSpendDeviation(user, c), loadPersonaDailyValueBundle(user, c)])
+    : [null, null];
   const editable = c.accounts
     .filter((a) => a.editable !== false)
     .map((a) => ({ id: a.accountId, name: a.name, balanceMinor: a.balanceMinor }));
@@ -252,7 +259,26 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
         </div>
       </section>
 
+      {dailyBundle && (
+        <DailyPulseCard
+          pulse={dailyBundle.pulse}
+          pendingCharges={c.pending}
+          paidCharges={dailyBundle.paidCharges}
+          cycleEnd={c.nextIncomeOn}
+          captureAccounts={dailyBundle.captureAccounts}
+          todayIso={todayInBogota()}
+          currentHour={currentBogotaHour()}
+        />
+      )}
+
       {askBalance && <BalancePrompt accounts={editable} note={ageNote(c.balanceAgeDays, c.balanceOn)} />}
+
+      {/* Mapa inteligente desplegable: cruce de gastos reales × cercanía × ofertas por franja horaria */}
+      <ExpandableSmartMap
+        bundle={smartMap}
+        compactTitle="Tiendas de tu cuadra que cruzan con tus gastos"
+        compactSubtitle="Despliega el mapa para ver locales a pocos minutos caminando con descuentos en las horas en que sueles comprar."
+      />
 
       {/* Alerta temprana de desviación frente al propio patrón (Etapa 4 del recorrido C.5) */}
       {deviation?.triggered && (
@@ -323,53 +349,6 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
           </p>
         )}
       </section>
-
-      {/* Ofertas contextuales cercanas filtradas por patrón real de gasto y barrio */}
-      {topOffers.length > 0 && (
-        <section className="surface-card px-5 py-4">
-          <div className="flex items-baseline justify-between gap-2">
-            <div>
-              <h2 className="font-display text-[17px] font-bold text-ink">Beneficios cerca de ti para este ciclo</h2>
-              <p className="text-[13px] text-ink-muted">Elegidos según tus categorías reales de gasto y tu zona</p>
-            </div>
-            <Link href="/app/ofertas" className="shrink-0 text-[13.5px] font-semibold text-terra-dark underline-offset-2 hover:underline">
-              Ver todas
-            </Link>
-          </div>
-          <ul className="mt-3.5 space-y-2.5">
-            {topOffers.map((item) => (
-              <li key={item.offer.id}>
-                <Link
-                  href={`/app/ofertas?destacada=${item.offer.id}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-line bg-paper/60 px-4 py-3 transition-colors hover:border-line-strong hover:bg-white"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="badge-terra">
-                        {item.offer.discountKind === 'percent'
-                          ? `${item.offer.discountPercent}% dto.`
-                          : `${cop(item.offer.discountFixedMinor ?? 0)} dto.`}
-                      </span>
-                      <span className="truncate text-[14.5px] font-semibold text-ink">{item.offer.merchantName}</span>
-                    </div>
-                    <p className="mt-0.5 truncate text-[13.5px] text-ink-soft">{item.offer.title}</p>
-                    <p className="mt-0.5 flex items-center gap-1 text-[12px] text-ink-faint">
-                      <MapPin size={12} aria-hidden="true" />
-                      <span>{item.whyRelevant}</span>
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <span className="tnum block text-[13px] font-bold text-primary-dark">
-                      Ahorras ~{cop(item.estimatedSavingsMinor)}
-                    </span>
-                    <span className="text-[12px] font-semibold text-terra-dark">Usar código →</span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {c.commitmentSuggestions.length > 0 && (
         <Link href="/app/cobros#escritos" className="flex gap-2.5 rounded-xl bg-warn-light px-4 py-3 text-[14px] leading-snug text-warn">

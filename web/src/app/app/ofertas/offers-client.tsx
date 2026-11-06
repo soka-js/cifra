@@ -33,6 +33,7 @@ interface OffersClientProps {
   ranked: RankedOffer[];
   activeCodes: Record<string, ActiveCodeView>;
   recentRedemptions: UserRedemptionView[];
+  hideMapWidget?: boolean;
 }
 
 function CountdownLabel({ expiresAtIso }: { expiresAtIso: string }) {
@@ -61,6 +62,7 @@ export function OffersClient({
   ranked,
   activeCodes,
   recentRedemptions,
+  hideMapWidget = false,
 }: OffersClientProps) {
   const [view, setView] = useState<'both' | 'map'>('both');
   const [selectedId, setSelectedId] = useState<string | null>(ranked[0]?.offer.id ?? null);
@@ -98,52 +100,56 @@ export function OffersClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3">
-        <div className="flex items-center gap-2 text-[13.5px] text-ink-soft">
-          <MapPin size={16} className="text-terra" aria-hidden="true" />
-          <span>
-            Zona activa: <strong className="font-semibold text-ink">{zoneLabel}</strong>
-          </span>
-          <Link href="/app/ajustes#zona" className="ml-1 text-[12.5px] font-semibold text-primary-dark underline">
-            Cambiar
-          </Link>
-        </div>
+      {!hideMapWidget && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3">
+            <div className="flex items-center gap-2 text-[13.5px] text-ink-soft">
+              <MapPin size={16} className="text-terra" aria-hidden="true" />
+              <span>
+                Zona activa: <strong className="font-semibold text-ink">{zoneLabel}</strong>
+              </span>
+              <Link href="/app/ajustes#zona" className="ml-1 text-[12.5px] font-semibold text-primary-dark underline">
+                Cambiar
+              </Link>
+            </div>
 
-        {ranked.length > 0 && (
-          <div className="inline-flex rounded-xl bg-paper p-1">
-            <button
-              type="button"
-              onClick={() => setView('both')}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                view === 'both' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              <List size={14} aria-hidden="true" />
-              Lista + Mapa
-            </button>
-            <button
-              type="button"
-              onClick={() => setView('map')}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                view === 'map' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              <MapIcon size={14} aria-hidden="true" />
-              Mapa grande
-            </button>
+            {ranked.length > 0 && (
+              <div className="inline-flex rounded-xl bg-paper p-1">
+                <button
+                  type="button"
+                  onClick={() => setView('both')}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                    view === 'both' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  <List size={14} aria-hidden="true" />
+                  Lista + Mapa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView('map')}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                    view === 'map' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  <MapIcon size={14} aria-hidden="true" />
+                  Mapa grande
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {ranked.length > 0 && (
-        <LazyNeighborhoodMap
-          centerLat={centerLat}
-          centerLng={centerLng}
-          pins={pins}
-          selectedId={selectedId}
-          onSelectPin={handleSelectPin}
-          heightClassName={view === 'map' ? 'h-[420px]' : 'h-64'}
-        />
+          {ranked.length > 0 && (
+            <LazyNeighborhoodMap
+              centerLat={centerLat}
+              centerLng={centerLng}
+              pins={pins}
+              selectedId={selectedId}
+              onSelectPin={handleSelectPin}
+              heightClassName={view === 'map' ? 'h-[420px]' : 'h-64'}
+            />
+          )}
+        </>
       )}
 
       {ranked.length === 0 ? (
