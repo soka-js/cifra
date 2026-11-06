@@ -1,6 +1,6 @@
 'use server';
 
-import { and, eq, gt, gte, isNull, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, gte, isNull, ne, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -40,6 +40,7 @@ import {
   type CandidateOffer,
 } from '@/lib/engine/attribution';
 import { computeHonestMerchantMargin } from '@/lib/engine/crossref';
+import { evaluateMerchantBillingHealth } from '@/lib/engine/commission-cycle';
 import { addDays, todayInBogota } from '@/lib/engine/dates';
 import { CONSENT_VERSION, cop, parsePesosInput } from '@/lib/format';
 import { getPartnerShareBps, syncMerchantInvoice } from '@/lib/merchant-data';
@@ -531,6 +532,22 @@ export async function createMerchantOffer(_prev: MerchantActionState, formData: 
     return { status: 'error', message: 'Ponle un título claro a tu oferta, por ejemplo: «10 % en panadería artesanal».' };
   }
 
+  // Política de protección mutua recomendada por Karol Benavides:
+  // Si hay cortes de comisiones vencidos > 5 días, se bloquea la creación de ofertas hasta liquidar.
+  const invoices = await db
+    .select()
+    .from(merchantInvoices)
+    .where(eq(merchantInvoices.merchantId, access.merchant.id));
+  const health = evaluateMerchantBillingHealth(invoices, todayInBogota());
+  if (!health.canPublishOffers) {
+    return {
+      status: 'error',
+      message:
+        health.lockReason ??
+        'Tienes un corte de comisiones vencido en mora. Liquida tu saldo en Mi Cuenta para reactivar la emisión de ofertas.',
+    };
+  }
+
   if (unitCostMinor && unitCostMinor > 0) {
     const margin = computeHonestMerchantMargin({
       salePriceMinor: Math.max(minPurchaseMinor, access.merchant.typicalTicketMinor),
@@ -592,6 +609,18 @@ export async function toggleOfferStatus(formData: FormData): Promise<void> {
   const access = await requireMerchantAccess();
   const offerId = String(formData.get('offerId') ?? '');
   const nextStatus = formData.get('nextStatus') === 'pausada' ? 'pausada' : 'activa';
+
+  if (nextStatus === 'activa') {
+    const invoices = await db
+      .select()
+      .from(merchantInvoices)
+      .where(eq(merchantInvoices.merchantId, access.merchant.id));
+    const health = evaluateMerchantBillingHealth(invoices, todayInBogota());
+    if (!health.canPublishOffers) {
+      return; // Mantiene la oferta pausada por mora
+    }
+  }
+
   await db
     .update(offers)
     .set({ status: nextStatus, updatedAt: new Date() })
@@ -677,7 +706,7 @@ export async function lookupOfferCode(rawInput: string): Promise<CodeLookupRespo
     return { ok: false, error: 'Escribe las 6 letras/números del código del cliente.' };
   }
 
-  const [row] = await db
+  const candidateRows = await db
     .select({
       offerCode: offerCodes,
       offer: offers,
@@ -687,7 +716,12 @@ export async function lookupOfferCode(rawInput: string): Promise<CodeLookupRespo
     .innerJoin(offers, eq(offers.id, offerCodes.offerId))
     .innerJoin(users, eq(users.id, offerCodes.userId))
     .where(and(eq(offerCodes.code, code), eq(offerCodes.merchantId, access.merchant.id)))
-    .limit(1);
+    .orderBy(desc(offerCodes.createdAt));
+
+  const now = new Date();
+  const row =
+    candidateRows.find((r) => r.offerCode.status === 'pendiente' && r.offerCode.expiresAt > now) ??
+    candidateRows[0];
 
   if (!row) {
     return { ok: false, error: 'No encontramos ese código para tu negocio. Verifica las 6 letras.' };

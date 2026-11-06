@@ -24,6 +24,13 @@ import {
   type OrganicVisitObservation,
 } from './engine/attribution';
 import { addDays, todayInBogota } from './engine/dates';
+import {
+  evaluateMerchantBillingHealth,
+  computeCycleSummary,
+  getCurrentCommissionCycle,
+  type MerchantBillingHealth,
+  type CycleSummary,
+} from './engine/commission-cycle';
 import { cop } from './format';
 import { bogotaDate, loadRankedOffersForUser } from './data';
 
@@ -159,6 +166,8 @@ export interface MerchantDashboardData {
   }>;
   invoices: Array<typeof merchantInvoices.$inferSelect>;
   payments: Array<typeof merchantPayments.$inferSelect>;
+  billingHealth: MerchantBillingHealth;
+  cycleSummary: CycleSummary;
 }
 
 export async function loadMerchantDashboard(
@@ -258,6 +267,17 @@ export async function loadMerchantDashboard(
     formatMoney: (minor) => cop(minor),
   });
 
+  const todayIso = todayInBogota();
+  const activeCycle = getCurrentCommissionCycle(todayIso);
+  const cycleRedemptions = allValidRedemptions.filter((r) => {
+    const d = bogotaDate(r.redeemedAt);
+    return d >= activeCycle.startDate && d <= activeCycle.cutDate;
+  });
+  const cycleSummary = computeCycleSummary(
+    cycleRedemptions.length > 0 ? cycleRedemptions : periodRedemptions,
+  );
+  const billingHealth = evaluateMerchantBillingHealth(invoices, todayIso);
+
   return {
     periodMonth,
     periodLabel,
@@ -279,6 +299,8 @@ export async function loadMerchantDashboard(
     })),
     invoices,
     payments,
+    billingHealth,
+    cycleSummary,
   };
 }
 

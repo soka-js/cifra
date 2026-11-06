@@ -1,10 +1,13 @@
 import { and, eq, ne, sql } from 'drizzle-orm';
-import { Pause, Play, RefreshCw, Sparkles, Tag } from 'lucide-react';
+import { Pause, Play, RefreshCw, ShieldAlert, Sparkles, Tag } from 'lucide-react';
+import Link from 'next/link';
 import { renewOfferCampaign, toggleOfferStatus } from '@/app/actions/merchant';
 import { BackButton } from '@/components/ui/back-button';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { db } from '@/lib/db';
-import { offers, redemptions } from '@/lib/db/schema';
+import { merchantInvoices, offers, redemptions } from '@/lib/db/schema';
+import { evaluateMerchantBillingHealth } from '@/lib/engine/commission-cycle';
+import { todayInBogota } from '@/lib/engine/dates';
 import { cop, shortDate } from '@/lib/format';
 import { OfferCreator } from './offer-creator';
 
@@ -18,7 +21,7 @@ export default async function MerchantOffersPage({
   const sp = await searchParams;
   const access = await requireMerchantAccess();
 
-  const [merchantOffers, usageRows] = await Promise.all([
+  const [merchantOffers, usageRows, invoices] = await Promise.all([
     db.select().from(offers).where(eq(offers.merchantId, access.merchant.id)),
     db
       .select({
@@ -28,8 +31,13 @@ export default async function MerchantOffersPage({
       .from(redemptions)
       .where(and(eq(redemptions.merchantId, access.merchant.id), ne(redemptions.status, 'anulada')))
       .groupBy(redemptions.offerId),
+    db
+      .select()
+      .from(merchantInvoices)
+      .where(eq(merchantInvoices.merchantId, access.merchant.id)),
   ]);
 
+  const health = evaluateMerchantBillingHealth(invoices, todayInBogota());
   const usedMap = new Map(usageRows.map((u) => [u.offerId, u.used]));
   const sortedOffers = [...merchantOffers].sort((a, b) =>
     b.createdAt.getTime() - a.createdAt.getTime(),
@@ -42,6 +50,36 @@ export default async function MerchantOffersPage({
         <div className="rounded-2xl border border-primary/25 bg-primary-pale px-4 py-3 text-[14px] text-primary-dark">
           <strong>¡Negocio registrado!</strong> Crea abajo tu primera oferta en 1 minuto para empezar a recibir clientes nuevos de tu barrio.
         </div>
+      )}
+
+      {/* Alerta de corte vencido / pausa preventiva (política Karol Benavides) */}
+      {!health.canPublishOffers && (
+        <section className="rounded-2xl border border-red-300 bg-red-50 p-5 text-red-950">
+          <div className="flex items-start gap-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+              <ShieldAlert size={22} aria-hidden="true" />
+            </span>
+            <div className="space-y-2">
+              <span className="rounded-full bg-red-200 px-3 py-0.5 text-[12px] font-bold uppercase tracking-wider text-red-900">
+                Pausa preventiva de ofertas
+              </span>
+              <h2 className="font-display text-[19px] font-bold text-red-950">
+                Tienes un corte de comisiones pendiente de liquidar ({cop(health.overdueAmountMinor)})
+              </h2>
+              <p className="text-[13.5px] text-red-800">
+                {health.lockReason}
+              </p>
+              <div className="pt-1">
+                <Link
+                  href="/negocio/cuenta"
+                  className="btn-sm inline-flex items-center gap-1.5 bg-red-700 text-white hover:bg-red-800"
+                >
+                  Liquidar corte en Mi Cuenta
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       )}
 
       <div>

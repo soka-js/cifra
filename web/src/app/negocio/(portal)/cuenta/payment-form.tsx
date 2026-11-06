@@ -1,7 +1,7 @@
 'use client';
 
-import { CheckCircle2, CreditCard, Send } from 'lucide-react';
-import { useActionState } from 'react';
+import { CheckCircle2, CreditCard, Send, Sparkles } from 'lucide-react';
+import { useActionState, useState } from 'react';
 import { reportMerchantPayment, type MerchantActionState } from '@/app/actions/merchant';
 import { cop } from '@/lib/format';
 
@@ -21,10 +21,20 @@ export function PaymentReportForm({
   siteUrl: string;
 }) {
   const [state, action, pending] = useActionState(reportMerchantPayment, INITIAL);
+  const [reference, setReference] = useState('');
+  const [note, setNote] = useState('');
+  const [method, setMethod] = useState<'breb' | 'nequi' | 'transferencia'>('breb');
 
   const wompiUrl = wompiPublicKey
     ? `https://checkout.wompi.co/p/?public-key=${encodeURIComponent(wompiPublicKey)}&currency=COP&amount-in-cents=${amountMinor}&reference=${encodeURIComponent(`CIFRA-${invoiceId}`)}&redirect-url=${encodeURIComponent(`${siteUrl}/negocio/cuenta`)}`
     : null;
+
+  function handleDemoAutofill() {
+    const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setMethod('breb');
+    setReference(`BREB-${randomHex}`);
+    setNote('Liquidación de comisiones quincenales CIFRA');
+  }
 
   return (
     <div className="space-y-4">
@@ -43,9 +53,19 @@ export function PaymentReportForm({
       <form action={action} className="space-y-3.5 rounded-2xl border border-line bg-paper p-4">
         <input type="hidden" name="invoiceId" value={invoiceId} />
 
-        <p className="text-[14px] font-bold text-ink">
-          Reportar pago realizado por Bre-B, Nequi o transferencia ({periodLabel})
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[14px] font-bold text-ink">
+            Reportar pago realizado por Bre-B, Nequi o transferencia ({periodLabel})
+          </p>
+          <button
+            type="button"
+            onClick={handleDemoAutofill}
+            className="btn-sm border border-line bg-white text-[12px] text-ink-soft hover:bg-paper-deep"
+          >
+            <Sparkles size={13} aria-hidden="true" className="text-terra" />
+            Llenar comprobante de prueba (Demo)
+          </button>
+        </div>
 
         {state.status === 'ok' && (
           <div className="flex items-center gap-2 rounded-xl bg-primary-pale px-3.5 py-2.5 text-[13.5px] font-medium text-primary-dark">
@@ -65,7 +85,13 @@ export function PaymentReportForm({
             <label htmlFor={`method-${invoiceId}`} className="label">
               Medio usado
             </label>
-            <select id={`method-${invoiceId}`} name="method" defaultValue="breb" className="field py-2.5 text-[14.5px]">
+            <select
+              id={`method-${invoiceId}`}
+              name="method"
+              value={method}
+              onChange={(e) => setMethod(e.target.value as any)}
+              className="field py-2.5 text-[14.5px]"
+            >
               <option value="breb">Llave Bre-B</option>
               <option value="nequi">Nequi</option>
               <option value="transferencia">Transferencia bancaria</option>
@@ -82,8 +108,10 @@ export function PaymentReportForm({
               type="text"
               required
               minLength={4}
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
               placeholder="Ej. M9482014"
-              className="field py-2.5 text-[14.5px]"
+              className="field py-2.5 font-mono text-[14.5px]"
             />
           </div>
         </div>
@@ -96,6 +124,8 @@ export function PaymentReportForm({
             id={`note-${invoiceId}`}
             name="note"
             type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
             placeholder="Ej. Enviado desde el Nequi de Rosa"
             className="field py-2 text-[14px]"
           />

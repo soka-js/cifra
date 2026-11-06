@@ -144,7 +144,7 @@ export function PosTerminal({ defaultTicketMinor }: { defaultTicketMinor: number
 
         <dl className="space-y-2 rounded-2xl border border-line bg-paper p-4 text-[14px]">
           <div className="flex justify-between">
-            <dt className="text-ink-muted">Comisión CIFRA (5 % sobre lo cobrado):</dt>
+            <dt className="text-ink-muted">Comisión CIFRA (5 % acumulada al corte):</dt>
             <dd className="tnum font-semibold text-ink">{cop(redeemState.commissionMinor)}</dd>
           </div>
           <div className="flex justify-between border-t border-line pt-2">
@@ -152,6 +152,15 @@ export function PosTerminal({ defaultTicketMinor }: { defaultTicketMinor: number
             <dd className="tnum font-bold text-primary-dark">{cop(redeemState.merchantKeepMinor)}</dd>
           </div>
         </dl>
+
+        <div className="rounded-2xl border border-primary/25 bg-primary-pale/70 p-3.5 text-[13.5px] text-primary-dark">
+          <p className="font-bold">
+            🛡️ Sin micro-cobros individuales en cada venta
+          </p>
+          <p className="mt-0.5 text-ink-soft">
+            La comisión de {cop(redeemState.commissionMinor)} quedó sumada a tu próximo corte quincenal consolidado. Cobraste el 100 % ({cop(redeemState.netPaidMinor)}) al cliente y atiendes sin interrupciones ni transferencias sueltas.
+          </p>
+        </div>
 
         <button type="button" onClick={handleResetForNext} className="btn-terra w-full text-[16px]">
           <RotateCcw size={18} aria-hidden="true" />
@@ -308,15 +317,20 @@ export function PosTerminal({ defaultTicketMinor }: { defaultTicketMinor: number
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[13px] text-ink-soft">
-                    <span>
-                      Comisión CIFRA (5 % a fin de mes):{' '}
-                      <strong className="tnum text-ink">{cop(liveSplit.cifraCommissionMinor)}</strong>
-                    </span>
-                    <span>
-                      Te quedan libres:{' '}
-                      <strong className="tnum text-primary-dark">{cop(liveSplit.merchantNetKeepMinor)}</strong>
-                    </span>
+                  <div className="space-y-1 rounded-xl bg-paper-deep/60 px-3 py-2 text-[13px] text-ink-soft">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span>
+                        Comisión CIFRA (5 % al corte quincenal):{' '}
+                        <strong className="tnum text-ink">{cop(liveSplit.cifraCommissionMinor)}</strong>
+                      </span>
+                      <span>
+                        Te quedan libres:{' '}
+                        <strong className="tnum text-primary-dark">{cop(liveSplit.merchantNetKeepMinor)}</strong>
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-primary-dark font-medium">
+                      🛡️ Cero cobro por cliente: no pagas nada hoy, se acumula a tu corte quincenal consolidado.
+                    </p>
                   </div>
                 </>
               )}
