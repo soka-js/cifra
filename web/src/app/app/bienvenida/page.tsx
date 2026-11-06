@@ -11,10 +11,10 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
   const { nuevo } = await searchParams;
   const firstName = user.name ? user.name.split(' ')[0]! : null;
 
-  // Quien llega desde su entidad ya tiene saldos y movimientos: solo falta saber cuándo le pagan.
+  // Quien llega desde su entidad aliada ya tiene saldos y movimientos: solo falta confirmar cuándo le pagan.
   if (user.partnerId) {
     return (
-      <div>
+      <div className="surface-card p-6 sm:p-8">
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">
           {firstName ? `${firstName}, ` : ''}¿cada cuánto te pagan?
         </h1>
@@ -23,7 +23,9 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
         </p>
         <form action={saveOnboarding} className="mt-7 space-y-6">
           <IncomeFields frequency={user.incomeFrequency ?? null} days={user.incomeDays ?? null} />
-          <button type="submit" className="btn-primary w-full">Seguir</button>
+          <button type="submit" className="btn-primary w-full">
+            Seguir
+          </button>
         </form>
       </div>
     );
@@ -32,7 +34,13 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
   return (
     <div>
       {nuevo === '1' && <GaOnce name="sign_up" />}
-      <QuickStart firstName={firstName} frequency={user.incomeFrequency ?? null} days={user.incomeDays ?? null} />
+      <QuickStart
+        firstName={firstName}
+        frequency={user.incomeFrequency ?? null}
+        days={user.incomeDays ?? null}
+        initialZoneSlug={user.zoneSlug ?? 'chapinero'}
+        alreadyOnboarded={Boolean(user.onboardedAt)}
+      />
     </div>
   );
 }

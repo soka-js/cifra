@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth/session';
-import { loadCifra } from '@/lib/data';
+import { loadCifra, loadRankedOffersForUser } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
 import { Ask } from './ask';
@@ -9,27 +9,48 @@ export const metadata = { title: '¿Puedo hacer este gasto?' };
 
 export default async function GastoPage() {
   const user = await requireUser();
-  const c = await loadCifra(user);
+  const [c, offers] = await Promise.all([loadCifra(user), loadRankedOffersForUser(user, 3)]);
   return (
-    <div>
-      <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">¿Puedo hacer este gasto?</h1>
-      {c.ready ? (
-        <>
-          <p className="mt-2 text-[15px] text-ink-muted">
-            Lo comparamos con tu cifra: <span className="tnum font-semibold text-ink">{cop(c.availableMinor)}</span> libres hasta el{' '}
-            {shortDate(c.nextIncomeOn)}.
+    <div className="space-y-5">
+      <div>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">¿Puedo hacer este gasto?</h1>
+        {c.ready && (
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
+            Lo cruzamos al instante con tus <span className="tnum font-semibold text-ink">{cop(c.availableMinor)}</span> libres hasta el{' '}
+            {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'}).
           </p>
-          <div className="mt-6">
-            <Ask cifra={{ availableMinor: c.availableMinor, dailyVariableMinor: c.dailyVariableMinor, daysLeft: c.daysLeft, nextIncomeOn: c.nextIncomeOn }} />
-          </div>
-        </>
+        )}
+      </div>
+
+      {c.ready ? (
+        <Ask
+          cifra={{
+            availableMinor: c.availableMinor,
+            perDayMinor: c.perDayMinor,
+            dailyVariableMinor: c.dailyVariableMinor,
+            daysLeft: c.daysLeft,
+            nextIncomeOn: c.nextIncomeOn,
+          }}
+          nearbyOffers={offers.map((o) => ({
+            id: o.offer.id,
+            merchantName: o.offer.merchantName,
+            title: o.offer.title,
+            neighborhood: o.offer.neighborhood,
+            estimatedSavingsMinor: o.estimatedSavingsMinor,
+          }))}
+        />
       ) : (
-        <p className="mt-4 text-[16px] text-ink-muted">
-          Primero necesitamos {c.missing.includes('saldo') ? 'tu saldo de hoy' : 'tu gasto del día a día'}.{' '}
-          <Link href={c.missing.includes('saldo') ? '/app' : '/app/bienvenida'} className="font-semibold text-primary-dark underline">
-            {c.missing.includes('saldo') ? 'Escribir saldo' : 'Calcular mi cifra en un minuto'}
-          </Link>
-        </p>
+        <div className="surface-card p-6">
+          <p className="text-[16px] text-ink-muted">
+            Primero necesitamos {c.missing.includes('saldo') ? 'tu saldo de hoy' : 'tu gasto del día a día'}.{' '}
+            <Link
+              href={c.missing.includes('saldo') ? '/app' : '/app/bienvenida'}
+              className="font-semibold text-primary-dark underline"
+            >
+              {c.missing.includes('saldo') ? 'Escribir saldo' : 'Calcular mi cifra en un minuto'}
+            </Link>
+          </p>
+        </div>
       )}
     </div>
   );

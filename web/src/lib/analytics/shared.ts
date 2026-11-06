@@ -13,6 +13,12 @@ export const EVENT_NAMES = [
   'update_balance',
   'view_cifra',
   'ask_spend',
+  'reclassify_category',
+  'cancel_recurring',
+  'generate_offer_code',
+  'redeem_offer',
+  'close_cycle',
+  'demo_enter',
   'begin_lead',
   'generate_lead',
 ] as const;
