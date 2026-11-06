@@ -7,6 +7,8 @@ export interface Tx {
   amountMinor: number;
 }
 
+export type RawTx = Tx;
+
 export interface AccountBalance {
   accountId: string;
   name: string;

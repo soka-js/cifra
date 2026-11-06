@@ -21,6 +21,9 @@ export const EVENT_NAMES = [
   'demo_enter',
   'begin_lead',
   'generate_lead',
+  'quick_capture',
+  'merchant_ledger_add',
+  'launch_flash_offer',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

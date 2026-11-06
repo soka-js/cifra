@@ -113,6 +113,17 @@ export function computeRedemptionSplit(input: SplitInput): RedemptionSplit {
   };
 }
 
+export function computeDiscountMinor(input: {
+  grossAmountMinor: number;
+  discountKind: 'percent' | 'fixed';
+  discountPercent?: number | null;
+  discountFixedMinor?: number | null;
+  maxDiscountMinor?: number | null;
+  minPurchaseMinor?: number;
+}): number {
+  return computeRedemptionSplit(input).discountMinor;
+}
+
 /**
  * Hash determinístico FNV-1a (0..99) por par (persona, comercio) para asignar grupos de control (holdout)
  * sin sesgo y de forma consistente entre sesiones (Control de canibalización #2, G.10).

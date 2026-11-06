@@ -1,10 +1,17 @@
-import { Coffee, Search, Upload, X } from 'lucide-react';
+import { AlertOctagon, Coffee, Search, Upload, X } from 'lucide-react';
 import Link from 'next/link';
+import { QuickCaptureModal } from '@/components/app/quick-capture-modal';
+import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
 import { requireUser } from '@/lib/auth/session';
-import { loadMovimientosInsights } from '@/lib/data';
-import { shortDate } from '@/lib/engine/dates';
+import { loadCifra, loadMovimientosInsights } from '@/lib/data';
+import { shortDate, todayInBogota } from '@/lib/engine/dates';
 import { CATEGORY_LABEL, EDITABLE_CATEGORIES, type Category } from '@/lib/engine/merchant';
 import { cop } from '@/lib/format';
+import {
+  currentBogotaHour,
+  loadPersonaDailyValueBundle,
+  loadSmartMapBundle,
+} from '@/lib/v3-data';
 import { toggleExcluded } from '../actions';
 import { ReclassifyChip } from './reclassify-chip';
 
@@ -17,12 +24,19 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
   const catParam = sp.cat as Category | undefined;
   const activeCat = catParam && EDITABLE_CATEGORIES.includes(catParam) ? catParam : null;
 
-  const { breakdown, antExpenses, movements } = await loadMovimientosInsights(user, q, activeCat);
+  const [{ breakdown, antExpenses, movements }, cifra, smartMap] = await Promise.all([
+    loadMovimientosInsights(user, q, activeCat),
+    loadCifra(user),
+    loadSmartMapBundle(user),
+  ]);
+  const dailyBundle = await loadPersonaDailyValueBundle(user, cifra);
 
   const deltaPct =
     breakdown.previousTotalMinor > 0
       ? Math.round(((breakdown.currentTotalMinor - breakdown.previousTotalMinor) / breakdown.previousTotalMinor) * 100)
       : null;
+
+  const totalRecoverableLeaksMinor = dailyBundle.leaks.reduce((s, l) => s + l.recoverableMonthlyMinor, 0);
 
   const groups = new Map<string, typeof movements>();
   for (const r of movements) {
@@ -37,13 +51,74 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
         <div>
           <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">En qué se me va</h1>
           <p className="mt-1.5 text-[15px] leading-relaxed text-ink-muted">
-            Tus gastos clasificados automáticamente. Toca cualquier etiqueta para reclasificar un comercio hacia atrás y hacia adelante en un toque.
+            Tus gastos clasificados automáticamente y tus fugas con nombre propio. Anota en 3 segundos o reclasifica en un toque.
           </p>
         </div>
-        <Link href="/app/datos/importar" className="btn-sm border border-line bg-white text-ink hover:bg-paper-warm">
-          <Upload size={15} aria-hidden="true" /> Subir extracto
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <QuickCaptureModal
+            accounts={dailyBundle.captureAccounts}
+            todayIso={todayInBogota()}
+            currentHour={currentBogotaHour()}
+            buttonLabel="Anotar / pegar SMS"
+            buttonClassName="btn-sm bg-ink text-white hover:bg-ink/90"
+          />
+          <Link href="/app/datos/importar" className="btn-sm border border-line bg-white text-ink hover:bg-paper-warm">
+            <Upload size={15} aria-hidden="true" /> Subir extracto
+          </Link>
+        </div>
       </div>
+
+      {/* Radiografía de Fugas con Nombre Propio (Fase 6) */}
+      {!q && !activeCat && dailyBundle.leaks.length > 0 && (
+        <section className="surface-card border-neg/20 bg-gradient-to-br from-neg-light/45 via-white to-terra-pale/40 p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-neg-light text-neg">
+                <AlertOctagon size={20} aria-hidden="true" />
+              </span>
+              <div>
+                <span className="badge-neg">Radiografía de fugas reales · últimos 30 días</span>
+                <h2 className="mt-1.5 font-display text-[20px] font-bold text-ink">
+                  Podrías recuperar hasta <span className="tnum text-primary-dark">{cop(totalRecoverableLeaksMinor)}/mes</span>
+                </h2>
+                <p className="mt-0.5 text-[13.5px] text-ink-muted">
+                  Plata que se va en sobrecostos invisibles, comisiones bancarias o picos evitables:
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {dailyBundle.leaks.map((leak) => (
+              <div key={leak.id} className="rounded-2xl border border-line bg-white p-4">
+                <div className="flex items-baseline justify-between gap-2">
+                  <h3 className="font-display text-[16px] font-bold text-ink">{leak.title}</h3>
+                  <span className="tnum shrink-0 text-[13.5px] font-extrabold text-neg">
+                    -{cop(leak.monthlyLossMinor)}/mes
+                  </span>
+                </div>
+                <p className="mt-1 text-[12.5px] text-ink-muted">{leak.evidence}</p>
+                <p className="mt-2 rounded-xl bg-paper px-3 py-2 text-[12.5px] leading-snug text-ink-soft">
+                  <strong className="font-semibold text-primary-dark">
+                    Recupera ~{cop(leak.recoverableMonthlyMinor)}/mes:
+                  </strong>{' '}
+                  {leak.concreteAction}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Mapa inteligente desplegable para sustituir fugas por comercio local */}
+      {!q && smartMap.offers.length > 0 && (
+        <ExpandableSmartMap
+          bundle={smartMap}
+          initialCategoryFilter={activeCat ?? 'comida'}
+          compactTitle="Reemplaza sobrecostos de apps con tiendas a minutos de ti"
+          compactSubtitle="Cruzamos tus gastos del mes con comercios independientes de tu barrio que tienen descuento activo hoy."
+        />
+      )}
 
       {/* Comparativo de ciclo actual (30d) vs ciclo anterior (30d previos) */}
       {!q && breakdown.rows.length > 0 && (

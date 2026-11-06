@@ -222,6 +222,10 @@ export const transactions = pgTable(
     merchantName: text('merchant_name'),
     category: text('category'),
     categorySource: text('category_source').notNull().default('auto'),
+    /** Hora local en Bogotá (0..23) cuando se conoce por SMS, comprobante, captura rápida o Caja POS. */
+    spentHour: integer('spent_hour'),
+    /** Canal de captura: 'extracto' | 'rapido' | 'sms_banco' | 'comprobante' | 'caja_cifra'. */
+    captureMethod: text('capture_method').notNull().default('extracto'),
     /** Huella para no duplicar al volver a subir el mismo extracto. */
     dedupeKey: text('dedupe_key').notNull(),
     /** La persona decidió que este movimiento no cuente en la cifra (por ejemplo, una compra única que ya pasó). */
@@ -300,6 +304,23 @@ export const commitments = pgTable(
   (t) => [index('commitments_user_idx').on(t.userId)],
 );
 
+/** Checklist de cobros intocables de la quincena que la persona ya marcó como pagados en el ciclo actual. */
+export const paidCycleCharges = pgTable(
+  'paid_cycle_charges',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    chargeKey: text('charge_key').notNull(),
+    label: text('label').notNull(),
+    cycleEnd: date('cycle_end', { mode: 'string' }).notNull(),
+    amountMinor: money('amount_minor').notNull(),
+    paidAt: timestamp('paid_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('paid_cycle_charges_unique').on(t.userId, t.chargeKey, t.cycleEnd)],
+);
+
 export const savingsKind = pgEnum('savings_kind', ['cobro_cancelado', 'oferta_redimida', 'comision_evitada']);
 
 /** Pesos ahorrados reales y verificables por la persona (recurrentes cancelados + ofertas redimidas). */
@@ -370,6 +391,13 @@ export const merchantStage = pgEnum('merchant_stage', [
   'pausado',
 ]);
 
+export interface MerchantFeaturedItem {
+  name: string;
+  priceMinor: number;
+  costMinor?: number;
+  tag?: string;
+}
+
 export const merchants = pgTable(
   'merchants',
   {
@@ -389,6 +417,12 @@ export const merchants = pgTable(
     lng: doublePrecision('lng').notNull(),
     hoursText: text('hours_text'),
     typicalTicketMinor: money('typical_ticket_minor').notNull().default(2000000),
+    /** Productos estrella visibles en la vitrina pública /b/[slug] y calculadora de margen. */
+    featuredItems: jsonb('featured_items').$type<MerchantFeaturedItem[]>().notNull().default(sql`'[]'::jsonb`),
+    /** Meta diaria de ventas en centavos para cubrir arriendo + servicios + insumos (punto de equilibrio). */
+    dailyBreakEvenMinor: money('daily_break_even_minor').notNull().default(40000000),
+    /** Costos fijos mensuales del local (arriendo, luz, gas, internet, ayuda) en centavos. */
+    monthlyFixedCostMinor: money('monthly_fixed_cost_minor').notNull().default(450000000),
     /** Comisión de CIFRA en puntos básicos sobre el pago neto de la venta atribuida (500 = 5,00 % en G.10 y J.3). */
     commissionBps: integer('commission_bps').notNull().default(500),
     /** Palabras clave que aparecen en extractos bancarios para medir compras previas y retorno sin descuento. */
@@ -468,6 +502,15 @@ export const offers = pgTable(
     /** Control de canibalización #2 (G.10): % de audiencia retenida como grupo de control sin oferta (ej. 10 %). */
     holdoutPercent: integer('holdout_percent').notNull().default(10),
     monthlyCapRedemptions: integer('monthly_cap_redemptions'),
+    /** Oferta Relámpago de horas muertas / cero merma con ventana horaria y cupos vivos. */
+    isFlash: boolean('is_flash').notNull().default(false),
+    startHour: integer('start_hour'),
+    endHour: integer('end_hour'),
+    activeDays: integer('active_days').array().notNull().default(sql`'{0,1,2,3,4,5,6}'::integer[]`),
+    stockLimit: integer('stock_limit'),
+    stockRemaining: integer('stock_remaining'),
+    /** Costo estimado de insumos del producto/combo para proteger el margen real del tendero. */
+    unitCostMinor: money('unit_cost_minor'),
     validFrom: date('valid_from', { mode: 'string' }).notNull(),
     validUntil: date('valid_until', { mode: 'string' }).notNull(),
     activeHoursText: text('active_hours_text'),
@@ -478,6 +521,27 @@ export const offers = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('offers_merchant_status_idx').on(t.merchantId, t.status)],
+);
+
+/** Libro diario del tendero: ventas de mostrador, gastos de insumos y costos fijos del local (/negocio/cuadre). */
+export const merchantLedgerEntries = pgTable(
+  'merchant_ledger_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    merchantId: uuid('merchant_id')
+      .notNull()
+      .references(() => merchants.id, { onDelete: 'cascade' }),
+    entryOn: date('entry_on', { mode: 'string' }).notNull(),
+    /** 'venta_mostrador' | 'venta_cifra' | 'insumos' | 'servicios_arriendo' | 'nomina_otros' */
+    kind: text('kind').notNull(),
+    categoryLabel: text('category_label').notNull(),
+    supplierName: text('supplier_name'),
+    amountMinor: money('amount_minor').notNull(),
+    note: text('note'),
+    refRedemptionId: uuid('ref_redemption_id').unique(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('merchant_ledger_date_idx').on(t.merchantId, t.entryOn)],
 );
 
 export const offerCodeStatus = pgEnum('offer_code_status', ['pendiente', 'redimido', 'vencido', 'cancelado']);
@@ -749,3 +813,6 @@ export type Redemption = typeof redemptions.$inferSelect;
 export type MerchantInvoice = typeof merchantInvoices.$inferSelect;
 export type MerchantPayment = typeof merchantPayments.$inferSelect;
 export type NotificationRow = typeof notifications.$inferSelect;
+export type PaidCycleCharge = typeof paidCycleCharges.$inferSelect;
+export type MerchantLedgerEntry = typeof merchantLedgerEntries.$inferSelect;
+

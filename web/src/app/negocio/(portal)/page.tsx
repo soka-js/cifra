@@ -15,6 +15,7 @@ import { requireMerchantAccess } from '@/lib/auth/session';
 import { bogotaDate } from '@/lib/data';
 import { cop, shortDate } from '@/lib/format';
 import { loadMerchantDashboard } from '@/lib/merchant-data';
+import { loadMerchantBreakEvenData } from '@/lib/v3-data';
 
 export const metadata = { title: 'Resumen de mi negocio · CIFRA' };
 
@@ -25,7 +26,10 @@ export default async function MerchantHomePage({
 }) {
   const sp = await searchParams;
   const access = await requireMerchantAccess();
-  const data = await loadMerchantDashboard(access.merchant);
+  const [data, cuadre] = await Promise.all([
+    loadMerchantDashboard(access.merchant),
+    loadMerchantBreakEvenData(access.merchant),
+  ]);
   const { report } = data;
   const activeOffers = data.offers.filter((o) => o.status === 'activa');
   const firstName = access.merchant.ownerName.split(' ')[0] || 'Hola';
@@ -50,15 +54,51 @@ export default async function MerchantHomePage({
             Hola, {firstName} · {access.merchant.name}
           </h1>
           <p className="mt-1 text-[15px] text-ink-muted">
-            Cuentas claras de tu mes en pesos reales, sin enredos técnicos.
+            Cuentas claras de tu día y de tu mes en pesos reales, sin enredos técnicos.
           </p>
         </div>
 
-        <Link href="/negocio/informe" className="btn-ghost text-[14px]">
-          <FileText size={16} aria-hidden="true" />
-          Ver informe de 1 página
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/negocio/vitrina" className="btn-ghost text-[14px]">
+            Mi vitrina y QR
+          </Link>
+          <Link href="/negocio/informe" className="btn-ghost text-[14px]">
+            <FileText size={16} aria-hidden="true" />
+            Informe de 1 página
+          </Link>
+        </div>
       </div>
+
+      {/* Termómetro vivo del día: valor desde el Día 1 aunque aún lleguen pocos códigos */}
+      <section className="surface-card border-terra/25 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className={cuadre.summary.reachedBreakEven ? 'badge-primary' : 'badge-terra'}>
+              Punto de equilibrio de hoy
+            </span>
+            <p className="tnum mt-2 font-display text-[26px] font-extrabold leading-none text-ink">
+              {cop(cuadre.summary.todaySalesMinor)}{' '}
+              <span className="text-[14px] font-normal text-ink-muted">
+                de {cop(cuadre.summary.dailyBreakEvenMinor)} ({cuadre.summary.progressPct} %)
+              </span>
+            </p>
+            <p className="mt-1 text-[13px] text-ink-muted">
+              {cuadre.summary.reachedBreakEven
+                ? 'Ya cubriste la meta operativa de hoy.'
+                : `Te faltan ${cop(cuadre.summary.gapToBreakEvenMinor)} hoy · puedes anotar mostrador o prender una oferta relámpago de cero merma.`}
+            </p>
+          </div>
+          <Link href="/negocio/cuadre" className="btn-ink shrink-0 text-[13.5px]">
+            Abrir cuadre e insumos →
+          </Link>
+        </div>
+        <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-paper-deep">
+          <div
+            className={`h-full rounded-full ${cuadre.summary.reachedBreakEven ? 'bg-primary' : 'bg-terra'}`}
+            style={{ width: `${Math.min(100, Math.max(4, cuadre.summary.progressPct))}%` }}
+          />
+        </div>
+      </section>
 
       {/* Acceso gigante a Caja para mostrador */}
       <div className="grid gap-3.5 sm:grid-cols-2">
@@ -93,10 +133,10 @@ export default async function MerchantHomePage({
                 : 'Aún sin oferta activa'}
             </p>
             <p className="mt-1 font-display text-[21px] font-bold leading-snug text-ink">
-              {activeOffers.length > 0 ? 'Ajustar o crear oferta' : 'Publicar mi primera oferta'}
+              {activeOffers.length > 0 ? 'Ajustar o prender relámpago' : 'Publicar mi primera oferta'}
             </p>
             <p className="mt-1 text-[13.5px] text-ink-muted">
-              Tú eliges el descuento, el tope mensual y si aplica solo a clientes nuevos.
+              Campañas para clientes nuevos u ofertas relámpago de horas tranquilas.
             </p>
           </div>
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-terra-pale text-terra-dark">

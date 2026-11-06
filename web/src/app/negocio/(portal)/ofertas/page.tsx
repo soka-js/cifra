@@ -77,6 +77,12 @@ export default async function MerchantOffersPage({
                             ? `${o.discountPercent} %`
                             : cop(o.discountFixedMinor ?? 0)}
                         </span>
+                        {o.isFlash && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-900">
+                            ⚡ Relámpago
+                            {o.stockRemaining !== null ? ` · Quedan ${o.stockRemaining}/${o.stockLimit ?? o.stockRemaining}` : ''}
+                          </span>
+                        )}
                         {o.newCustomersOnly && (
                           <span className="badge-neutral">
                             <Sparkles size={11} aria-hidden="true" />
@@ -90,6 +96,7 @@ export default async function MerchantOffersPage({
                       )}
                       <p className="mt-2 text-[12.5px] text-ink-muted">
                         Vigente hasta {shortDate(o.validUntil)}
+                        {o.activeHoursText ? ` · Franja ${o.activeHoursText}` : ''}
                         {o.minPurchaseMinor > 0 ? ` · Compra mínima ${cop(o.minPurchaseMinor)}` : ''}
                         {o.monthlyCapRedemptions ? ` · Cupo ${used}/${o.monthlyCapRedemptions} ventas` : ` · ${used} ventas registradas`}
                       </p>
