@@ -4,10 +4,11 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { db } from '../db';
-import { sessions, users, type User } from '../db/schema';
+import { merchantMembers, merchants, sessions, users, type Merchant, type User } from '../db/schema';
 import { randomToken, sha256 } from '../crypto';
 
 export const SESSION_COOKIE = 'cf_session';
+export const ACTIVE_MERCHANT_COOKIE = 'cf_merchant';
 const SESSION_DAYS = 30;
 
 export async function createSession(userId: string): Promise<void> {
@@ -38,7 +39,6 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
     .limit(1);
   const row = rows[0];
   if (!row) return null;
-  // Sesión deslizante: si le quedan menos de 15 días, se renueva en la base (la cookie se renueva al volver a entrar).
   if (row.expiresAt.getTime() - Date.now() < 15 * 86_400_000) {
     await db.update(sessions).set({ expiresAt: new Date(Date.now() + SESSION_DAYS * 86_400_000) }).where(eq(sessions.id, id));
   }
@@ -56,13 +56,81 @@ export async function destroySession(): Promise<void> {
   const token = jar.get(SESSION_COOKIE)?.value;
   if (token) await db.delete(sessions).where(eq(sessions.id, sha256(token)));
   jar.delete(SESSION_COOKIE);
+  jar.delete(ACTIVE_MERCHANT_COOKIE);
 }
 
 export function isAdmin(user: User | null): boolean {
-  if (!user?.email) return false;
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  if (!user.email) return false;
   const admins = (process.env.ADMIN_EMAILS ?? '')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
   return admins.includes(user.email.toLowerCase());
+}
+
+export interface MerchantAccess {
+  user: User;
+  merchant: Merchant;
+  role: 'owner' | 'cashier';
+  allMerchants: Array<{ id: string; name: string; neighborhood: string; role: 'owner' | 'cashier' }>;
+}
+
+/** Obtiene el negocio activo para el usuario autenticado (o cualquiera si es admin y seleccionó uno). */
+export const getMerchantAccess = cache(async (): Promise<MerchantAccess | null> => {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const memberships = await db
+    .select({ merchant: merchants, role: merchantMembers.role })
+    .from(merchantMembers)
+    .innerJoin(merchants, eq(merchants.id, merchantMembers.merchantId))
+    .where(eq(merchantMembers.userId, user.id));
+
+  const jar = await cookies();
+  const preferredId = jar.get(ACTIVE_MERCHANT_COOKIE)?.value;
+
+  if (memberships.length > 0) {
+    const chosen = memberships.find((m) => m.merchant.id === preferredId) ?? memberships[0]!;
+    return {
+      user,
+      merchant: chosen.merchant,
+      role: chosen.role,
+      allMerchants: memberships.map((m) => ({
+        id: m.merchant.id,
+        name: m.merchant.name,
+        neighborhood: m.merchant.neighborhood,
+        role: m.role,
+      })),
+    };
+  }
+
+  // Un administrador también puede inspeccionar o asistir cualquier negocio desde /negocio.
+  if (isAdmin(user)) {
+    const all = await db.select().from(merchants);
+    if (all.length === 0) return null;
+    const chosen = all.find((m) => m.id === preferredId) ?? all[0]!;
+    return {
+      user,
+      merchant: chosen,
+      role: 'owner',
+      allMerchants: all.map((m) => ({
+        id: m.id,
+        name: m.name,
+        neighborhood: m.neighborhood,
+        role: 'owner' as const,
+      })),
+    };
+  }
+
+  return null;
+});
+
+export async function requireMerchantAccess(): Promise<MerchantAccess> {
+  const user = await getCurrentUser();
+  if (!user) redirect('/entrar?next=/negocio');
+  const access = await getMerchantAccess();
+  if (!access) redirect('/negocio/registro');
+  return access;
 }

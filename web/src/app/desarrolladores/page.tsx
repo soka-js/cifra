@@ -1,6 +1,7 @@
 import { LegalPage } from '@/components/legal/page';
+import { B2B2CSimulator } from './api-playground';
 
-export const metadata = { title: 'API para entidades' };
+export const metadata = { title: 'API y Canal B2B2C para Entidades · CIFRA' };
 
 function Code({ children }: { children: string }) {
   return (
@@ -10,106 +11,94 @@ function Code({ children }: { children: string }) {
   );
 }
 
-const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tu-dominio';
+const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cifra.co';
 
 export default function DevelopersPage() {
   return (
-    <LegalPage title="API para entidades" updated="1 de noviembre de 2026">
+    <LegalPage title="API y Canal B2B2C para Entidades" updated="6 de noviembre de 2026">
       <p>
-        Con esta API una cooperativa, banco o billetera ofrece CIFRA dentro de su app usando los datos que ya tiene de sus asociados.
-        No requiere finanzas abiertas: la entidad es la dueña de la relación y de los datos, y el asociado autoriza en la app de la
-        entidad.
+        Con esta API una cooperativa, fondo de empleados, caja de compensación o billetera integra CIFRA dentro de su propia aplicación usando los saldos y movimientos que ya custodia. No requiere esperar regulación de finanzas abiertas: la entidad mantiene la relación con su asociado, le entrega bienestar financiero inmediato y recibe el <strong>30 % de las comisiones</strong> generadas cuando sus asociados redimen ofertas en comercios de barrio.
       </p>
 
-      <h2>Autenticación</h2>
+      <B2B2CSimulator />
+
+      <h2>Autenticación y seguridad</h2>
       <p>
-        Cada entidad recibe una llave secreta que empieza por <code>cfk_</code>. Va en el encabezado <code>Authorization</code> y solo
-        se usa desde tus servidores, nunca desde la app del celular.
+        Cada entidad recibe una llave secreta con prefijo <code>cfk_</code> (almacenada únicamente como hash SHA-256 en CIFRA). Viaja en el encabezado <code>Authorization</code> desde tus servidores backend, nunca desde el navegador o la app móvil.
       </p>
       <Code>{`Authorization: Bearer cfk_...`}</Code>
       <p>
-        Los montos van en centavos de peso, como enteros (<code>amount_minor</code>): $45.000 es <code>4500000</code>. Negativo es
-        plata que sale, positivo es plata que entra. Las fechas de movimiento son <code>AAAA-MM-DD</code> y los instantes van en ISO
-        8601 con zona horaria. Límite: 600 peticiones por minuto por entidad.
+        Todos los montos viajan en centavos enteros de peso colombiano (<code>amount_minor</code>): $45.000 es <code>4500000</code>. Negativo indica salida de dinero; positivo indica entrada. Límite: 600 peticiones por minuto por entidad.
       </p>
 
       <h2>1. Crear o actualizar un asociado</h2>
       <p>
-        Llámalo cuando el asociado active CIFRA en tu app. <code>consent_at</code> es el momento en que aceptó el tratamiento de sus
-        datos para CIFRA; guárdalo también de tu lado como prueba de la autorización. Es idempotente.
+        Llámalo cuando el asociado active CIFRA en tu app. <code>consent_at</code> registra el instante exacto de autorización Ley 1581/2012. Es idempotente.
       </p>
       <Code>{`PUT ${site}/api/v1/members/{member_id}
 {
   "name": "Andrés",
   "income": { "frequency": "quincenal", "days": [15, 30] },
-  "consent_at": "2026-11-01T10:00:00-05:00"
+  "consent_at": "2026-11-06T10:00:00-05:00"
 }`}</Code>
-      <p><code>frequency</code>: mensual, quincenal, semanal (días 1 a 7, lunes a domingo) o irregular. <code>income</code> es opcional: si no lo envías, CIFRA lo detecta en los movimientos o le pregunta al asociado.</p>
 
-      <h2>2. Crear o actualizar una cuenta y su saldo</h2>
+      <h2>2. Sincronizar cuenta y saldo disponible</h2>
       <Code>{`PUT ${site}/api/v1/members/{member_id}/accounts/{account_id}
 {
   "kind": "ahorros",
   "name": "Ahorros a la vista",
   "mask": "7788",
-  "balance": { "amount_minor": 185000000, "at": "2026-11-01T08:00:00-05:00" }
+  "balance": { "amount_minor": 185000000, "at": "2026-11-06T08:00:00-05:00" }
 }`}</Code>
-      <p><code>kind</code>: ahorros, corriente, billetera, tarjeta_credito u otra. Las tarjetas de crédito no suman a la cifra.</p>
+      <p>
+        <code>kind</code>: <code>ahorros</code>, <code>corriente</code>, <code>billetera</code>, <code>tarjeta_credito</code> u <code>otra</code>. Los cupos de tarjeta de crédito nunca se suman como efectivo disponible.
+      </p>
 
-      <h2>3. Enviar movimientos</h2>
-      <p>Hasta 1.000 por petición. Es idempotente por <code>id</code>: reenviar un movimiento no lo duplica. Lo ideal es enviar 90 días al activar y después los nuevos cada día.</p>
+      <h2>3. Enviar movimientos (idempotente)</h2>
+      <p>
+        Hasta 1.000 movimientos por lote. Reenviar un mismo <code>id</code> externo nunca duplica registros. Recomendamos enviar 90 días al activar para detectar cobros recurrentes y luego sincronizar novedades diarias.
+      </p>
       <Code>{`POST ${site}/api/v1/members/{member_id}/accounts/{account_id}/transactions
 {
   "transactions": [
     { "id": "mov-20261030-001", "posted_on": "2026-10-30", "description": "PAGO NOMINA EMPRESA SAS", "amount_minor": 250000000 },
-    { "id": "mov-20261031-002", "posted_on": "2026-10-31", "description": "COMPRA EN D1", "amount_minor": -3450000 }
+    { "id": "mov-20261031-002", "posted_on": "2026-10-31", "description": "COMPRA EN D1 CHAPINero", "amount_minor": -3450000 }
   ]
 }
 
 200 { "received": 2, "inserted": 2, "duplicates": 0 }`}</Code>
 
-      <h2>4. Leer la cifra</h2>
-      <p>Para mostrar la cifra en tu propia pantalla, sin abrir CIFRA.</p>
+      <h2>4. Consultar la cifra calculada (headless)</h2>
+      <p>Ideal para mostrar el disponible seguro directamente en la pantalla principal de la app de la entidad.</p>
       <Code>{`GET ${site}/api/v1/members/{member_id}/cifra
 
 200 {
   "ready": true,
   "next_income_on": "2026-11-15",
-  "days_left": 14,
+  "days_left": 9,
   "balance_minor": 185000000,
-  "pending_minor": 113431100,
-  "projected_variable_minor": 44604000,
-  "available_minor": 26964900,
-  "per_day_minor": 1926064,
+  "pending_minor": 92000000,
+  "projected_variable_minor": 38000000,
+  "available_minor": 55000000,
+  "per_day_minor": 6111111,
   "status": "holgado",
-  "pending": [{ "name": "Netflix", "date": "2026-11-05", "amount_minor": 2690000, "estimated": false }],
+  "pending": [{ "name": "Spotify", "date": "2026-11-09", "amount_minor": 1690000, "estimated": false }],
   "warnings": []
 }`}</Code>
 
-      <h2>5. Abrir CIFRA dentro de tu app</h2>
+      <h2>5. Abrir experiencia embebida con token efímero (2 minutos)</h2>
       <p>
-        Cuando el asociado toque &quot;Ver mi cifra&quot;, tu servidor pide un enlace y tu app lo abre en un webview. El enlace sirve
-        una sola vez y vence en 2 minutos.
+        Cuando el asociado toca «Ver detalles, ¿Puedo? u Ofertas de barrio», tu backend solicita una sesión firmada de un solo uso que abre CIFRA en un WebView seguro. Toda oferta redimida por ese asociado queda atribuida automáticamente a tu entidad con reparto del 30 %.
       </p>
       <Code>{`POST ${site}/api/v1/members/{member_id}/sessions
 
-201 { "url": "${site}/e/...", "expires_at": "2026-11-01T15:02:00Z" }`}</Code>
+201 { "url": "${site}/e/...", "expires_at": "2026-11-06T15:02:00Z" }`}</Code>
 
-      <h2>6. Borrar un asociado</h2>
-      <p>Si el asociado revoca la autorización en tu app, borra sus datos en CIFRA. Se eliminan de inmediato.</p>
+      <h2>6. Revocación inmediata (Ley 1581 de 2012)</h2>
+      <p>Si el asociado revoca su autorización en tu aplicación, este llamado elimina en cascada sus cuentas, movimientos y sesiones en CIFRA.</p>
       <Code>{`DELETE ${site}/api/v1/members/{member_id}
 
-204`}</Code>
-
-      <h2>Errores</h2>
-      <Code>{`{ "error": { "code": "no_existe", "message": "No hay un asociado con ese id." } }`}</Code>
-      <p>
-        Códigos: <code>no_autorizado</code> (401), <code>cuerpo_invalido</code> e <code>id_invalido</code> (400),{' '}
-        <code>no_existe</code> (404), <code>demasiadas_peticiones</code> (429).
-      </p>
-
-      <h2>Llaves de prueba</h2>
-      <p>Para pedir una llave, usa el formulario de entidades en la página principal.</p>
+204 No Content`}</Code>
     </LegalPage>
   );
 }

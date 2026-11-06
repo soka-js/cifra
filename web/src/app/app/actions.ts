@@ -1,17 +1,32 @@
 'use server';
 
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { accounts, commitments, dataSources, recurringMarks, transactions, users } from '@/lib/db/schema';
+import {
+  accounts,
+  commitments,
+  cycleSnapshots,
+  dataSources,
+  merchantCatalog,
+  notifications,
+  recurringMarks,
+  savingsEvents,
+  transactions,
+  userCategoryRules,
+  users,
+} from '@/lib/db/schema';
 import { requireUser, destroySession } from '@/lib/auth/session';
-import { logAccess } from '@/lib/data';
+import { loadCifra, loadMovimientosInsights, loadSavingsSummary, logAccess } from '@/lib/data';
+import { addDays, todayInBogota } from '@/lib/engine/dates';
+import { EDITABLE_CATEGORIES, type Category } from '@/lib/engine/merchant';
 import { parseBalanceInput, parsePesosInput, toDailyMinor } from '@/lib/format';
 import { setBalance } from '@/lib/ingest';
 import { createManualAccount, listManualAccounts } from '@/lib/manual';
 import { recordEvent } from '@/lib/analytics/server';
+import { getZoneBySlug } from '@/lib/zones';
 
 export type FormState = { status: 'idle' } | { status: 'ok'; message?: string } | { status: 'error'; message: string };
 
@@ -65,6 +80,25 @@ export async function saveIncome(_prev: FormState, form: FormData): Promise<Form
   await db.update(users).set({ incomeFrequency: parsed.data.frequency, incomeDays: days }).where(eq(users.id, user.id));
   revalidatePath('/app', 'layout');
   return { status: 'ok', message: 'Guardado.' };
+}
+
+export async function saveZonePreference(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const raw = String(form.get('zoneSlug') ?? '').trim();
+  if (!raw || raw === 'ninguna') {
+    await db.update(users).set({ zoneSlug: null, lat: null, lng: null }).where(eq(users.id, user.id));
+    await logAccess(user.id, 'tú', 'desactivaste tu zona para ofertas cercanas');
+    revalidatePath('/app', 'layout');
+    return { status: 'ok', message: 'Desactivamos la ubicación aproximada.' };
+  }
+  const zone = getZoneBySlug(raw);
+  await db
+    .update(users)
+    .set({ zoneSlug: zone.slug, lat: zone.lat, lng: zone.lng })
+    .where(eq(users.id, user.id));
+  await logAccess(user.id, 'tú', 'actualizaste tu zona de barrio', { zona: zone.name });
+  revalidatePath('/app', 'layout');
+  return { status: 'ok', message: `Zona guardada: ${zone.name}.` };
 }
 
 export async function saveBuffer(_prev: FormState, form: FormData): Promise<FormState> {
@@ -123,8 +157,208 @@ export async function markRecurring(form: FormData): Promise<void> {
     await db
       .insert(recurringMarks)
       .values({ userId: user.id, merchantKey: key, mark: mark.data })
-      .onConflictDoUpdate({ target: [recurringMarks.userId, recurringMarks.merchantKey], set: { mark: mark.data, updatedAt: new Date() } });
+      .onConflictDoUpdate({
+        target: [recurringMarks.userId, recurringMarks.merchantKey],
+        set: { mark: mark.data, updatedAt: new Date() },
+      });
   }
+  revalidatePath('/app', 'layout');
+}
+
+/**
+ * Registra que la persona canceló de verdad un cobro recurrente que no usaba (H.1.3 e I.5 #5)
+ * y suma ese ahorro mensual verificable a su contador de "pesos ahorrados con CIFRA".
+ */
+export async function confirmRecurringCancelled(form: FormData): Promise<void> {
+  const user = await requireUser();
+  const key = String(form.get('key') ?? '').trim().slice(0, 120);
+  const name = String(form.get('name') ?? '').trim().slice(0, 80) || key;
+  const monthlyMinor = Math.max(0, Math.round(Number(form.get('monthlyMinor') ?? 0)));
+  if (!key || monthlyMinor <= 0) return;
+
+  const today = todayInBogota();
+  const now = new Date();
+
+  await db
+    .insert(recurringMarks)
+    .values({
+      userId: user.id,
+      merchantKey: key,
+      mark: 'no_lo_uso',
+      cancelledAt: now,
+      savedMonthlyMinor: monthlyMinor,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [recurringMarks.userId, recurringMarks.merchantKey],
+      set: {
+        mark: 'no_lo_uso',
+        cancelledAt: now,
+        savedMonthlyMinor: monthlyMinor,
+        updatedAt: now,
+      },
+    });
+
+  await db
+    .insert(savingsEvents)
+    .values({
+      userId: user.id,
+      kind: 'cobro_cancelado',
+      amountMinor: monthlyMinor,
+      referenceKey: `${key}:${today.slice(0, 7)}`,
+      label: `Cancelaste ${name}`,
+      occurredOn: today,
+    })
+    .onConflictDoUpdate({
+      target: [savingsEvents.userId, savingsEvents.kind, savingsEvents.referenceKey],
+      set: { amountMinor: monthlyMinor, label: `Cancelaste ${name}`, occurredOn: today },
+    });
+
+  await logAccess(user.id, 'tú', 'registraste la cancelación de un cobro fijo', { comercio: name });
+  await recordEvent('cancel_recurring', { merchant: key, savedMinor: monthlyMinor }, user.id);
+  revalidatePath('/app', 'layout');
+}
+
+/**
+ * Corrección de categoría en un toque (H.1.1):
+ * 1) Crea o actualiza la regla personal hacia adelante.
+ * 2) Reclasifica hacia atrás todos los movimientos del mismo comercio.
+ * 3) Alimenta el diccionario global de comercios colombianos (Ventaja injusta, H.5).
+ */
+export async function reclassifyMerchant(form: FormData): Promise<void> {
+  const user = await requireUser();
+  const merchantKey = String(form.get('merchantKey') ?? '').trim().slice(0, 120);
+  const merchantName = String(form.get('merchantName') ?? '').trim().slice(0, 80);
+  const categoryRaw = String(form.get('category') ?? '').trim() as Category;
+
+  if (!merchantKey || !EDITABLE_CATEGORIES.includes(categoryRaw)) return;
+
+  const now = new Date();
+  await db
+    .insert(userCategoryRules)
+    .values({
+      userId: user.id,
+      merchantKey,
+      customName: merchantName || null,
+      category: categoryRaw,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [userCategoryRules.userId, userCategoryRules.merchantKey],
+      set: {
+        customName: merchantName || null,
+        category: categoryRaw,
+        updatedAt: now,
+      },
+    });
+
+  await db
+    .update(transactions)
+    .set({
+      category: categoryRaw,
+      merchantName: merchantName || undefined,
+      categorySource: 'user_rule',
+    })
+    .where(and(eq(transactions.userId, user.id), eq(transactions.merchantKey, merchantKey)));
+
+  if (merchantKey !== 'sin_nombre' && !user.isDemo) {
+    await db
+      .insert(merchantCatalog)
+      .values({
+        merchantKey,
+        displayName: merchantName || merchantKey,
+        category: categoryRaw,
+        votesCount: 1,
+        verified: false,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: merchantCatalog.merchantKey,
+        set: {
+          category: categoryRaw,
+          votesCount: sql`${merchantCatalog.votesCount} + 1`,
+          verified: sql`${merchantCatalog.votesCount} + 1 >= 3`,
+          updatedAt: now,
+        },
+      });
+  }
+
+  await recordEvent('reclassify_category', { merchant: merchantKey, category: categoryRaw }, user.id);
+  revalidatePath('/app', 'layout');
+}
+
+export async function saveCycleClosure(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const committedAction = String(form.get('committedAction') ?? '').trim().slice(0, 200);
+  if (committedAction.length < 4) {
+    return { status: 'error', message: 'Elige o escribe un compromiso concreto para el próximo ciclo.' };
+  }
+
+  const today = todayInBogota();
+  const cycleStart = addDays(today, -29);
+  const [cifra, insights, savings] = await Promise.all([
+    loadCifra(user),
+    loadMovimientosInsights(user),
+    loadSavingsSummary(user.id),
+  ]);
+
+  const fixedMonthly = cifra.recurring
+    .filter((r) => r.active)
+    .reduce((s, r) => s + r.monthlyMinor, 0);
+
+  const topCategories = insights.breakdown.rows.slice(0, 4).map((r) => ({
+    category: r.label,
+    amountMinor: r.currentMinor,
+  }));
+
+  await db
+    .insert(cycleSnapshots)
+    .values({
+      userId: user.id,
+      cycleStart,
+      cycleEnd: today,
+      incomeMinor: Math.max(0, cifra.balanceMinor + insights.breakdown.currentTotalMinor),
+      fixedMinor: fixedMonthly,
+      variableMinor: insights.breakdown.currentTotalMinor,
+      savedMinor: savings.monthMinor,
+      closingAvailableMinor: cifra.availableMinor,
+      topCategories,
+      committedAction,
+    })
+    .onConflictDoUpdate({
+      target: [cycleSnapshots.userId, cycleSnapshots.cycleStart, cycleSnapshots.cycleEnd],
+      set: {
+        fixedMinor: fixedMonthly,
+        variableMinor: insights.breakdown.currentTotalMinor,
+        savedMinor: savings.monthMinor,
+        closingAvailableMinor: cifra.availableMinor,
+        topCategories,
+        committedAction,
+      },
+    });
+
+  await recordEvent('close_cycle', { savedMinor: savings.monthMinor }, user.id);
+  revalidatePath('/app', 'layout');
+  return { status: 'ok', message: 'Guardamos el cierre de tu ciclo y tu compromiso para el próximo pago.' };
+}
+
+export async function markNotificationRead(form: FormData): Promise<void> {
+  const user = await requireUser();
+  const id = String(form.get('id') ?? '');
+  if (!id) return;
+  await db
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(and(eq(notifications.id, id), eq(notifications.userId, user.id)));
+  revalidatePath('/app', 'layout');
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const user = await requireUser();
+  await db
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(and(eq(notifications.userId, user.id), isNull(notifications.readAt)));
   revalidatePath('/app', 'layout');
 }
 
@@ -240,9 +474,18 @@ export async function saveQuickStart(_prev: QuickState, form: FormData): Promise
   const dailyMinor = readDailySpend(form);
   if (dailyMinor === null) return quickError(3, 'Escribe cuánto gastas en el día a día, por ejemplo 30.000 al día.');
 
+  const zoneRaw = String(form.get('zoneSlug') ?? '').trim();
+  const zone = zoneRaw && zoneRaw !== 'otra' ? getZoneBySlug(zoneRaw) : null;
+
   await db
     .update(users)
-    .set({ incomeFrequency: income.data.frequency, incomeDays: days, dailySpendMinor: dailyMinor, onboardedAt: user.onboardedAt ?? new Date() })
+    .set({
+      incomeFrequency: income.data.frequency,
+      incomeDays: days,
+      dailySpendMinor: dailyMinor,
+      ...(zone ? { zoneSlug: zone.slug, lat: zone.lat, lng: zone.lng } : {}),
+      onboardedAt: user.onboardedAt ?? new Date(),
+    })
     .where(eq(users.id, user.id));
 
   // Un solo saldo escrito por el modo rápido: si ya existe (volvió a esta pantalla), se actualiza.
@@ -326,7 +569,10 @@ export async function addManualAccount(_prev: FormState, form: FormData): Promis
   const balance = parseBalanceInput(String(form.get('balance') ?? ''));
   if (entityName.length < 2) return { status: 'error', message: 'Escribe dónde está esa plata, por ejemplo Nequi o Efectivo.' };
   if (balance === null) return { status: 'error', message: 'Escribe el saldo en pesos, por ejemplo 250.000.' };
-  const count = await db.select({ id: dataSources.id }).from(dataSources).where(and(eq(dataSources.userId, user.id), eq(dataSources.kind, 'manual')));
+  const count = await db
+    .select({ id: dataSources.id })
+    .from(dataSources)
+    .where(and(eq(dataSources.userId, user.id), eq(dataSources.kind, 'manual')));
   if (count.length >= 10) return { status: 'error', message: 'Puedes tener hasta 10 saldos escritos a mano.' };
   await createManualAccount(user.id, { entityName, name: 'Saldo escrito a mano', balanceMinor: balance });
   await logAccess(user.id, 'tú', 'escribiste un saldo a mano', { entidad: entityName });

@@ -41,9 +41,11 @@ export async function submitLead(_prev: LeadState, form: FormData): Promise<Lead
     return { status: 'error', fields };
   }
   const jar = await cookies();
+  const kindRaw = String(form.get('kind') ?? 'entidad');
+  const kind = kindRaw === 'negocio' ? 'negocio' : 'entidad';
   const { consent: _c, ...data } = parsed.data;
   await db.insert(leads).values({
-    kind: 'entidad',
+    kind,
     ...data,
     role: data.role || null,
     phone: data.phone || null,

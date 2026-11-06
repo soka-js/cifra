@@ -6,15 +6,21 @@ const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'ut
 /**
  * - Asigna un id anónimo de visitante y la variante A/B del titular de la landing (cookies propias).
  * - Guarda los UTM de la primera visita para atribuir registros y contactos a su fuente.
- * - Manda a /entrar a quien abre /app sin sesión.
+ * - Manda a /entrar a quien abre /app o /negocio (salvo /negocio/activar) sin sesión.
  */
 export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  if (pathname.startsWith('/app') && !request.cookies.get('cf_session')) {
+  const isProtectedApp = pathname.startsWith('/app');
+  const isProtectedMerchant =
+    pathname.startsWith('/negocio') &&
+    !pathname.startsWith('/negocio/activar') &&
+    !pathname.startsWith('/negocio/unirse');
+
+  if ((isProtectedApp || isProtectedMerchant) && !request.cookies.get('cf_session')) {
     const url = request.nextUrl.clone();
     url.pathname = '/entrar';
-    url.search = '';
+    url.search = isProtectedMerchant ? `?next=${encodeURIComponent(pathname)}` : '';
     return NextResponse.redirect(url);
   }
 

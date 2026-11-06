@@ -1,12 +1,14 @@
+import { ArrowRight, CheckCircle2, QrCode, ShieldCheck, Store } from 'lucide-react';
 import { cookies, headers } from 'next/headers';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Logo } from '@/components/logo';
 import { Faq } from '@/components/landing/faq';
 import { LeadForm } from '@/components/landing/lead-form';
+import { MerchantCalculator } from '@/components/landing/merchant-calculator';
 import { Receipt } from '@/components/landing/receipt';
 import { Testimonios } from '@/components/landing/testimonios';
 import { TrackedLink } from '@/components/landing/tracked-link';
+import { Logo } from '@/components/logo';
 import { getCurrentUser } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
@@ -29,16 +31,23 @@ export default async function Landing() {
     <div className="overflow-x-clip">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <Logo />
-        <nav aria-label="Principal" className="flex items-center gap-1 text-[15px] sm:gap-2">
-          <a href="#como-funciona" className="hidden rounded-lg px-3 py-2 text-ink-muted hover:text-ink md:inline">
-            Cómo funciona
+        <nav aria-label="Principal" className="flex items-center gap-1 text-[14.5px] sm:gap-2">
+          <a href="#como-funciona" className="hidden rounded-lg px-3 py-2 text-ink-muted hover:text-ink lg:inline">
+            Personas
           </a>
-          <a href="#tus-datos" className="hidden rounded-lg px-3 py-2 text-ink-muted hover:text-ink md:inline">
-            Tus datos
+          <a href="#negocios" className="hidden rounded-lg px-3 py-2 font-medium text-terra-dark hover:bg-terra-pale sm:inline">
+            Negocios de barrio
           </a>
-          <a href="#cooperativas" className="hidden rounded-lg px-3 py-2 text-ink-muted hover:text-ink sm:inline">
-            Para cooperativas
+          <a href="#cooperativas" className="hidden rounded-lg px-3 py-2 text-ink-muted hover:text-ink md:inline">
+            Cooperativas y billeteras
           </a>
+          <Link
+            href="/demo"
+            className="hidden rounded-lg px-3 py-2 font-semibold text-ink hover:bg-paper-warm md:inline"
+          >
+            Demo en vivo
+          </Link>
+
           {user ? (
             <TrackedLink href="/app" location="header" className="btn-primary ml-1 sm:ml-2">
               Ir a mi cifra
@@ -48,7 +57,6 @@ export default async function Landing() {
               <Link href="/entrar" className="rounded-lg px-3 py-2 font-semibold text-primary-dark hover:bg-primary-light">
                 Entrar
               </Link>
-              {/* CTA principal arriba a la derecha; texto corto donde no cabe el largo, pero siempre visible. */}
               <TrackedLink href="/registro" location="header" className="btn-primary ml-1 px-4 sm:ml-2 lg:px-5">
                 <span className="lg:hidden">Empieza gratis</span>
                 <span className="hidden lg:inline">Calcula tu cifra gratis</span>
@@ -59,80 +67,113 @@ export default async function Landing() {
       </header>
 
       <main>
-        {/* Encabezado: qué ofrece, a quién y qué hacer. */}
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-8 sm:px-6 md:grid-cols-[1.1fr_1fr] md:pb-28 md:pt-14">
+        {/* Hero editorial: propuesta de valor + tiquete interactivo */}
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-8 sm:px-6 md:grid-cols-[1.12fr_0.95fr] md:pb-28 md:pt-14">
           <div>
-            <h1 className="text-balance font-display text-[42px] font-extrabold leading-[1.02] tracking-[-0.035em] sm:text-[56px] lg:text-[64px]">
+            <p className="text-[13.5px] font-bold uppercase tracking-[0.08em] text-primary-dark">
+              Claridad financiera diaria · Barrio conectado en Bogotá
+            </p>
+            <h1 className="mt-3 text-balance font-display text-[42px] font-extrabold leading-[1.02] tracking-[-0.035em] sm:text-[56px] lg:text-[62px]">
               {HEADLINES[variant]}
             </h1>
-            <p className="mt-6 max-w-[34rem] text-pretty text-[18px] leading-relaxed text-ink-muted">
-              CIFRA lee los movimientos de tu cuenta, resta lo que ya está comprometido y lo que gastas normalmente, y te deja
-              una sola cifra: lo que de verdad tienes libre hasta que te vuelvan a pagar.
+            <p className="mt-6 max-w-[35rem] text-pretty text-[18px] leading-relaxed text-ink-muted">
+              CIFRA lee tus movimientos sin pedirte la clave del banco, separa lo que ya está comprometido y te deja un solo número honesto: lo que tienes libre hasta tu próximo ingreso. Y además te conecta con beneficios reales en comercios independientes de tu cuadra.
             </p>
+
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <TrackedLink href="/registro" location="hero" className="btn-primary min-h-14 px-7 text-[16px]">
                 Calcula tu cifra gratis
+                <ArrowRight size={18} aria-hidden="true" />
               </TrackedLink>
-              <a href="#como-funciona" className="btn-ghost min-h-14 px-6 text-[16px]">
-                Ver cómo funciona
+              <Link href="/demo" className="btn-ghost min-h-14 px-6 text-[16px]">
+                Probar Demo en 1 clic
+              </Link>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13.5px] text-ink-faint">
+              <span>100 % gratis para las personas</span>
+              <span>·</span>
+              <span>Sin claves bancarias</span>
+              <span>·</span>
+              <a href="#negocios" className="font-semibold text-terra-dark hover:underline">
+                ¿Tienes tienda o café? Paga 5 % solo al vender →
               </a>
             </div>
-            <p className="mt-4 text-[14px] text-ink-faint">Gratis para ti. No te pedimos la clave de tu banco.</p>
           </div>
           <Receipt />
         </section>
 
-        {/* Lo que está en juego si no hace nada. */}
+        {/* Evidencia empírica del problema */}
         <section className="border-y border-line bg-white">
           <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-24">
             <h2 className="max-w-3xl font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
-              El saldo dice cuánto hay. No cuánto puedes gastar.
+              El saldo del banco dice cuánto hay. No cuánto puedes gastar.
             </h2>
             <p className="mt-5 max-w-prose text-[17px] leading-relaxed text-ink-muted">
-              En el saldo de tu app todavía está el arriendo que sale el primero, la cuota del celular y el mercado de la semana.
-              Gastas mirando ese número y, a mitad de mes, la plata ya no alcanza. Te toca pedir prestado, pagar intereses o
-              llegar al día de pago contando monedas.
+              En el saldo de tu aplicación todavía están mezclados el arriendo, los servicios, las suscripciones automáticas y el mercado del resto de la quincena. Gastar mirando el saldo bruto hace que la plata se acabe días antes del pago.
             </p>
             <dl className="mt-12 grid gap-10 md:grid-cols-3">
               <div>
-                <dt className="tnum font-display text-[56px] font-extrabold leading-none tracking-[-0.04em] text-neg">41 de 48</dt>
+                <dt className="tnum font-display text-[56px] font-extrabold leading-none tracking-[-0.04em] text-neg">
+                  41 de 48
+                </dt>
                 <dd className="mt-3 text-[15.5px] leading-relaxed text-ink-muted">
-                  personas que entrevistamos se quedaron sin plata antes de lo que esperaban.
-                  <span className="mt-1 block text-[13px] text-ink-faint">Entrevistas y formulario del equipo CIFRA, Bogotá, 2026.</span>
+                  personas entrevistadas se quedaron sin liquidez antes de lo que esperaban en su ciclo.
+                  <span className="mt-1 block text-[13px] text-ink-faint">
+                    Investigación de campo equipo CIFRA, Bogotá, 2026.
+                  </span>
                 </dd>
               </div>
               <div>
-                <dt className="tnum font-display text-[56px] font-extrabold leading-none tracking-[-0.04em]">23 %</dt>
+                <dt className="tnum font-display text-[56px] font-extrabold leading-none tracking-[-0.04em]">
+                  23 %
+                </dt>
                 <dd className="mt-3 text-[15.5px] leading-relaxed text-ink-muted">
-                  de los colombianos sabía con exactitud cuánto gastó la semana anterior, aunque el 94 % dice que planifica su
-                  presupuesto.
-                  <span className="mt-1 block text-[13px] text-ink-faint">Encuesta de Capacidades Financieras, Banco Mundial y Gobierno de Colombia.</span>
+                  de los adultos en Colombia sabe con exactitud cuánto gastó la semana anterior, pese a que el 94 % afirma planificar.
+                  <span className="mt-1 block text-[13px] text-ink-faint">
+                    Encuesta de Capacidades Financieras, Banco Mundial.
+                  </span>
                 </dd>
               </div>
               <div>
-                <dt className="tnum font-display text-[56px] font-extrabold leading-none tracking-[-0.04em]">19 de 20</dt>
+                <dt className="tnum font-display text-[56px] font-extrabold leading-none tracking-[-0.04em]">
+                  19 de 20
+                </dt>
                 <dd className="mt-3 text-[15.5px] leading-relaxed text-ink-muted">
-                  personas que dieron una cifra en nuestra prueba creían tener más plata de la que podían gastar.
-                  <span className="mt-1 block text-[13px] text-ink-faint">Prueba del prototipo con 21 personas, octubre de 2026.</span>
+                  participantes en pruebas sobreestimaron cuánto dinero tenían realmente libre antes de ver su resta en CIFRA.
+                  <span className="mt-1 block text-[13px] text-ink-faint">
+                    Validación con prototipo funcional, octubre de 2026.
+                  </span>
                 </dd>
               </div>
             </dl>
           </div>
         </section>
 
-        {/* El plan: tres pasos. */}
+        {/* Cómo funciona para la persona en < 5 minutos */}
         <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-8 px-4 py-20 sm:px-6 md:py-28">
-          <h2 className="font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">Así funciona</h2>
+          <div className="max-w-2xl">
+            <p className="text-[13px] font-bold uppercase tracking-wider text-primary-dark">
+              Para personas · Menos de 5 minutos hasta tu primera cifra
+            </p>
+            <h2 className="mt-2 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
+              Tres pasos sin hojas de cálculo ni anotar cada tinto
+            </h2>
+          </div>
+
           <ol className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
             {[
-              { t: 'Crea tu cuenta', d: 'Con tu correo y una contraseña. Toma un minuto y dices cada cuánto te pagan.' },
               {
-                t: 'Sube el extracto de tu banco',
-                d: 'El CSV, Excel o PDF que descargas de la sucursal virtual o la app. Se lee en tu teléfono o computador: el archivo no se sube y nunca te pedimos la clave del banco.',
+                t: 'Dinos cuándo entra tu plata',
+                d: 'Eliges si tu ingreso es quincenal, mensual o irregular. Antes de pedirte un solo dato ves exactamente cómo protegemos tu privacidad.',
               },
               {
-                t: 'Mira tu cifra y pregunta antes de pagar',
-                d: 'Ves cuánto tienes libre hasta tu próximo pago y le preguntas a CIFRA si un gasto cabe. La respuesta llega en pesos.',
+                t: 'Carga tu extracto o arranca en modo rápido',
+                d: 'Tu CSV, Excel o PDF de Bancolombia, Nequi, Davivienda, Nu o BBVA se procesa directo en tu dispositivo. Clasificamos más de 100 comercios colombianos al instante y corriges cualquiera en 1 toque.',
+              },
+              {
+                t: 'Decide antes de pagar y ahorra en tu cuadra',
+                d: 'Pregunta «¿puedo gastar 150 mil el viernes?», cancela suscripciones que no usas con guías paso a paso y redime descuentos reales en tiendas independientes cercanas.',
               },
             ].map((s, i) => (
               <li key={s.t} className="relative border-t-2 border-ink pt-5">
@@ -142,41 +183,44 @@ export default async function Landing() {
               </li>
             ))}
           </ol>
-          <div className="mt-12">
+
+          <div className="mt-12 flex flex-wrap gap-3">
             <TrackedLink href="/registro" location="plan" className="btn-primary min-h-14 px-7 text-[16px]">
-              Calcula tu cifra gratis
+              Ver mi cifra gratis
             </TrackedLink>
+            <Link href="/demo" className="btn-ghost min-h-14 px-6 text-[16px]">
+              Explorar cuenta de ejemplo (Mariana)
+            </Link>
           </div>
         </section>
 
-        {/* Qué cambia: el producto, mostrado tal cual. */}
+        {/* El producto en vivo */}
         <section className="bg-primary-dark text-white">
           <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 py-20 sm:px-6 md:grid-cols-[1fr_1fr] md:py-28">
             <div>
               <h2 className="font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
-                Llegas al día de pago sabiendo cuánto te queda.
+                Llegas al día de pago con margen y pesos ahorrados de verdad.
               </h2>
               <p className="mt-5 max-w-prose text-[17px] leading-relaxed text-white/80">
-                Sin anotar gastos y sin gráficas. Abres CIFRA, ves tu cifra y decides. Si un gasto no cabe, lo sabes antes de
-                hacerlo, no cuando ya pasó.
+                Cero sermones y cero sustos mostrando deudas totales de golpe. CIFRA trabaja sobre el ciclo actual en el que sí puedes actuar hoy.
               </p>
               <ul className="mt-10 space-y-6">
                 {[
                   {
-                    t: 'La cifra, con la resta a la vista',
-                    d: 'Saldo, menos los cobros fijos que faltan, menos tu gasto normal hasta el próximo pago. Ves cada parte y de dónde sale.',
+                    t: 'La cifra con la resta abierta sobre la mesa',
+                    d: 'Saldo disponible, menos cobros fijos pendientes del ciclo, menos tu ritmo real diario y tu colchón de tranquilidad.',
                   },
                   {
-                    t: '¿Puedo hacer este gasto?',
-                    d: 'Escribes el monto y CIFRA te dice si cabe, cuánto te quedaría y cuánto tendrías por día.',
+                    t: '¿Puedo hacer este gasto? en español natural',
+                    d: 'Pregunta en segundos antes de pasar la tarjeta. Ves cómo cambia tu disponible por día y alternativas concretas si quedas apretado.',
                   },
                   {
-                    t: 'Cobros que se repiten',
-                    d: 'Netflix, el gimnasio, el plan del celular, la app que ya no usas. CIFRA los encuentra en tus movimientos y suma lo que pagas al mes.',
+                    t: 'Cobros vampiro con acumulado histórico y salida clara',
+                    d: 'Ves cuánto te ha costado cada suscripción en los últimos meses y sigues los pasos exactos para cancelarla en Colombia.',
                   },
                   {
-                    t: 'Tus datos, a la vista',
-                    d: 'Qué entidad, qué cuenta, qué datos y desde cuándo. Borras una fuente o toda tu cuenta con un botón.',
+                    t: 'Contador verificable de pesos ahorrados',
+                    d: 'Cada cobro fijo cancelado y cada oferta usada en un comercio vecino suma pesos medibles a tu ahorro mensual.',
                   },
                 ].map((f) => (
                   <li key={f.t} className="border-l-2 border-primary-soft pl-5">
@@ -189,7 +233,7 @@ export default async function Landing() {
             <figure className="relative mx-auto h-[520px] w-full max-w-[460px] sm:h-[600px]">
               <Image
                 src="/producto-cobros.webp"
-                alt="Pantalla de cobros que se repiten en CIFRA"
+                alt="Pantalla de cobros recurrentes en CIFRA"
                 width={390}
                 height={780}
                 className="absolute right-0 top-10 w-[58%] rounded-[28px] border-[6px] border-white/10 shadow-2xl"
@@ -201,36 +245,94 @@ export default async function Landing() {
                 height={780}
                 className="absolute left-0 top-0 w-[62%] rounded-[28px] border-[6px] border-white/15 shadow-2xl"
               />
-              <figcaption className="absolute -bottom-2 left-0 text-[13px] text-white/60">La app real, con un extracto de prueba.</figcaption>
+              <figcaption className="absolute -bottom-2 left-0 text-[13px] text-white/60">
+                La aplicación real sobre extractos colombianos.
+              </figcaption>
             </figure>
+          </div>
+        </section>
+
+        {/* LADO 2 DEL MERCADO: MICRONEGOCIOS DE BARRIO (Sección E.2 y G.10) */}
+        <section id="negocios" className="scroll-mt-8 border-b border-line bg-paper-warm/70">
+          <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 md:grid-cols-[1.05fr_1fr] md:py-28">
+            <div>
+              <span className="badge-terra">
+                <Store size={13} aria-hidden="true" />
+                Para panaderías, cafés, tiendas, fruvers y comercios de barrio
+              </span>
+              <h2 className="mt-3 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] text-ink sm:text-[44px]">
+                Clientes nuevos de tu propia cuadra. Pagas solo después de vender.
+              </h2>
+              <p className="mt-4 text-[17px] leading-relaxed text-ink-muted">
+                Los anuncios en redes sociales cobran por clic aunque nadie entre al local, y los volantes terminan en la esquina. En CIFRA tu oferta le aparece únicamente a vecinos cercanos que ya compran en tu categoría pero aún no conocen tu negocio.
+              </p>
+
+              <ul className="mt-7 space-y-3.5 text-[15.5px] text-ink-soft">
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle2 size={19} className="mt-0.5 shrink-0 text-terra-dark" aria-hidden="true" />
+                  <span>
+                    <strong className="font-semibold text-ink">Protegemos tu clientela actual:</strong> puedes activar ofertas exclusivas para <em>clientes nuevos</em> sin regalar descuento a quienes ya te compran siempre.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <QrCode size={19} className="mt-0.5 shrink-0 text-terra-dark" aria-hidden="true" />
+                  <span>
+                    <strong className="font-semibold text-ink">Caja lista en 10 segundos:</strong> sin datáfonos especiales ni integración técnica. Digitas las 6 letras del cliente en tu celular y ves exactamente cuánto cobrarle.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <ShieldCheck size={19} className="mt-0.5 shrink-0 text-terra-dark" aria-hidden="true" />
+                  <span>
+                    <strong className="font-semibold text-ink">Informe mensual de 1 sola página:</strong> cuántas ventas trajo CIFRA, cuántos fueron vecinos nuevos y cuántos volvieron después a precio completo sin descuento.
+                  </span>
+                </li>
+              </ul>
+
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link href="/negocio/unirse" className="btn-terra min-h-14 px-7 text-[16px]">
+                  Registrar mi negocio gratis
+                  <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+                <Link href="/demo" className="btn-ghost min-h-14 px-6 text-[15.5px]">
+                  Ver el mostrador de Rosa en vivo
+                </Link>
+              </div>
+            </div>
+
+            <MerchantCalculator />
           </div>
         </section>
 
         <Testimonios />
 
-        {/* Confianza. */}
+        {/* Confianza y Ley 1581 */}
         <section id="tus-datos" className="mx-auto max-w-6xl scroll-mt-8 px-4 py-20 sm:px-6 md:py-28">
           <div className="grid gap-12 md:grid-cols-[1fr_1.15fr]">
             <div>
               <h2 className="font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
-                Tu banco no se toca.
+                Tu banco no se toca. Tus extractos nunca se venden.
               </h2>
               <p className="mt-5 max-w-prose text-[17px] leading-relaxed text-ink-muted">
-                CIFRA no mueve tu plata ni entra a tu banco. Solo hace cuentas con los movimientos que tú decides compartir.
+                CIFRA no custodia ni mueve dinero. Ganamos una comisión transparente del 5 % pagada por los comercios cuando ahorras en ellos, nunca vendiendo tu información financiera.
               </p>
             </div>
             <ul className="divide-y divide-line border-y border-line">
               {[
-                ['No te pedimos la clave de tu banco.', 'Nunca. Si alguien te la pide a nombre de CIFRA, no es CIFRA.'],
                 [
-                  'El extracto se lee en tu dispositivo.',
-                  'El archivo no sale de tu teléfono o computador. Guardamos solo fecha, descripción y valor de cada movimiento.',
+                  'Jamás te pedimos la clave de tu banco.',
+                  'Ni usuario, ni clave dinámica, ni token. Si alguien te los pide en nombre de CIFRA, no somos nosotros.',
                 ],
-                ['No vendemos tus datos.', 'No los usamos para publicidad ni se los pasamos a terceros.'],
-                ['Borras todo cuando quieras.', 'Desde Ajustes, tu cuenta y todos tus movimientos se eliminan de inmediato.'],
                 [
-                  'Otras entidades, desde su propia app.',
-                  'Cuando tu banco active el intercambio de datos de finanzas abiertas, la autorización la das dentro de la app de tu banco, no aquí. En CIFRA solo ves qué entidad comparte qué datos.',
+                  'Lectura local en tu teléfono o computador.',
+                  'Tu extracto PDF, Excel o CSV se interpreta en tu navegador antes de guardar únicamente fecha, concepto y monto.',
+                ],
+                [
+                  'Los comercios nunca ven tus cuentas.',
+                  'Cuando redimes una oferta en tu barrio, el negocio solo valida un código temporal de 6 letras.',
+                ],
+                [
+                  'Control total bajo Ley 1581 de 2012.',
+                  'En la sección Tus datos descargas todo tu historial en JSON o CSV y eliminas fuentes o tu cuenta completa en un clic.',
                 ],
               ].map(([t, d]) => (
                 <li key={t} className="py-5">
@@ -242,29 +344,33 @@ export default async function Landing() {
           </div>
         </section>
 
-        {/* Objeciones. */}
+        {/* Preguntas frecuentes */}
         <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6 md:py-28">
-          <h2 className="font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">Preguntas frecuentes</h2>
+          <h2 className="font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
+            Preguntas frecuentes
+          </h2>
           <div className="mt-10">
             <Faq
               items={[
-                { q: '¿Cuánto cuesta?', a: 'Nada. CIFRA es gratis para las personas. Lo pagan las entidades que lo ofrecen dentro de su app.' },
                 {
-                  q: '¿Con qué bancos funciona?',
-                  a: 'Con cualquier banco o billetera que te deje descargar tus movimientos en CSV, Excel o PDF digital desde su sucursal virtual o su app. Antes de guardar ves los movimientos leídos para confirmar que quedaron bien.',
+                  q: '¿Por qué CIFRA es gratis para las personas si no vende mis datos?',
+                  a: 'Porque nuestro modelo se financia del lado comercial: cuando descubres y usas un beneficio real en un comercio independiente de tu barrio, ese comercio nos paga una comisión del 5 % sobre la venta efectiva en caja.',
                 },
                 {
-                  q: '¿Por qué no se conecta directo a mi banco?',
-                  a: 'Porque para conectarse directo hoy habría que pedirte la clave del banco, y eso no lo vamos a hacer. En Colombia el intercambio de datos por finanzas abiertas es obligatorio desde el Decreto 368 de 2026, pero los estándares para compartir movimientos de cuentas de ahorro todavía no están listos. Cuando lo estén, la conexión se autorizará desde la app de tu banco.',
+                  q: '¿Con qué bancos y billeteras de Colombia funciona?',
+                  a: 'Con Bancolombia, Nequi, Davivienda, DaviPlata, Nu Colombia, BBVA, Banco de Bogotá, Lulo Bank, Scotiabank Colpatria y cualquier entidad que permita descargar extractos en CSV, Excel o PDF digital. También puedes empezar en 60 segundos con el modo rápido sin subir archivos.',
                 },
                 {
-                  q: '¿Qué tan exacta es la cifra?',
-                  a: 'Tan exacta como tus datos. Usa tu saldo, los cobros fijos que encuentra en tus movimientos y tu gasto promedio de las últimas ocho semanas. Te muestra cada parte de la resta y te avisa si tu saldo está viejo.',
+                  q: 'Tengo una tienda, panadería o cafetería: ¿tengo que pagar mensualidad o comprar equipos?',
+                  a: 'Cero pesos fijos y cero equipos nuevos. Publicas tu oferta gratis, validas los códigos desde cualquier celular en mostrador y solo pagas el 5 % al cierre del mes sobre las ventas reales cobradas por Bre-B o Nequi.',
                 },
-                { q: '¿CIFRA es un banco?', a: 'No. CIFRA no guarda ni mueve tu plata. Solo hace cuentas con tus movimientos.' },
                 {
-                  q: '¿Qué pasa con mis datos si borro la cuenta?',
-                  a: 'Se eliminan: tu usuario, tus cuentas, tus movimientos y tus ajustes. No guardamos copias para nada más.',
+                  q: '¿Cómo evitan que mis clientes de siempre usen el descuento de clientes nuevos?',
+                  a: 'El motor de elegibilidad de CIFRA filtra automáticamente tu oferta para personas de la zona que no registran compras recientes en tu comercio y mantiene un grupo de control para medir cuántas ventas son genuinamente nuevas.',
+                },
+                {
+                  q: '¿Qué pasa con mis datos si decido cerrar mi cuenta?',
+                  a: 'Desde «Tus datos» puedes exportar una copia completa en CSV o JSON y borrar definitivamente tu usuario, cuentas, extractos y sesiones de forma inmediata.',
                 },
               ]}
             />
@@ -273,36 +379,48 @@ export default async function Landing() {
             <TrackedLink href="/registro" location="faq" className="btn-primary min-h-14 px-7 text-[16px]">
               Calcula tu cifra gratis
             </TrackedLink>
-            <span className="text-[14px] text-ink-faint">Toma unos cinco minutos con tu extracto a la mano.</span>
+            <Link href="/negocio/unirse" className="btn-ghost min-h-14 px-6 text-[15.5px]">
+              Afiliar mi comercio de barrio
+            </Link>
           </div>
         </section>
 
-        {/* Para entidades. */}
+        {/* LADO 3: CANAL B2B2C PARA COOPERATIVAS, CAJAS Y BILLETERAS (Sección J.3) */}
         <section id="cooperativas" className="scroll-mt-8 bg-ink text-white">
           <div className="mx-auto grid max-w-6xl gap-14 px-4 py-20 sm:px-6 md:grid-cols-[1fr_1.1fr] md:py-28">
             <div>
-              <p className="text-[15px] font-semibold text-primary-soft">Para cooperativas y entidades financieras</p>
+              <p className="text-[14px] font-bold uppercase tracking-wider text-primary-soft">
+                Canal B2B2C · Cooperativas, fondos de empleados y billeteras
+              </p>
               <h2 className="mt-3 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
-                Dale a tus asociados la cifra dentro de tu app.
+                Entrega bienestar financiero hoy y recibe el 30 % de cada comisión.
               </h2>
               <ul className="mt-8 space-y-5 text-[16px] leading-relaxed text-white/80">
                 <li>
-                  <strong className="text-white">Empiezas con los datos que ya tienes.</strong> Tus asociados ya confían en ti y
-                  sus movimientos ya están contigo. No hace falta esperar a finanzas abiertas.
+                  <strong className="text-white">Sin esperar regulación técnica de Open Finance.</strong> Integras los saldos y movimientos que ya custodias mediante nuestra API REST y abres CIFRA dentro de tu app con sesiones efímeras de 2 minutos.
                 </li>
                 <li>
-                  <strong className="text-white">Se integra con una API.</strong> Envías cuentas y movimientos, y CIFRA se abre
-                  dentro de tu app con un enlace seguro de un solo uso.
+                  <strong className="text-white">$0 de costo para tu entidad y $0 para el asociado.</strong> Fortaleces la salud financiera de tu base, reduces mora temprana y aumentas la frecuencia de uso de tu aplicación.
                 </li>
                 <li>
-                  <strong className="text-white">Pagas por usuario activo.</strong> Una licencia mensual por asociado que usa
-                  CIFRA. El asociado no paga nada.
+                  <strong className="text-white">Reparto automático del 30 % (revenue share).</strong> Por cada venta atribuida que tus asociados rediman en la red de comercios de barrio de CIFRA, tu entidad recibe el 30 % de la comisión recaudada.
                 </li>
               </ul>
+
+              <div className="mt-8">
+                <Link
+                  href="/desarrolladores"
+                  className="inline-flex items-center gap-2 text-[15px] font-semibold text-primary-soft underline underline-offset-4 hover:text-white"
+                >
+                  Explorar documentación API y simulador de ingresos B2B2C →
+                </Link>
+              </div>
             </div>
             <div>
-              <h3 className="font-display text-[22px] font-bold">Pide una demo</h3>
-              <p className="mt-1.5 text-white/70">Te mostramos CIFRA con datos de prueba y la API.</p>
+              <h3 className="font-display text-[22px] font-bold">Conversa con nuestro equipo de alianzas</h3>
+              <p className="mt-1.5 text-white/70">
+                Te entregamos llaves <code>cfk_</code> de prueba y recorremos el piloto en vivo.
+              </p>
               <div className="mt-6">
                 <LeadForm />
               </div>
@@ -312,33 +430,53 @@ export default async function Landing() {
       </main>
 
       <footer className="border-t border-line bg-white">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 text-[14.5px] sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 text-[14.5px] sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <Logo />
             <p className="mt-3 max-w-sm leading-relaxed text-ink-muted">
-              Cuánto puedes gastar hasta tu próximo pago, en un solo número. CIFRA no es una entidad financiera y no mueve tu
-              dinero.
+              Claridad sobre tu disponible diario y red de beneficios reales en comercios independientes de barrio. CIFRA no es una entidad vigilada ni capta recursos del público.
             </p>
           </div>
-          <nav aria-label="Producto" className="flex flex-col gap-2.5">
-            <span className="font-semibold">Producto</span>
-            <Link href="/registro" className="text-ink-muted hover:text-ink">Crear cuenta</Link>
-            <Link href="/entrar" className="text-ink-muted hover:text-ink">Entrar</Link>
-            <a href="#cooperativas" className="text-ink-muted hover:text-ink">Para cooperativas</a>
-            <Link href="/desarrolladores" className="text-ink-muted hover:text-ink">API para entidades</Link>
+          <nav aria-label="Personas" className="flex flex-col gap-2.5">
+            <span className="font-semibold text-ink">Personas</span>
+            <Link href="/registro" className="text-ink-muted hover:text-ink">
+              Crear cuenta gratis
+            </Link>
+            <Link href="/entrar" className="text-ink-muted hover:text-ink">
+              Iniciar sesión
+            </Link>
+            <Link href="/demo" className="font-semibold text-primary-dark hover:underline">
+              Modo Demo en 1 clic
+            </Link>
+          </nav>
+          <nav aria-label="Comercios y Entidades" className="flex flex-col gap-2.5">
+            <span className="font-semibold text-ink">Comercios y Aliados</span>
+            <Link href="/negocio/unirse" className="text-ink-muted hover:text-ink">
+              Registrar mi negocio
+            </Link>
+            <Link href="/negocio" className="text-ink-muted hover:text-ink">
+              Entrar a Caja / Portal tendero
+            </Link>
+            <Link href="/desarrolladores" className="text-ink-muted hover:text-ink">
+              API B2B2C (30 % reparto)
+            </Link>
           </nav>
           <nav aria-label="Legal y contacto" className="flex flex-col gap-2.5">
-            <span className="font-semibold">Legal y contacto</span>
-            <Link href="/privacidad" className="text-ink-muted hover:text-ink">Tratamiento de datos</Link>
-            <Link href="/terminos" className="text-ink-muted hover:text-ink">Términos de uso</Link>
+            <span className="font-semibold text-ink">Legal y transparencia</span>
+            <Link href="/privacidad" className="text-ink-muted hover:text-ink">
+              Tratamiento de datos (Ley 1581)
+            </Link>
+            <Link href="/terminos" className="text-ink-muted hover:text-ink">
+              Términos de uso
+            </Link>
             {contact && (
               <a href={`mailto:${contact}`} className="text-ink-muted hover:text-ink">
                 {contact}
               </a>
             )}
           </nav>
-          <p className="text-[13px] text-ink-faint md:col-span-3">
-            Proyecto del curso Diseño de Productos e Innovación en TI, Universidad de los Andes, 2026.
+          <p className="text-[13px] text-ink-faint md:col-span-4">
+            CIFRA · Bogotá, Colombia · Diseño de Productos e Innovación en TI, Universidad de los Andes, 2026.
           </p>
         </div>
       </footer>

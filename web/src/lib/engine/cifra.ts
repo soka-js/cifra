@@ -1,6 +1,6 @@
 import { addDays, daysBetween, nextDayOfMonth, shortDate, toDayNumber } from './dates';
 import { nextIncomeDate, resolveIncome, type IncomeEstimate } from './income';
-import { flowOf, identifyMerchant, stripAccents, type Category } from './merchant';
+import { flowOf, identifyMerchant, stripAccents, type Category, type UserCategoryOverride } from './merchant';
 import { detectRecurring, type RecurringSeries } from './recurring';
 import { splitInternalTransfers } from './transfers';
 import type { AccountBalance, Commitment, IncomeSettings, Tx } from './types';
@@ -17,6 +17,7 @@ export interface CifraInput {
   marks: Record<string, RecurringMarkValue>;
   /** Gasto del día a día que la persona escribió (modo rápido), en centavos. */
   declaredDailyMinor?: number | null;
+  categoryOverrides?: Record<string, UserCategoryOverride>;
 }
 
 export interface PendingCharge {
@@ -236,7 +237,7 @@ export function computeCifra(input: CifraInput): CifraResult {
     warnings.push(`${STALE_BALANCE_WARNING} ${shortDate(balanceOn)}. Actualízalo para que la cifra sea precisa.`);
   }
 
-  const recurring = detectRecurring(transactions, today).filter((r) => input.marks[r.merchantKey] !== 'no_es_fijo');
+  const recurring = detectRecurring(transactions, today, input.categoryOverrides).filter((r) => input.marks[r.merchantKey] !== 'no_es_fijo');
   const fixedKeys = new Set(recurring.filter((r) => r.active).map((r) => r.merchantKey));
 
   // Cobros que todavía no han pasado desde la fecha del saldo hasta el próximo ingreso.
@@ -244,7 +245,7 @@ export function computeCifra(input: CifraInput): CifraResult {
   const paidAfterAnchor = new Set(
     transactions
       .filter((t) => t.amountMinor < 0 && t.postedOn > anchor)
-      .map((t) => identifyMerchant(t.description).key),
+      .map((t) => identifyMerchant(t.description, input.categoryOverrides).key),
   );
   for (const r of recurring) {
     if (!r.active || paidAfterAnchor.has(r.merchantKey)) continue;

@@ -6,24 +6,30 @@ import { SignupForm } from './form';
 
 export const metadata = { title: 'Crear cuenta' };
 
-export default async function SignupPage() {
-  if (await getCurrentUser()) redirect('/app');
+export default async function SignupPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const sp = await searchParams;
+  const nextPath = sp.next && sp.next.startsWith('/') && !sp.next.startsWith('//') ? sp.next : undefined;
+  if (await getCurrentUser()) redirect(nextPath ?? '/app');
+
+  const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+
   return (
     <AuthShell
-      title="Crea tu cuenta"
+      title="Crea tu cuenta en CIFRA"
+      subtitle="En menos de 5 minutos sabrás exactamente cuánto puedes gastar hasta tu próximo pago, con tus extractos o escribiendo cuatro números."
       footer={
         <>
           ¿Ya tienes cuenta?{' '}
-          <Link href="/entrar" className="font-semibold text-primary-dark underline-offset-2 hover:underline">
+          <Link
+            href={nextPath ? `/entrar?next=${encodeURIComponent(nextPath)}` : '/entrar'}
+            className="font-semibold text-primary-dark underline-offset-2 hover:underline"
+          >
             Entra aquí
           </Link>
         </>
       }
     >
-      <p className="-mt-4 mb-7 text-[16px] leading-relaxed text-ink-muted">
-        Después te pedimos el extracto de tu banco en CSV, Excel o PDF. Tenlo a la mano.
-      </p>
-      <SignupForm />
+      <SignupForm nextPath={nextPath} googleEnabled={googleEnabled} />
     </AuthShell>
   );
 }

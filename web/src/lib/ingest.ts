@@ -1,8 +1,9 @@
 import 'server-only';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from './db';
-import { accounts, dataSources, transactions } from './db/schema';
+import { accounts, dataSources, merchantCatalog, transactions, userCategoryRules } from './db/schema';
 import { sha256 } from './crypto';
+import { categoryOf, identifyMerchant, type Category, type UserCategoryOverride } from './engine/merchant';
 
 export interface IncomingTx {
   postedOn: string;
@@ -31,20 +32,44 @@ export function dedupeKeys(txs: IncomingTx[]): string[] {
   });
 }
 
+export async function loadCategoryOverrides(userId: string): Promise<Record<string, UserCategoryOverride>> {
+  const [globalRows, userRows] = await Promise.all([
+    db.select().from(merchantCatalog).where(eq(merchantCatalog.verified, true)),
+    db.select().from(userCategoryRules).where(eq(userCategoryRules.userId, userId)),
+  ]);
+  const map: Record<string, UserCategoryOverride> = {};
+  for (const g of globalRows) {
+    map[g.merchantKey] = { category: g.category as Category, customName: g.displayName };
+  }
+  for (const r of userRows) {
+    map[r.merchantKey] = { category: r.category as Category, customName: r.customName };
+  }
+  return map;
+}
+
 export async function ingestTransactions(userId: string, accountId: string, sourceId: string, txs: IncomingTx[]) {
   if (!txs.length) return { inserted: 0, duplicates: 0 };
-  const keys = dedupeKeys(txs);
+  const [keys, overrides] = await Promise.all([Promise.resolve(dedupeKeys(txs)), loadCategoryOverrides(userId)]);
   let inserted = 0;
   for (let i = 0; i < txs.length; i += 500) {
-    const chunk = txs.slice(i, i + 500).map((t, j) => ({
-      userId,
-      accountId,
-      externalId: t.externalId ?? null,
-      postedOn: t.postedOn,
-      description: t.description.slice(0, 300),
-      amountMinor: t.amountMinor,
-      dedupeKey: keys[i + j]!,
-    }));
+    const chunk = txs.slice(i, i + 500).map((t, j) => {
+      const m = identifyMerchant(t.description, overrides);
+      const cat = categoryOf(t.description, t.amountMinor, overrides);
+      const hasUserRule = Boolean(overrides[m.key]);
+      return {
+        userId,
+        accountId,
+        externalId: t.externalId ?? null,
+        postedOn: t.postedOn,
+        description: t.description.slice(0, 300),
+        amountMinor: t.amountMinor,
+        merchantKey: m.key,
+        merchantName: m.name,
+        category: cat,
+        categorySource: hasUserRule ? 'user_rule' : 'auto',
+        dedupeKey: keys[i + j]!,
+      };
+    });
     const res = await db.insert(transactions).values(chunk).onConflictDoNothing().returning({ id: transactions.id });
     inserted += res.length;
   }

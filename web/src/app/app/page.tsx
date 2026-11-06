@@ -1,10 +1,27 @@
-import { AlertTriangle, ChevronRight, PencilLine, Repeat, Upload } from 'lucide-react';
+import {
+  AlertTriangle,
+  CalendarCheck2,
+  ChevronRight,
+  CircleHelp,
+  MapPin,
+  PencilLine,
+  PiggyBank,
+  Repeat,
+  TrendingUp,
+  Upload,
+} from 'lucide-react';
 import Link from 'next/link';
 import { BalancePrompt, BalanceRow } from '@/components/app/balance-editor';
 import { GaOnce } from '@/components/app/ga-once';
 import { TrackView } from '@/components/app/track-view';
 import { requireUser } from '@/lib/auth/session';
-import { loadCifra, loadMarks } from '@/lib/data';
+import {
+  loadCifra,
+  loadMarksDetailed,
+  loadRankedOffersForUser,
+  loadSavingsSummary,
+  loadSpendDeviation,
+} from '@/lib/data';
 import { STALE_BALANCE_WARNING } from '@/lib/engine/cifra';
 import { shortDate } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
@@ -13,10 +30,10 @@ function Row({ label, hint, value }: { label: string; hint: React.ReactNode; val
   return (
     <div className="flex items-baseline justify-between gap-3">
       <span>
-        {label}
+        <span className="font-medium text-ink">{label}</span>
         <span className="block text-[12.5px] text-ink-faint">{hint}</span>
       </span>
-      <span className="shrink-0 font-semibold">{value}</span>
+      <span className="shrink-0 font-semibold text-ink">{value}</span>
     </div>
   );
 }
@@ -25,30 +42,41 @@ const FREQ_LABEL = { mensual: 'mensual', quincenal: 'quincenal', semanal: 'seman
 
 function ageNote(days: number | null, on: string | null): string {
   if (days === null || !on) return 'Todavía no hay saldo. Con el de hoy calculamos tu cifra.';
-  if (days === 1) return 'Tu saldo es de ayer. Escribe el de hoy y la cifra se ajusta.';
-  return `Tu saldo es del ${shortDate(on)}. Escribe el de hoy y la cifra se ajusta.`;
+  if (days === 1) return 'Tu saldo es de ayer. Escribe el de hoy y la cifra se ajusta al instante.';
+  return `Tu saldo es del ${shortDate(on)}. Escribe el de hoy y la cifra se ajusta al instante.`;
 }
 
 export default async function HoyPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
-  const [c, marks, sp] = await Promise.all([loadCifra(user), loadMarks(user.id), searchParams]);
-  const editable = c.accounts.filter((a) => a.editable !== false).map((a) => ({ id: a.accountId, name: a.name, balanceMinor: a.balanceMinor }));
+  const [c, marksDetail, savings, topOffers, sp] = await Promise.all([
+    loadCifra(user),
+    loadMarksDetailed(user.id),
+    loadSavingsSummary(user.id),
+    loadRankedOffersForUser(user, 2),
+    searchParams,
+  ]);
+  const deviation = c.ready ? await loadSpendDeviation(user, c) : null;
+  const editable = c.accounts
+    .filter((a) => a.editable !== false)
+    .map((a) => ({ id: a.accountId, name: a.name, balanceMinor: a.balanceMinor }));
 
-  // Nada todavía: dos caminos, y el rápido primero.
+  // Estado vacío inicial: dos caminos directos (rápido en 1 min o extracto).
   if (c.missing.includes('movimientos') && c.missing.includes('saldo')) {
     return (
-      <section className="pt-6">
-        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">Calculemos tu cifra.</h1>
+      <section className="surface-card p-6 sm:p-8">
+        <span className="badge-primary">Empieza en menos de 3 minutos</span>
+        <h1 className="mt-3 font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">
+          Calculemos tu primera cifra.
+        </h1>
         <p className="mt-3 text-[16px] leading-relaxed text-ink-muted">
-          En un minuto, con cuatro datos que escribes: cuándo te pagan, cuánto tienes, tus cobros fijos y tu gasto del día a día. O con el
-          extracto de tu banco, si lo tienes a mano.
+          Sabrás en un solo número cuánto puedes gastar hasta tu próximo pago sin descuadrar el arriendo ni tus cobros fijos. Sin pedirte claves bancarias.
         </p>
         <div className="mt-7 space-y-3">
-          <Link href="/app/bienvenida" className="btn-primary w-full">
-            <PencilLine size={18} aria-hidden="true" /> Calcularla en un minuto
+          <Link id="cta-empty-quick" href="/app/bienvenida" className="btn-primary w-full">
+            <PencilLine size={18} aria-hidden="true" /> Calcularla en 1 minuto (4 datos)
           </Link>
-          <Link href="/app/datos/importar" className="btn-ghost w-full">
-            <Upload size={18} aria-hidden="true" /> Subir un extracto
+          <Link id="cta-empty-import" href="/app/datos/importar?primera=1" className="btn-ghost w-full">
+            <Upload size={18} aria-hidden="true" /> Subir extracto de mi banco
           </Link>
         </div>
       </section>
@@ -57,20 +85,19 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
 
   if (c.missing.includes('saldo')) {
     return (
-      <section className="space-y-5 pt-6">
+      <section className="surface-card space-y-5 p-6 sm:p-8">
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">Falta tu saldo de hoy.</h1>
-        <BalancePrompt accounts={editable} note="Lo que tienes en tus cuentas y billeteras, sin tarjetas de crédito." />
+        <BalancePrompt accounts={editable} note="Lo que tienes líquido hoy en cuentas y billeteras, sin sumar cupos de tarjeta." />
       </section>
     );
   }
 
   if (c.missing.includes('movimientos')) {
     return (
-      <section className="pt-6">
+      <section className="surface-card p-6 sm:p-8">
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em]">Falta tu gasto del día a día.</h1>
         <p className="mt-3 text-[16px] leading-relaxed text-ink-muted">
-          Ya tenemos tu saldo. Para saber cuánto te queda libre, dinos más o menos cuánto gastas en comida, transporte y salidas, o sube un
-          extracto y lo calculamos con tus movimientos.
+          Ya tenemos tu saldo. Dinos un aproximado de comida, transporte y salidas, o sube tu extracto y lo calculamos con tus compras reales.
         </p>
         <div className="mt-7 space-y-3">
           <Link href="/app/ajustes#dia-a-dia" className="btn-primary w-full">
@@ -84,40 +111,265 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
     );
   }
 
-  // El saldo no es de hoy y la persona puede escribirlo: se pregunta arriba, en vez del aviso.
   const askBalance = editable.length > 0 && (c.balanceAgeDays ?? 0) >= 1;
   const warnings = askBalance ? c.warnings.filter((w) => !w.startsWith(STALE_BALANCE_WARNING)) : c.warnings;
 
-  const recurringActive = c.recurring.filter((r) => r.active && marks[r.merchantKey] !== 'no_es_fijo');
+  const recurringActive = c.recurring.filter((r) => r.active && marksDetail[r.merchantKey]?.mark !== 'no_es_fijo');
   const monthlyRecurring = recurringActive.reduce((s, r) => s + r.monthlyMinor, 0);
-  // Los cobros fijos escritos a mano que no son el mismo cobro que ya se ve en los movimientos.
+  const unusedRecurring = recurringActive.filter(
+    (r) => marksDetail[r.merchantKey]?.mark === 'no_lo_uso' && !marksDetail[r.merchantKey]?.cancelledAt,
+  );
+  const potentialSavingsMinor = unusedRecurring.reduce((s, r) => s + r.monthlyMinor, 0);
+
   const written = c.commitments.filter((x) => !c.matchedCommitments.includes(x.id));
   const fixedCount = recurringActive.length + written.length;
   const fixedMonthly = monthlyRecurring + written.reduce((s, x) => s + x.amountMinor, 0);
+
+  // Nunca mostramos "deuda total" de golpe (Dolor 7): mostramos el margen disponible o el ajuste necesario del ciclo actual con tono empático.
   const negative = c.availableMinor < 0;
   const big = negative ? -c.availableMinor : c.availableMinor;
   const numberColor = negative ? 'text-neg' : c.status === 'justo' ? 'text-warn' : 'text-ink';
+  const statusBadge = negative
+    ? { cls: 'badge-neg', text: 'Ciclo apretado · Revisemos juntos' }
+    : c.status === 'justo'
+      ? { cls: 'badge-warn', text: 'Margen justo hasta tu pago' }
+      : { cls: 'badge-primary', text: 'Vas con buen margen' };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <TrackView name="view_cifra" props={{ status: c.status, ready: c.ready, daily: c.dailySource }} />
       {sp.listo === 'rapido' && <GaOnce name="quick_start" />}
-      <section aria-labelledby="cifra-label" className="pt-2">
-        <p id="cifra-label" className="text-[15px] font-medium text-ink-muted">
-          {negative ? `Hasta el ${shortDate(c.nextIncomeOn)} te faltarían` : `Puedes gastar hasta el ${shortDate(c.nextIncomeOn)}`}
+
+      {/* Tiquete principal CIFRA: número hero + resta transparente a la vista */}
+      <section aria-labelledby="cifra-label" className="ticket-surface p-5 sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className={statusBadge.cls}>{statusBadge.text}</span>
+          <span className="tnum text-[12.5px] font-medium text-ink-faint">
+            Próximo pago: {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'})
+          </span>
+        </div>
+
+        <p id="cifra-label" className="mt-4 text-[15px] font-medium text-ink-muted">
+          {negative
+            ? `Para cubrir tus fijos y tu ritmo hasta el ${shortDate(c.nextIncomeOn)} te faltarían`
+            : `Disponible seguro hasta el ${shortDate(c.nextIncomeOn)}`}
         </p>
-        <p className={`tnum mt-1 font-display text-[60px] font-extrabold leading-none tracking-[-0.04em] ${numberColor}`}>{cop(big)}</p>
+        <p className={`tnum mt-1 font-display text-[52px] font-extrabold leading-none tracking-[-0.04em] sm:text-[62px] ${numberColor}`}>
+          {cop(big)}
+        </p>
         <p className="mt-3 text-[15px] leading-snug text-ink-muted">
           {negative
-            ? 'Lo comprometido y tu gasto normal suman más de lo que tienes. Revisa los cobros fijos o tu día a día.'
-            : `Unos ${cop(c.perDayMinor)} extra por día durante ${c.daysLeft} ${c.daysLeft === 1 ? 'día' : 'días'}, además de tu gasto normal.`}
+            ? 'Sin sustos: este número solo mira de aquí a tu próximo ingreso. Abajo puedes ver qué cobro o gasto diario ajustar.'
+            : `Equivale a unos ${cop(c.perDayMinor)} libres por día durante ${c.daysLeft} ${
+                c.daysLeft === 1 ? 'día' : 'días'
+              }, además de tu día a día habitual.`}
         </p>
-        <Link href="/app/gasto" className="btn-primary mt-6 w-full">
-          ¿Puedo hacer un gasto?
-        </Link>
+
+        <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <Link id="cta-hoy-ask" href="/app/gasto" className="btn-primary">
+            <CircleHelp size={18} aria-hidden="true" /> ¿Puedo hacer un gasto?
+          </Link>
+          <Link href="/app/movimientos" className="btn-ghost">
+            En qué se me va
+          </Link>
+        </div>
+
+        <div className="ticket-divider" />
+
+        <div aria-labelledby="resta">
+          <div className="flex items-baseline justify-between">
+            <h2 id="resta" className="text-[13px] font-semibold uppercase tracking-wider text-ink-faint">
+              De dónde sale tu cifra
+            </h2>
+            {c.internalTransfers > 0 && (
+              <span className="text-[12px] text-ink-faint">{c.internalTransfers} traslados propios excluidos</span>
+            )}
+          </div>
+
+          <div className="tnum mt-3 space-y-3 text-[15px]">
+            <BalanceRow
+              accounts={editable}
+              hint={c.balanceAgeDays === 0 ? 'Saldo líquido de hoy' : c.balanceOn ? `Saldo al ${shortDate(c.balanceOn)}` : 'Sin saldo'}
+              value={cop(c.balanceMinor)}
+            />
+            <Row
+              label="Cobros fijos que faltan"
+              hint={
+                c.pending.length === 0
+                  ? 'Ninguno pendiente antes de tu próximo ingreso'
+                  : `${c.pending.length} cobro${c.pending.length === 1 ? '' : 's'} antes del ${shortDate(c.nextIncomeOn)}`
+              }
+              value={`- ${cop(c.pendingMinor)}`}
+            />
+            {c.pending.length > 0 && (
+              <details className="-mt-1">
+                <summary className="cursor-pointer text-[13px] font-semibold text-primary-dark">
+                  Ver cobros reservados de este ciclo
+                </summary>
+                <ul className="mt-2 space-y-1.5 border-l-2 border-line pl-3 text-[13.5px] text-ink-muted">
+                  {c.pending.map((p) => (
+                    <li key={`${p.key}-${p.date}`} className="flex justify-between gap-3">
+                      <span>
+                        {p.name} <span className="text-ink-faint">· {shortDate(p.date)}</span>
+                      </span>
+                      <span className="font-medium text-ink">
+                        {p.estimated ? 'aprox. ' : ''}
+                        {cop(p.amountMinor)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            <Row
+              label="Tu día a día proyectado"
+              hint={
+                c.dailySource === 'declarado' ? (
+                  <>
+                    {cop(c.dailyVariableMinor)}/día × {c.projectionDays} días (declarado por ti).{' '}
+                    <Link href="/app/ajustes#dia-a-dia" className="underline underline-offset-2 hover:text-ink">
+                      Ajustar
+                    </Link>
+                  </>
+                ) : (
+                  `${cop(c.dailyVariableMinor)}/día × ${c.projectionDays} días, calculado con tus últimas semanas`
+                )
+              }
+              value={`- ${cop(c.projectedVariableMinor)}`}
+            />
+            {c.bufferMinor > 0 && (
+              <Row label="Colchón de tranquilidad" hint="Apartado para imprevistos" value={`- ${cop(c.bufferMinor)}`} />
+            )}
+            <div
+              className={`flex items-baseline justify-between gap-3 border-t border-dashed border-line-strong pt-3 text-[16px] font-bold ${
+                negative ? 'text-neg' : 'text-primary-dark'
+              }`}
+            >
+              <span>= Disponible seguro</span>
+              <span>{cop(c.availableMinor)}</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       {askBalance && <BalancePrompt accounts={editable} note={ageNote(c.balanceAgeDays, c.balanceOn)} />}
+
+      {/* Alerta temprana de desviación frente al propio patrón (Etapa 4 del recorrido C.5) */}
+      {deviation?.triggered && (
+        <section className="surface-card border-warn/30 bg-warn-light/70 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <TrendingUp size={20} className="mt-0.5 shrink-0 text-warn" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[14.5px] font-semibold text-ink">
+                Esta semana tu ritmo diario subió a <span className="tnum">{cop(deviation.recent7dDailyMinor)}</span>/día
+              </p>
+              <p className="mt-1 text-[13.5px] leading-relaxed text-ink-soft">
+                Tu promedio habitual es <span className="tnum font-semibold">{cop(deviation.baselineDailyMinor)}</span>/día
+                {deviation.topDriverName ? ` (impulsado sobre todo por ${deviation.topDriverName})` : ''}. Bajar un cambio los próximos 3 días protege tu cierre de quincena.
+              </p>
+              <Link
+                href="/app/movimientos"
+                className="mt-2 inline-block text-[13px] font-semibold text-warn underline underline-offset-2"
+              >
+                Revisar gastos de los últimos 7 días →
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Contador de pesos reales ahorrados con CIFRA (suscripciones canceladas + ofertas de barrio redimidas) */}
+      <section className="surface-card px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-light text-primary-dark">
+              <PiggyBank size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-[13px] font-semibold text-ink-muted">Pesos ahorrados con CIFRA este mes</p>
+              <p className="tnum mt-0.5 font-display text-[28px] font-extrabold leading-tight tracking-[-0.03em] text-primary-dark">
+                {cop(savings.monthMinor)}
+              </p>
+              {savings.allTimeMinor > savings.monthMinor && (
+                <p className="tnum text-[12.5px] text-ink-faint">Acumulado histórico: {cop(savings.allTimeMinor)}</p>
+              )}
+            </div>
+          </div>
+          {potentialSavingsMinor > 0 ? (
+            <Link href="/app/cobros" className="badge-terra shrink-0">
+              +{cop(potentialSavingsMinor)}/mes por rescatar
+            </Link>
+          ) : (
+            <Link href="/app/ofertas" className="text-[13px] font-semibold text-primary-dark underline-offset-2 hover:underline">
+              Ver ofertas →
+            </Link>
+          )}
+        </div>
+        {savings.recent.length > 0 ? (
+          <ul className="tnum mt-3 divide-y divide-line border-t border-line pt-2.5 text-[13px]">
+            {savings.recent.slice(0, 2).map((ev) => (
+              <li key={ev.id} className="flex items-center justify-between gap-2 py-1.5">
+                <span className="truncate text-ink-muted">
+                  {ev.label} <span className="text-ink-faint">· {shortDate(ev.occurredOn)}</span>
+                </span>
+                <span className="shrink-0 font-semibold text-primary-dark">+{cop(ev.amountMinor)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2.5 text-[13.5px] text-ink-muted">
+            Cada suscripción que canceles en <Link href="/app/cobros" className="font-semibold text-ink underline">Cobros</Link> o descuento que uses en{' '}
+            <Link href="/app/ofertas" className="font-semibold text-ink underline">Ofertas cerca</Link> se suma aquí con pesos reales.
+          </p>
+        )}
+      </section>
+
+      {/* Ofertas contextuales cercanas filtradas por patrón real de gasto y barrio */}
+      {topOffers.length > 0 && (
+        <section className="surface-card px-5 py-4">
+          <div className="flex items-baseline justify-between gap-2">
+            <div>
+              <h2 className="font-display text-[17px] font-bold text-ink">Beneficios cerca de ti para este ciclo</h2>
+              <p className="text-[13px] text-ink-muted">Elegidos según tus categorías reales de gasto y tu zona</p>
+            </div>
+            <Link href="/app/ofertas" className="shrink-0 text-[13.5px] font-semibold text-terra-dark underline-offset-2 hover:underline">
+              Ver todas
+            </Link>
+          </div>
+          <ul className="mt-3.5 space-y-2.5">
+            {topOffers.map((item) => (
+              <li key={item.offer.id}>
+                <Link
+                  href={`/app/ofertas?destacada=${item.offer.id}`}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-line bg-paper/60 px-4 py-3 transition-colors hover:border-line-strong hover:bg-white"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="badge-terra">
+                        {item.offer.discountKind === 'percent'
+                          ? `${item.offer.discountPercent}% dto.`
+                          : `${cop(item.offer.discountFixedMinor ?? 0)} dto.`}
+                      </span>
+                      <span className="truncate text-[14.5px] font-semibold text-ink">{item.offer.merchantName}</span>
+                    </div>
+                    <p className="mt-0.5 truncate text-[13.5px] text-ink-soft">{item.offer.title}</p>
+                    <p className="mt-0.5 flex items-center gap-1 text-[12px] text-ink-faint">
+                      <MapPin size={12} aria-hidden="true" />
+                      <span>{item.whyRelevant}</span>
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="tnum block text-[13px] font-bold text-primary-dark">
+                      Ahorras ~{cop(item.estimatedSavingsMinor)}
+                    </span>
+                    <span className="text-[12px] font-semibold text-terra-dark">Usar código →</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {c.commitmentSuggestions.length > 0 && (
         <Link href="/app/cobros#escritos" className="flex gap-2.5 rounded-xl bg-warn-light px-4 py-3 text-[14px] leading-snug text-warn">
@@ -125,7 +377,7 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
           <span>
             {c.commitmentSuggestions.length === 1
               ? 'Un cobro que escribiste puede ser el mismo que vemos en tus movimientos y lo estaríamos contando dos veces.'
-              : `${c.commitmentSuggestions.length} cobros que escribiste pueden ser los mismos que vemos en tus movimientos y los estaríamos contando dos veces.`}{' '}
+              : `${c.commitmentSuggestions.length} cobros que escribiste pueden ser los mismos que vemos en tus movimientos.`}{' '}
             <span className="font-semibold underline underline-offset-2">Revisar</span>
           </span>
         </Link>
@@ -142,108 +394,63 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
         </ul>
       )}
 
-      <section aria-labelledby="resta" className="rounded-2xl border border-line bg-white px-5 py-4">
-        <h2 id="resta" className="text-[14px] font-semibold text-ink-muted">De dónde sale</h2>
-        <div className="tnum mt-3 space-y-3 text-[15px]">
-          <BalanceRow
-            accounts={editable}
-            hint={c.balanceAgeDays === 0 ? 'Saldo de hoy' : c.balanceOn ? `Saldo al ${shortDate(c.balanceOn)}` : 'Sin saldo'}
-            value={cop(c.balanceMinor)}
-          />
-          <Row
-            label="Cobros fijos que faltan"
-            hint={c.pending.length === 0 ? 'Ninguno antes de tu próximo ingreso' : `${c.pending.length} antes del ${shortDate(c.nextIncomeOn)}`}
-            value={`- ${cop(c.pendingMinor)}`}
-          />
-          {c.pending.length > 0 && (
-            <details className="-mt-1">
-              <summary className="cursor-pointer text-[13px] font-semibold text-primary-dark">Ver cuáles</summary>
-              <ul className="mt-2 space-y-1.5 border-l-2 border-line pl-3 text-[14px] text-ink-muted">
-                {c.pending.map((p) => (
-                  <li key={`${p.key}-${p.date}`} className="flex justify-between gap-3">
-                    <span>
-                      {p.name} <span className="text-ink-faint">{shortDate(p.date)}</span>
-                    </span>
-                    <span>
-                      {p.estimated ? 'aprox. ' : ''}
-                      {cop(p.amountMinor)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-          <Row
-            label="Tu día a día"
-            hint={
-              c.dailySource === 'declarado' ? (
-                <>
-                  {cop(c.dailyVariableMinor)} diarios por {c.projectionDays} días, según lo que escribiste.{' '}
-                  <Link href="/app/ajustes#dia-a-dia" className="underline underline-offset-2 hover:text-ink">
-                    Cambiar
-                  </Link>
-                </>
-              ) : (
-                `${cop(c.dailyVariableMinor)} diarios por ${c.projectionDays} días, según tus últimas semanas`
-              )
-            }
-            value={`- ${cop(c.projectedVariableMinor)}`}
-          />
-          {c.bufferMinor > 0 && <Row label="Colchón" hint="Lo apartas para imprevistos" value={`- ${cop(c.bufferMinor)}`} />}
-          <div className={`flex items-baseline justify-between gap-3 border-t-2 border-dashed border-ink/20 pt-3 font-bold ${negative ? 'text-neg' : 'text-primary-dark'}`}>
-            <span>= Puedes gastar</span>
-            <span>{cop(c.availableMinor)}</span>
-          </div>
-        </div>
-        <p className="mt-3 text-[12.5px] text-ink-faint">
-          Esto no es tu saldo. Es lo que queda libre después de lo comprometido.
-          {c.internalTransfers > 0 && ` No contamos ${c.internalTransfers} movimientos entre tus propias cuentas.`}
-        </p>
-        {c.historyDays > 0 ? (
-          <Link href="/app/movimientos" className="mt-3 inline-block text-[13.5px] font-semibold text-primary-dark underline-offset-2 hover:underline">
-            Ver movimientos
-          </Link>
-        ) : null}
-      </section>
-
       {c.dailySource === 'declarado' && (
-        <Link href="/app/datos/importar" className="flex items-center gap-3 rounded-2xl border border-dashed border-ink/25 px-5 py-4 hover:bg-white">
+        <Link
+          href="/app/datos/importar"
+          className="flex items-center gap-3 rounded-2xl border border-dashed border-line-strong bg-white/70 px-5 py-4 transition-colors hover:bg-white"
+        >
           <Upload size={19} className="shrink-0 text-primary-dark" aria-hidden="true" />
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold">Afínala con tu extracto</span>
+            <span className="block text-[15px] font-semibold">Afina tu cifra con un extracto real</span>
             <span className="block text-[13.5px] text-ink-muted">
               {c.historyDays > 0
-                ? `Tenemos ${c.historyDays} ${c.historyDays === 1 ? 'día' : 'días'} de movimientos. Con tres semanas, tu gasto diario sale de ellos y no de un aproximado.`
-                : 'Con tus movimientos reales calculamos tu gasto diario y encontramos los cobros que se repiten.'}
+                ? `Tenemos ${c.historyDays} ${c.historyDays === 1 ? 'día' : 'días'} de movimientos. Con tres semanas calculamos tu gasto diario real.`
+                : 'Detectamos cobros olvidados, gastos hormiga y tu promedio diario exacto.'}
             </span>
           </span>
           <ChevronRight size={18} className="text-ink-faint" aria-hidden="true" />
         </Link>
       )}
 
-      <section className="divide-y divide-line rounded-2xl border border-line bg-white">
-        <Link href="/app/cobros" className="flex items-center gap-3 px-5 py-4 hover:bg-paper">
-          <Repeat size={19} className="text-ink-muted" aria-hidden="true" />
+      <section className="divide-y divide-line rounded-2xl border border-line bg-white shadow-card">
+        <Link href="/app/cobros" className="flex items-center gap-3 px-5 py-4 hover:bg-paper/60">
+          <Repeat size={19} className="shrink-0 text-ink-muted" aria-hidden="true" />
           <span className="min-w-0 flex-1">
             <span className="block text-[15px] font-semibold">
-              {fixedCount === 1 ? '1 cobro fijo' : `${fixedCount} cobros fijos`}
+              {fixedCount === 1 ? '1 cobro fijo detectado' : `${fixedCount} cobros fijos`}
             </span>
             <span className="tnum block text-[13.5px] text-ink-muted">
               {cop(fixedMonthly)} al mes
-              {written.length > 0 && recurringActive.length > 0 ? `, ${written.length} escritos por ti` : written.length > 0 ? ', escritos por ti' : ''}
+              {written.length > 0 && recurringActive.length > 0
+                ? ` (${written.length} escritos por ti)`
+                : written.length > 0
+                  ? ' (escritos por ti)'
+                  : ''}
             </span>
           </span>
           <ChevronRight size={18} className="text-ink-faint" aria-hidden="true" />
         </Link>
-        <Link href="/app/ajustes#ingreso" className="flex items-center gap-3 px-5 py-4 hover:bg-paper">
+
+        <Link href="/app/cierre" className="flex items-center gap-3 px-5 py-4 hover:bg-paper/60">
+          <CalendarCheck2 size={19} className="shrink-0 text-ink-muted" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold">Cierre de ciclo y compromiso</span>
+            <span className="block text-[13.5px] text-ink-muted">
+              Compara este mes con el anterior y deja un solo ajuste para el próximo pago.
+            </span>
+          </span>
+          <ChevronRight size={18} className="text-ink-faint" aria-hidden="true" />
+        </Link>
+
+        <Link href="/app/ajustes#ingreso" className="flex items-center gap-3 px-5 py-4 hover:bg-paper/60">
           <span className="min-w-0 flex-1">
             <span className="block text-[15px] font-semibold">Próximo ingreso: {shortDate(c.nextIncomeOn)}</span>
             <span className="block text-[13.5px] text-ink-muted">
               {c.income.origin === 'sin_datos'
                 ? 'No lo encontramos en tus movimientos. Dinos cuándo te pagan.'
                 : c.income.origin === 'detectado'
-                  ? `Detectado: ingreso ${FREQ_LABEL[c.income.frequency]}${c.income.payer ? ` de ${c.income.payer}` : ''}. Toca para corregir.`
-                  : `Tú lo configuraste como ${FREQ_LABEL[c.income.frequency]}.`}
+                  ? `Detectado: ingreso ${FREQ_LABEL[c.income.frequency]}${c.income.payer ? ` de ${c.income.payer}` : ''}. Toca para ajustar.`
+                  : `Configurado como ${FREQ_LABEL[c.income.frequency]}.`}
             </span>
           </span>
           <ChevronRight size={18} className="text-ink-faint" aria-hidden="true" />

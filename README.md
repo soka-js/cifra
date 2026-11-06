@@ -1,67 +1,28 @@
 # CIFRA
 
-> **El producto real está en [`web/`](web/README.md)** (Next.js + Postgres, cuentas, extractos, API para entidades y landing con analítica). Lo que sigue describe el prototipo de demostración que se usó en las entrevistas.
+**Tu banco te dice cuánto tienes. CIFRA te dice cuánto puedes gastar — y te hace rendir la plata donde ya compras.**
 
-Prototipo interactivo de alta fidelidad de un ecosistema financiero hiperlocal para Bogotá, con dos lados:
+CIFRA es una plataforma financiera de dos lados diseñada para Bogotá y América Latina:
 
-- **Consumidor** (`/user/*`): una sola respuesta clara sobre cuánto puede gastar, sin tableros financieros.
-- **Tendero** (`/merchant/*`): conversación por WhatsApp con acciones en un toque y un panel web secundario.
+1. **Para las personas (`/` → `/app`) — Gratis siempre:** consolida saldos y movimientos sin pedir claves bancarias (extractos CSV/Excel/PDF leídos en el navegador, modo rápido en 60 segundos o conexión vía entidad aliada), calcula el **disponible seguro** hasta el próximo pago, responde **«¿Puedo hacer este gasto?»** antes de pagar, detecta **cobros recurrentes olvidados** con guía de cancelación y entrega **descuentos reales** en comercios de barrio donde ya compra.
+2. **Para el micronegocio de barrio (`/negocio`) — Cobro solo por resultado (5 %):** sin mensualidades, sin tableros complejos y sin arriesgar capital por adelantado. Publica una oferta con control de canibalización, valida códigos o QR de un solo uso desde el celular en segundos y recibe clientes nuevos verificados más un **informe mensual de una página** con sus 4 cifras clave (redenciones, venta atribuida, clientes nuevos y retorno sin descuento).
+3. **Para cooperativas, cajas y billeteras (`/desarrolladores`) — Canal B2B2C:** API REST v1 + sesiones embebidas de un solo uso para entregar CIFRA dentro de su propia app y participar del **30 % de la comisión** generada en su canal.
+4. **Backoffice y Data Room (`/admin`):** operación de calle de micronegocios, conciliación de comisiones (Bre-B / Nequi / Wompi), monitoreo de umbrales de validación (retención, renovación de campañas, tiempo hasta la primera cifra) y telemetría de experimentación A/B.
 
-## Entrada pública
+---
 
-`/` es la portada para quien llega por el QR: el problema, qué hace CIFRA, los cuatro pasos y el botón **Empezar el recorrido**. Cualquier ruta desconocida vuelve ahí. En las pantallas del consumidor, la barra de demo (fuera del teléfono) muestra el paso actual del recorrido con flechas de anterior y siguiente. `vercel.json` reescribe todas las rutas a `index.html` para que los enlaces profundos funcionen al recargar.
+## Estructura del repositorio
 
-## Preparar una entrevista (YODA)
-
-Antes de cada entrevista, abre `/setup` (ícono de ajustes en la barra superior, fuera del marco del teléfono) y carga los datos del entrevistado: nombre, ingreso mensual, monto comprometido, gasto proyectado, colchón, día de corte, días restantes y sus cobros que se repiten. **Guardar** los aplica a todas las pantallas y los deja en `localStorage`, así que sobreviven a una recarga. **Restaurar valores de ejemplo** vuelve a cargar el caso de Mariana en el formulario.
-
-El recorrido de la sesión es conexión → inicio → simular → respuesta → cobros. El colchón no está en el documento del proyecto: la fórmula lo admite, pero va en 0 por defecto y en 0 no se muestra.
-
-## Correr
+Toda la aplicación productiva (Next.js 16 + PostgreSQL + Drizzle ORM) vive en [`web/`](web/README.md), lista para desplegar en Vercel con `Root Directory = web` y base de datos PostgreSQL (Neon).
 
 ```bash
+cd web
+cp .env.example .env.local
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # type-check + build de producción en dist/
+npm run db:migrate
+npm run dev          # http://localhost:3000
+npm test             # Suite de pruebas del motor, atribución, insights y lectores
+npm run typecheck    # Verificación estricta de TypeScript
 ```
 
-## Stack
-
-Vite + React 18 + TypeScript, Tailwind CSS 3, React Router 6, Zustand y Lucide Icons. Tipografía Plus Jakarta Sans vía Google Fonts.
-
-## Estructura
-
-```
-src/
-  components/
-    layout/    AppShell (barra demo + cambio de rol), PhoneFrame, BottomNav, layouts por rol
-    setup/     Panel de datos de la sesión (/setup)
-    welcome/   Portada pública en / (fuera del marco del teléfono)
-    ui/        Button, Pill, BottomSheet, Toast, Logo, ScreenHeader…
-    user/      6 pantallas del consumidor
-    merchant/  7 pantallas del tendero + whatsapp/ (chat, burbujas, nota de voz)
-  store/useAppStore.ts   estado global, datos de la sesión y cálculo del disponible
-  lib/                   formato COP, lista de pantallas, datos de comercio
-```
-
-## Pantallas
-
-| Consumidor | Tendero |
-| --- | --- |
-| `/user/connect` Conexión de cuentas | `/merchant/onboarding` Alta rápida por WhatsApp |
-| `/user/home` Saldo disponible | `/merchant/weekly-report` Reporte semanal |
-| `/user/simulate` Simular un gasto | `/merchant/create-offer-1` Crear oferta · producto |
-| `/user/response-positive` Sí te alcanza | `/merchant/create-offer-2` Crear oferta · descuento |
-| `/user/response-negative` No te alcanza | `/merchant/campaign-results` Resultados |
-| `/user/subscriptions` Cobros que se repiten | `/merchant/chat-query` Consulta conversacional |
-| | `/merchant/dashboard` Panel web de tendencias |
-
-La barra superior permite cambiar de rol, saltar a cualquier pantalla y abrir `/setup`.
-
-La cifra grande del Inicio es el disponible seguro:
-
-```
-disponibleSeguro = ingreso − comprometido − proyectado − colchón
-```
-
-El simulador compara el monto contra ese mismo número: si cabe, responde "Sí, te alcanza" con lo que quedaría (`disponibleSeguro − monto`) y cuánto da por día en los días restantes; si no, "No te alcanza" con lo que faltaría (`monto − disponibleSeguro`).
+Consulta [`web/README.md`](web/README.md) para instrucciones detalladas de despliegue, variables de entorno e integración de aliados.

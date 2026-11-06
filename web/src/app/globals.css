@@ -6,6 +6,7 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
   }
   body {
     @apply bg-paper font-sans text-ink antialiased;
@@ -28,23 +29,74 @@
   .text-pretty {
     text-wrap: pretty;
   }
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-[15px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-[15px] font-semibold transition-all duration-150 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-sm {
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3.5 text-[13.5px] font-semibold transition-all duration-150 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-primary {
-    @apply btn bg-primary text-white hover:bg-primary-dark;
+    @apply btn bg-primary text-white shadow-sm hover:bg-primary-dark;
+  }
+  .btn-terra {
+    @apply btn bg-terra text-white shadow-sm hover:bg-terra-dark;
+  }
+  .btn-ink {
+    @apply btn bg-ink text-white shadow-sm hover:bg-ink-soft;
   }
   .btn-ghost {
-    @apply btn border border-line bg-white text-ink hover:border-ink-faint;
+    @apply btn border border-line bg-white text-ink hover:border-line-strong hover:bg-paper-warm/60;
+  }
+  .btn-subtle {
+    @apply btn bg-paper-warm text-ink hover:bg-paper-deep;
   }
   .field {
-    @apply block w-full rounded-xl border border-line bg-white px-4 py-3 text-[16px] text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+    @apply block w-full rounded-xl border border-line bg-white px-4 py-3 text-[16px] text-ink shadow-[0_1px_1px_rgba(16,29,26,0.02)] transition-colors placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
   }
   .label {
-    @apply mb-1.5 block text-sm font-semibold text-ink;
+    @apply mb-1.5 block text-[13.5px] font-semibold text-ink;
+  }
+  .surface-card {
+    @apply rounded-2xl border border-line bg-white shadow-card;
+  }
+  .ticket-surface {
+    @apply relative rounded-3xl border border-line bg-white shadow-ticket;
+  }
+  .ticket-divider {
+    @apply relative my-4 border-t border-dashed border-line-strong;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[12px] font-semibold leading-5;
+  }
+  .badge-primary {
+    @apply badge bg-primary-light text-primary-dark;
+  }
+  .badge-terra {
+    @apply badge bg-terra-light text-terra-dark;
+  }
+  .badge-warn {
+    @apply badge bg-warn-light text-warn;
+  }
+  .badge-neg {
+    @apply badge bg-neg-light text-neg;
+  }
+  .badge-neutral {
+    @apply badge bg-paper-warm text-ink-muted;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
   }
 }
 
