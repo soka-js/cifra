@@ -3,6 +3,7 @@
 import { AlertTriangle, CheckCircle2, Sparkles, Tag, Zap } from 'lucide-react';
 import { useActionState, useState } from 'react';
 import { createMerchantOffer, type MerchantActionState } from '@/app/actions/merchant';
+import { MoneyInput } from '@/components/ui/money-input';
 import { computeRedemptionSplit } from '@/lib/engine/attribution';
 import { computeHonestMerchantMargin } from '@/lib/engine/crossref';
 import { cop, parsePesosInput } from '@/lib/format';
@@ -341,14 +342,13 @@ export function OfferCreator({
               <label htmlFor="discountFixed" className="label">
                 Descuento ($)
               </label>
-              <input
+              <MoneyInput
                 id="discountFixed"
                 name="discountFixed"
-                type="text"
-                inputMode="numeric"
                 value={discountFixed}
-                onChange={(e) => setDiscountFixed(e.target.value)}
-                className="field tnum"
+                onChangeValue={(minor) => setDiscountFixed(String(Math.round(minor / 100)))}
+                presets={[2000, 3000, 5000, 10000]}
+                placeholder="3,000"
               />
             </div>
           )}
@@ -357,14 +357,13 @@ export function OfferCreator({
             <label htmlFor="minPurchase" className="label">
               Compra mínima ($)
             </label>
-            <input
+            <MoneyInput
               id="minPurchase"
               name="minPurchase"
-              type="text"
-              inputMode="numeric"
               value={minPurchase}
-              onChange={(e) => setMinPurchase(e.target.value)}
-              className="field tnum"
+              onChangeValue={(minor) => setMinPurchase(String(Math.round(minor / 100)))}
+              presets={[10000, 15000, 20000, 30000]}
+              placeholder="12,000"
             />
           </div>
 
@@ -372,14 +371,13 @@ export function OfferCreator({
             <label htmlFor="unitCost" className="label">
               Costo insumos ($)
             </label>
-            <input
+            <MoneyInput
               id="unitCost"
               name="unitCost"
-              type="text"
-              inputMode="numeric"
               value={unitCost}
-              onChange={(e) => setUnitCost(e.target.value)}
-              className="field tnum"
+              onChangeValue={(minor) => setUnitCost(String(Math.round(minor / 100)))}
+              presets={[3000, 5000, 8000, 12000]}
+              placeholder="4,000"
             />
           </div>
         </div>

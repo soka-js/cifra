@@ -16,6 +16,7 @@ import {
   type CodeLookupResponse,
   type PosRedeemState,
 } from '@/app/actions/merchant';
+import { MoneyInput } from '@/components/ui/money-input';
 import { computeRedemptionSplit } from '@/lib/engine/attribution';
 import { cop, parsePesosInput } from '@/lib/format';
 
@@ -277,28 +278,14 @@ export function PosTerminal({ defaultTicketMinor }: { defaultTicketMinor: number
             <label htmlFor="grossAmount" className="label text-[15px]">
               2. ¿Cuánto vale el pedido completo antes del descuento? ($)
             </label>
-            <input
+            <MoneyInput
               id="grossAmount"
               name="grossAmount"
-              type="text"
-              inputMode="numeric"
-              required
               value={grossText}
-              onChange={(e) => setGrossText(e.target.value)}
-              className="field tnum text-[24px] font-bold"
+              onChangeValue={(minor) => setGrossText(String(Math.round(minor / 100)))}
+              presets={[10000, 15000, 20000, 30000, 50000]}
+              className="py-3 pl-9 font-display text-[26px] font-bold"
             />
-            <div className="mt-2 flex flex-wrap gap-2">
-              {QUICK_AMOUNTS.map((pesos) => (
-                <button
-                  key={pesos}
-                  type="button"
-                  onClick={() => setGrossText(String(pesos))}
-                  className="rounded-lg border border-line bg-paper px-3 py-1.5 text-[13px] font-semibold text-ink hover:border-line-strong hover:bg-paper-deep"
-                >
-                  ${pesos.toLocaleString('es-CO')}
-                </button>
-              ))}
-            </div>
           </div>
 
           {liveSplit && (

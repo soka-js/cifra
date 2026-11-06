@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { MerchantProfileForm } from './profile-form';
 
@@ -8,6 +9,7 @@ export default async function MerchantProfilePage() {
 
   return (
     <div className="space-y-5">
+      <BackButton href="/negocio" label="Volver a Inicio de Negocio" className="mb-2" />
       <div>
         <span className="badge-terra">Vitrina en tu barrio</span>
         <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">

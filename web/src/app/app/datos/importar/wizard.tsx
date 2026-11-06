@@ -8,7 +8,7 @@ import { buildTransactions, detectColumns, type Cell, type ColumnMapping } from 
 import { shortDate, todayInBogota, addDays } from '@/lib/engine/dates';
 import { identifyMerchant } from '@/lib/engine/merchant';
 import { detectRecurring } from '@/lib/engine/recurring';
-import { cop, parsePesosInput } from '@/lib/format';
+import { cop, formatThousands, parsePesosInput } from '@/lib/format';
 import { gaEvent, track } from '@/lib/analytics/client';
 
 const ENTITIES = [
@@ -167,7 +167,7 @@ export function ImportWizard({ preset, first, manual = [] }: { preset?: PresetAc
     );
     setInvert(false);
     const res = detected ? buildTransactions(r, detected) : null;
-    setBalance(res?.latestBalanceMinor != null ? String(Math.round(res.latestBalanceMinor / 100)) : '');
+    setBalance(res?.latestBalanceMinor != null ? formatThousands(Math.round(res.latestBalanceMinor / 100)) : '');
     if (!detected) setError('No reconocimos las columnas automáticamente. Elígelas abajo.');
 
     // Pantalla breve de clasificación visible (I.5 #2: evita que parezca trabajo manual).
@@ -212,7 +212,7 @@ export function ImportWizard({ preset, first, manual = [] }: { preset?: PresetAc
     const neg = raw.startsWith('-');
     const minor = raw.replace(/^-/, '') === '0' ? 0 : parsePesosInput(raw.replace(/^-/, ''));
     if (minor === null) {
-      setError('Escribe cuánto tienes hoy en esta cuenta, por ejemplo 1.250.000.');
+      setError('Escribe cuánto tienes hoy en esta cuenta, por ejemplo 1,250,000.');
       return;
     }
     setBusy(true);
@@ -651,8 +651,11 @@ export function ImportWizard({ preset, first, manual = [] }: { preset?: PresetAc
                     inputMode="numeric"
                     className="field tnum pl-8 font-semibold"
                     value={balance}
-                    onChange={(e) => setBalance(e.target.value)}
-                    placeholder="1.250.000"
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/[^0-9]/g, '');
+                      setBalance(digits ? formatThousands(digits) : '');
+                    }}
+                    placeholder="1,250,000"
                   />
                 </div>
                 <p className="mt-1.5 text-[13px] text-ink-faint">

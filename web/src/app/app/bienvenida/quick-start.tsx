@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { EyeOff, FileSpreadsheet, Lock, Plus, ShieldCheck, Trash2, X } from 'lucide-react';
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { IncomeFields } from '@/components/app/income-fields';
+import { MoneyInput } from '@/components/ui/money-input';
 import { cop, parsePesosInput, toDailyMinor, type SpendPeriod } from '@/lib/format';
 import { BOGOTA_ZONES } from '@/lib/zones';
 import { saveQuickStart, type QuickState } from '../actions';
@@ -264,17 +265,13 @@ export function QuickStart({
         <label htmlFor="qs-balance" className="label">
           Saldo de hoy
         </label>
-        <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint">$</span>
-          <input
-            id="qs-balance"
-            name="balance"
-            inputMode="numeric"
-            autoComplete="off"
-            className="field tnum pl-8 text-[20px] font-semibold placeholder:font-normal"
-            placeholder="1.250.000"
-          />
-        </div>
+        <MoneyInput
+          id="qs-balance"
+          name="balance"
+          placeholder="1,250,000"
+          presets={[500000, 1000000, 2000000]}
+          className="text-[20px] font-semibold"
+        />
         <label htmlFor="qs-where" className="label mt-5">
           ¿Dónde está esa plata? <span className="font-normal text-ink-faint">(opcional)</span>
         </label>
@@ -339,17 +336,15 @@ export function QuickStart({
                   </button>
                 </div>
                 <div className="mt-2 grid grid-cols-[1fr_7.5rem] gap-2">
-                  <div className="relative">
+                  <div>
                     <label htmlFor={`qs-fa-${r.id}`} className="sr-only">
                       Monto de {r.name || `cobro ${i + 1}`}
                     </label>
-                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint">$</span>
-                    <input
+                    <MoneyInput
                       id={`qs-fa-${r.id}`}
                       name="fixedAmount"
-                      inputMode="numeric"
                       placeholder="Monto"
-                      className="field tnum py-2.5 pl-8"
+                      presets={[100000, 300000, 600000]}
                       autoFocus={Boolean(r.name)}
                     />
                   </div>
@@ -383,19 +378,15 @@ export function QuickStart({
         <label htmlFor="qs-daily" className="label">
           Más o menos
         </label>
-        <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint">$</span>
-          <input
-            id="qs-daily"
-            name="daily"
-            inputMode="numeric"
-            autoComplete="off"
-            value={daily}
-            onChange={(e) => setDaily(e.target.value)}
-            className="field tnum pl-8 text-[20px] font-semibold placeholder:font-normal"
-            placeholder="35.000"
-          />
-        </div>
+        <MoneyInput
+          id="qs-daily"
+          name="daily"
+          value={daily}
+          onChangeValue={(minor) => setDaily(String(Math.round(minor / 100)))}
+          placeholder="35,000"
+          presets={[20000, 35000, 50000, 80000]}
+          className="text-[20px] font-semibold"
+        />
         <div role="radiogroup" aria-label="Cada cuánto" className="mt-3 grid grid-cols-3 gap-1 rounded-xl bg-paper-deep p-1">
           {PERIODS.map(([v, l]) => (
             <label

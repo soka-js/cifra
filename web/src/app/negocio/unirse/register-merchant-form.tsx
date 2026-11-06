@@ -4,6 +4,7 @@ import { ArrowRight, Store } from 'lucide-react';
 import { useActionState, useState } from 'react';
 import { selfRegisterMerchant, type MerchantActionState } from '@/app/actions/merchant';
 import { LazyNeighborhoodMap } from '@/components/map/neighborhood-map-lazy';
+import { MoneyInput } from '@/components/ui/money-input';
 import { BOGOTA_ZONES } from '@/lib/zones';
 
 const INITIAL: MerchantActionState = { status: 'idle' };
@@ -169,14 +170,12 @@ export function RegisterMerchantForm({
           <label htmlFor="typicalTicket" className="label">
             Compra promedio de un cliente ($)
           </label>
-          <input
+          <MoneyInput
             id="typicalTicket"
             name="typicalTicket"
-            type="text"
-            inputMode="numeric"
-            defaultValue="20000"
-            placeholder="20000"
-            className="field tnum"
+            defaultValue={20000}
+            placeholder="20,000"
+            presets={[10000, 20000, 35000, 50000]}
           />
         </div>
       </div>

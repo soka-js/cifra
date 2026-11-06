@@ -2,6 +2,7 @@ import { AlertOctagon, Coffee, Search, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import { QuickCaptureModal } from '@/components/app/quick-capture-modal';
 import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
+import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { loadCifra, loadMovimientosInsights } from '@/lib/data';
 import { shortDate, todayInBogota } from '@/lib/engine/dates';
@@ -47,6 +48,7 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
 
   return (
     <div className="space-y-6">
+      <BackButton href="/app" label="Volver a Hoy" className="mb-1" />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">En qué se me va</h1>

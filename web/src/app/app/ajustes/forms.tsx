@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { IncomeFields } from '@/components/app/income-fields';
+import { MoneyInput } from '@/components/ui/money-input';
 import { BOGOTA_ZONES } from '@/lib/zones';
 import {
   addCommitment,
@@ -83,10 +84,13 @@ export function BufferForm({ current }: { current: string }) {
         <label htmlFor="buffer" className="label">
           Colchón para imprevistos
         </label>
-        <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint">$</span>
-          <input id="buffer" name="buffer" inputMode="numeric" defaultValue={current} className="field tnum pl-8" />
-        </div>
+        <MoneyInput
+          id="buffer"
+          name="buffer"
+          defaultValue={current}
+          presets={[100000, 200000, 500000]}
+          placeholder="0"
+        />
         <p className="mt-1.5 text-[13px] text-ink-faint">
           Se resta de tu cifra para que no lo gastes. Escribe 0 si no quieres colchón.
         </p>
@@ -110,10 +114,13 @@ export function DailySpendForm({ current, fromMovements }: { current: string; fr
         <label htmlFor="daily" className="label">
           Más o menos cuánto gastas
         </label>
-        <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint">$</span>
-          <input id="daily" name="daily" inputMode="numeric" defaultValue={current} placeholder="30.000" className="field tnum pl-8" />
-        </div>
+        <MoneyInput
+          id="daily"
+          name="daily"
+          defaultValue={current}
+          placeholder="30,000"
+          presets={[20000, 30000, 50000, 80000]}
+        />
         <div role="radiogroup" aria-label="Cada cuánto" className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-paper-deep p-1">
           {(
             [
@@ -171,7 +178,12 @@ export function CommitmentForm() {
         <label htmlFor="c-amount" className="mb-1 block text-[13px] font-semibold">
           Monto
         </label>
-        <input id="c-amount" name="amount" inputMode="numeric" placeholder="650.000" className="field tnum py-2.5" />
+        <MoneyInput
+          id="c-amount"
+          name="amount"
+          placeholder="650,000"
+          presets={[100000, 300000, 650000, 1200000]}
+        />
       </div>
       <div className="flex items-center gap-3">
         <button type="submit" disabled={pending} className="btn-ghost">

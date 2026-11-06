@@ -20,6 +20,8 @@ import {
   updateMerchantBreakEvenTargetsAction,
   type V3ActionState,
 } from '@/app/actions/v3';
+import { BackButton } from '@/components/ui/back-button';
+import { MoneyInput } from '@/components/ui/money-input';
 import { cop, shortDate } from '@/lib/format';
 import type { MerchantBreakEvenPageData } from '@/lib/v3-data';
 
@@ -72,6 +74,10 @@ export function CuadreClient({
 
   return (
     <div className="space-y-6">
+      <div className="no-print">
+        <BackButton fallbackHref="/negocio" label="Volver al resumen" />
+      </div>
+
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <span className="badge-terra">Utilidad diaria para tu local · Día 1</span>
@@ -103,26 +109,24 @@ export function CuadreClient({
               <label htmlFor="dailyBreakEven" className="label">
                 Meta de ventas diaria para cubrir costos ($)
               </label>
-              <input
+              <MoneyInput
                 id="dailyBreakEven"
                 name="dailyBreakEven"
-                type="text"
-                inputMode="numeric"
                 defaultValue={Math.round(summary.dailyBreakEvenMinor / 100)}
-                className="field tnum"
+                placeholder="450,000"
+                presets={[50000, 100000, 200000]}
               />
             </div>
             <div>
               <label htmlFor="monthlyFixedCost" className="label">
                 Gastos fijos mensuales (arriendo + servicios + ayuda) ($)
               </label>
-              <input
+              <MoneyInput
                 id="monthlyFixedCost"
                 name="monthlyFixedCost"
-                type="text"
-                inputMode="numeric"
                 defaultValue={Math.round(monthlyFixedCostMinor / 100)}
-                className="field tnum"
+                placeholder="4,200,000"
+                presets={[200000, 500000, 1000000]}
               />
             </div>
           </div>
@@ -298,13 +302,11 @@ export function CuadreClient({
                 <label htmlFor="flash-cost" className="label">
                   Costo aproximado de insumos por venta de {cop(typicalTicketMinor)} ($) — protegemos tu margen
                 </label>
-                <input
+                <MoneyInput
                   id="flash-cost"
                   name="unitCost"
-                  type="text"
-                  inputMode="numeric"
                   defaultValue={Math.round((typicalTicketMinor * 0.36) / 100)}
-                  className="field tnum bg-white"
+                  placeholder="7,200"
                 />
               </div>
             </div>
@@ -421,14 +423,12 @@ export function CuadreClient({
               <label htmlFor="ledger-amount" className="label">
                 Valor en pesos ($)
               </label>
-              <input
+              <MoneyInput
                 id="ledger-amount"
                 name="amount"
-                type="text"
-                inputMode="numeric"
                 required
-                placeholder={entryKind === 'venta_mostrador' ? '185.000' : '92.000'}
-                className="field tnum font-display text-[20px] font-bold"
+                placeholder={entryKind === 'venta_mostrador' ? '185,000' : '92,000'}
+                presets={[20000, 50000, 100000, 200000]}
               />
             </div>
 

@@ -1,5 +1,6 @@
 import { Building2, Download, FileSpreadsheet, Link2, Plus, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { bogotaDate, loadAccessLog, loadSources } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
@@ -36,6 +37,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="space-y-6">
+      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div>
         <span className="badge-primary">
           <ShieldCheck size={13} aria-hidden="true" /> Ley 1581 de 2012 · Habeas Data

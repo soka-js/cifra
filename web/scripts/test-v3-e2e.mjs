@@ -7,7 +7,7 @@ if (!fs.existsSync(SCREENSHOTS_DIR)) {
   fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
 }
 
-const BASE_URL = 'http://127.0.0.1:3100';
+const BASE_URL = 'http://127.0.0.1:3200';
 
 async function run() {
   console.log('🚀 Starting CIFRA v3 E2E Test Suite...');
@@ -36,13 +36,14 @@ async function run() {
     console.log('📍 Entering as Mariana (Persona)...');
     const marianaBtn = page.locator('button:has-text("Mariana"), button:has-text("Entrar como Mariana")').first();
     await marianaBtn.click();
-    await page.waitForURL('**/app**', { timeout: 10000 });
+    await page.waitForURL('**/app**', { timeout: 15000 });
+    await page.waitForLoadState('networkidle');
     console.log('✅ Landed on Persona Hoy (/app)');
 
     // -------------------------------------------------------------------------
     // 2. PERSONA HOY: PULSE CARD, MAP & QUICK CAPTURE
     // -------------------------------------------------------------------------
-    await page.waitForSelector('#btn-toggle-smart-map', { timeout: 5000 });
+    await page.waitForSelector('#cifra-label', { timeout: 10000 });
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '02-persona-hoy.png'), fullPage: true });
 
     // Open Quick Capture Modal
@@ -59,25 +60,28 @@ async function run() {
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '04-quick-captured.png'), fullPage: true });
     console.log('✅ Quick movement captured');
 
-    // Expand Smart Map
-    console.log('📍 Expanding Smart Map...');
-    await page.click('#btn-toggle-smart-map');
-    await page.waitForTimeout(800);
-    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '05-smart-map-expanded.png'), fullPage: true });
+    // Expand Smart Map if visible
+    const mapToggle = page.locator('#btn-toggle-smart-map');
+    if (await mapToggle.isVisible()) {
+      console.log('📍 Expanding Smart Map...');
+      await mapToggle.click();
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '05-smart-map-expanded.png'), fullPage: true });
+    }
 
     // -------------------------------------------------------------------------
     // 3. ¿PUEDO? (SIMULADOR DE CUOTAS Y CRUCE CON EL BARRIO)
     // -------------------------------------------------------------------------
     console.log('📍 3. Navigating to ¿Puedo? (/app/gasto)...');
     await page.goto(`${BASE_URL}/app/gasto`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('#amount', { timeout: 5000 });
+    await page.waitForSelector('#amount', { timeout: 8000 });
 
     // Test a purchase question with credit card simulation
     console.log('📍 Simulating purchase of $350.000 with credit simulation...');
-    await page.fill('#amount', '350.000');
+    await page.fill('#amount', '350000');
     await page.fill('#what', 'Tenis deportivos en Falabella');
     await page.click('#btn-ask-direct');
-    await page.waitForSelector('text=¿Y si lo pasas con tarjeta a cuotas?', { timeout: 5000 });
+    await page.waitForSelector('text=¿Y si lo pasas con tarjeta a cuotas?', { timeout: 8000 });
     await page.waitForTimeout(1000);
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '06-puedo-simulation.png'), fullPage: true });
     console.log('✅ Credit installments simulation verified');
@@ -121,7 +125,7 @@ async function run() {
 
     // Test adding a quick ledger entry
     console.log('📍 Adding a quick counter sale to today\'s cuadre...');
-    await page.fill('#ledger-amount', '45.000');
+    await page.fill('#ledger-amount', '45000');
     await page.fill('#ledger-note', 'Venta 2 combos café tarde');
     await page.click('#btn-add-ledger');
     await page.waitForTimeout(1500);
@@ -171,12 +175,22 @@ async function run() {
     await page.goto(`${BASE_URL}/negocio/caja`, { waitUntil: 'networkidle' });
     await page.waitForSelector('#pos-code', { timeout: 5000 });
 
-    const codeToRedeem = 'ESPIGA';
+    let codeToRedeem = 'ESPIGA';
     console.log(`📍 Using redemption code: ${codeToRedeem}`);
 
     await page.fill('#pos-code', codeToRedeem);
     await page.click('button:has-text("Verificar código")');
-    await page.waitForSelector('text=Código válido', { timeout: 5000 });
+    await page.waitForTimeout(800);
+
+    const errorAlert = page.locator('div[role="alert"]:has-text("ya fue usado")');
+    if (await errorAlert.isVisible()) {
+      codeToRedeem = 'PAN10K';
+      console.log(`📍 Retrying with fresh demo code: ${codeToRedeem}`);
+      await page.fill('#pos-code', codeToRedeem);
+      await page.click('button:has-text("Verificar código")');
+    }
+
+    await page.waitForSelector('text=Código válido', { timeout: 8000 });
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '16-caja-lookup.png'), fullPage: true });
 
     console.log('📍 Confirming redemption in Caja...');

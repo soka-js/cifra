@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm';
+import { BackButton } from '@/components/ui/back-button';
 import { db } from '@/lib/db';
 import { accounts, dataSources } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
@@ -23,5 +24,10 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
     }
   }
   const manual = (await listManualAccounts(user.id)).map((m) => ({ id: m.id, entityName: m.entityName, balanceMinor: m.balanceMinor }));
-  return <ImportWizard preset={preset} first={sp.primera === '1'} manual={manual} />;
+  return (
+    <div className="space-y-4">
+      <BackButton href="/app/datos" label="Volver a Tus datos" className="mb-2" />
+      <ImportWizard preset={preset} first={sp.primera === '1'} manual={manual} />
+    </div>
+  );
 }

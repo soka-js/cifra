@@ -1,4 +1,5 @@
 import { CheckCircle2, Clock, Receipt, ShieldCheck } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { bogotaDate } from '@/lib/data';
 import { cop, shortDate } from '@/lib/format';
@@ -29,6 +30,7 @@ export default async function MerchantBillingPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/negocio" label="Volver a Inicio de Negocio" className="mb-2" />
       <div>
         <span className="badge-terra">5 % solo después de vender</span>
         <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">

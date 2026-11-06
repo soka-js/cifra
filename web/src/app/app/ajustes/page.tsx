@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { logout } from '@/app/actions/auth';
+import { BackButton } from '@/components/ui/back-button';
 import { db } from '@/lib/db';
 import { commitments } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
@@ -29,6 +30,7 @@ export default async function AjustesPage() {
   const matched = new Set(cifra.matchedCommitments);
   return (
     <div className="space-y-5">
+      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Ajustes</h1>
         <Link href="/app/datos" className="text-[14px] font-semibold text-primary-dark underline underline-offset-2">

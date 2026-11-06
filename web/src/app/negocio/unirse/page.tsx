@@ -1,6 +1,7 @@
 import { CheckCircle2, ShieldCheck, Store } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { BackButton } from '@/components/ui/back-button';
 import { LogoMark } from '@/components/logo';
 import { getCurrentUser, getMerchantAccess } from '@/lib/auth/session';
 import { RegisterMerchantForm } from './register-merchant-form';
@@ -17,6 +18,7 @@ export default async function UnirseNegocioPage() {
   return (
     <div className="min-h-screen bg-paper px-4 py-10">
       <div className="mx-auto max-w-2xl space-y-6">
+        <BackButton href="/" label="Volver a Inicio" className="mb-2" />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <LogoMark size={28} />

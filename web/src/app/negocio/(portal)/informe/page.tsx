@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BackButton } from '@/components/ui/back-button';
 import { LogoMark } from '@/components/logo';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { cop } from '@/lib/format';
@@ -38,6 +39,7 @@ export default async function MerchantOnePageReport({
 
   return (
     <div className="space-y-5">
+      <BackButton href="/negocio" label="Volver a Inicio de Negocio" className="mb-1 no-print" />
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5">
           {months.map((m) => (

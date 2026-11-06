@@ -1,6 +1,7 @@
 import { ShieldCheck, Store } from 'lucide-react';
 import Link from 'next/link';
 import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
+import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { loadPersonaOffersBundle } from '@/lib/merchant-data';
 import { loadSmartMapBundle } from '@/lib/v3-data';
@@ -19,6 +20,7 @@ export default async function OfertasPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <span className="badge-terra">Cruce inteligente: gastos × distancia × franja horaria</span>

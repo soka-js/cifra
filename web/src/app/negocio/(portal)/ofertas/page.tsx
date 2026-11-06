@@ -1,6 +1,7 @@
 import { and, eq, ne, sql } from 'drizzle-orm';
 import { Pause, Play, RefreshCw, Sparkles, Tag } from 'lucide-react';
 import { renewOfferCampaign, toggleOfferStatus } from '@/app/actions/merchant';
+import { BackButton } from '@/components/ui/back-button';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { db } from '@/lib/db';
 import { offers, redemptions } from '@/lib/db/schema';
@@ -36,6 +37,7 @@ export default async function MerchantOffersPage({
 
   return (
     <div className="space-y-6">
+      <BackButton href="/negocio" label="Volver a Inicio de Negocio" className="mb-2" />
       {sp.bienvenida === '1' && (
         <div className="rounded-2xl border border-primary/25 bg-primary-pale px-4 py-3 text-[14px] text-primary-dark">
           <strong>¡Negocio registrado!</strong> Crea abajo tu primera oferta en 1 minuto para empezar a recibir clientes nuevos de tu barrio.

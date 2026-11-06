@@ -1,5 +1,6 @@
 import { CalendarCheck2, PiggyBank } from 'lucide-react';
 import Link from 'next/link';
+import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { loadCifra, loadCycleSnapshots, loadMovimientosInsights, loadSavingsSummary } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
@@ -22,6 +23,7 @@ export default async function CierrePage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div>
         <span className="badge-primary">Hábito de cierre</span>
         <h1 className="mt-2.5 font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Cierre de ciclo</h1>

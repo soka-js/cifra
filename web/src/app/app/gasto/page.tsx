@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { loadCifra, loadRankedOffersForUser } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
@@ -17,6 +18,7 @@ export default async function GastoPage() {
   ]);
   return (
     <div className="space-y-5">
+      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div>
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">¿Puedo hacer este gasto?</h1>
         {c.ready && (

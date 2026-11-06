@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { saveMerchantFeaturedItemsAction, type V3ActionState } from '@/app/actions/v3';
 import { LogoMark } from '@/components/logo';
+import { BackButton } from '@/components/ui/back-button';
+import { MoneyInput } from '@/components/ui/money-input';
 import type { MerchantFeaturedItem } from '@/lib/db/schema';
 
 const INITIAL: V3ActionState = { status: 'idle' };
@@ -48,7 +50,11 @@ export function VitrinaClient({
   return (
     <div className="space-y-6">
       {/* Cabecera y barra de compartir (se oculta al imprimir el afiche) */}
-      <div className="no-print space-y-5">
+      <div className="no-print space-y-4">
+        <div>
+          <BackButton fallbackHref="/negocio" label="Volver al resumen" />
+        </div>
+
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="badge-terra">Herramienta gratuita de mostrador y WhatsApp</span>
@@ -170,13 +176,11 @@ export function VitrinaClient({
                     className="field bg-white py-2 text-[14px]"
                   />
                   <div className="grid grid-cols-2 gap-2">
-                    <input
+                    <MoneyInput
                       name={`itemPrice_${idx}`}
-                      type="text"
-                      inputMode="numeric"
                       defaultValue={slot.pricePesos}
-                      placeholder="Precio ($) ej. 14500"
-                      className="field tnum bg-white py-2 text-[14px]"
+                      placeholder="14,500"
+                      className="bg-white py-1.5 text-[14px]"
                     />
                     <input
                       name={`itemTag_${idx}`}

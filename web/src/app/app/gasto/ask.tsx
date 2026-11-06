@@ -4,6 +4,7 @@ import { CheckCircle2, Clock, CreditCard, Sparkles, Tag, TriangleAlert } from 'l
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
+import { MoneyInput } from '@/components/ui/money-input';
 import { track } from '@/lib/analytics/client';
 import { canISpend, type CifraResult } from '@/lib/engine/cifra';
 import { simulateCreditInstallments } from '@/lib/engine/daily-value';
@@ -131,7 +132,7 @@ export function Ask({
           e.preventDefault();
           const amount = parsePesosInput(raw);
           if (amount === null) {
-            setError('Escribe un monto en pesos, por ejemplo 85.000.');
+            setError('Escribe un monto en pesos, por ejemplo 85,000.');
             setAnswer(null);
             return;
           }
@@ -142,21 +143,18 @@ export function Ask({
           <label htmlFor="amount" className="label">
             O escribe el valor directo
           </label>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-display text-[22px] text-ink-faint">
-              $
-            </span>
-            <input
-              id="amount"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="85.000"
-              value={raw}
-              onChange={(e) => setRaw(e.target.value)}
-              className="field tnum py-3.5 pl-9 font-display text-[26px] font-bold"
-              aria-describedby={error ? 'amount-err' : undefined}
-            />
-          </div>
+          <MoneyInput
+            id="amount"
+            name="amount"
+            value={raw}
+            onChangeValue={(minor) => {
+              setRaw(String(Math.round(minor / 100)));
+              if (error) setError(null);
+            }}
+            placeholder="85,000"
+            presets={[20000, 50000, 100000, 200000]}
+            className="py-3 pl-9 font-display text-[26px] font-bold"
+          />
           {error && (
             <p id="amount-err" className="mt-1.5 text-sm text-neg">
               {error}

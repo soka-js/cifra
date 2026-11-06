@@ -29,21 +29,55 @@ export default async function Landing() {
 
   return (
     <div className="overflow-x-clip">
+      {/* Barra interactiva de acceso directo a la App */}
+      <div className="border-b border-primary/25 bg-primary-pale/90 px-4 py-2.5 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2.5 text-[13px]">
+          <div className="flex items-center gap-2 text-ink">
+            <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <strong className="font-semibold">Aplicación CIFRA en vivo:</strong>
+            <span className="text-ink-muted hidden sm:inline">Entra directamente al producto sin rodeos</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/app"
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[12px] font-bold text-white shadow-sm transition hover:bg-primary-dark"
+            >
+              <span>📱 Abrir como Persona</span>
+            </Link>
+            <Link
+              href="/negocio"
+              className="inline-flex items-center gap-1.5 rounded-full bg-terra px-3 py-1 text-[12px] font-bold text-white shadow-sm transition hover:bg-terra-dark"
+            >
+              <span>🏪 Abrir como Negocio</span>
+            </Link>
+            <Link
+              href="/demo"
+              className="rounded-full border border-line bg-white px-2.5 py-1 text-[12px] font-semibold text-ink-muted transition hover:text-ink"
+            >
+              Centro Demo
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <Logo />
         <nav aria-label="Principal" className="flex items-center gap-1 text-[14.5px] sm:gap-2">
-          <a href="#como-funciona" className="hidden rounded-lg px-3 py-2 text-ink-muted hover:text-ink lg:inline">
-            Personas
-          </a>
-          <a href="#negocios" className="hidden rounded-lg px-3 py-2 font-medium text-terra-dark hover:bg-terra-pale sm:inline">
-            Negocios de barrio
-          </a>
-          <a href="#cooperativas" className="hidden rounded-lg px-3 py-2 text-ink-muted hover:text-ink md:inline">
-            Cooperativas y billeteras
-          </a>
+          <Link
+            href="/app"
+            className="rounded-lg px-3 py-2 font-semibold text-primary-dark hover:bg-primary-light"
+          >
+            📱 App Persona
+          </Link>
+          <Link
+            href="/negocio"
+            className="rounded-lg px-3 py-2 font-semibold text-terra-dark hover:bg-terra-pale"
+          >
+            🏪 App Negocio
+          </Link>
           <Link
             href="/demo"
-            className="hidden rounded-lg px-3 py-2 font-semibold text-ink hover:bg-paper-warm md:inline"
+            className="rounded-lg px-3 py-2 font-semibold text-ink hover:bg-paper-warm"
           >
             Demo en vivo
           </Link>
@@ -54,12 +88,11 @@ export default async function Landing() {
             </TrackedLink>
           ) : (
             <>
-              <Link href="/entrar" className="rounded-lg px-3 py-2 font-semibold text-primary-dark hover:bg-primary-light">
+              <Link href="/entrar" className="rounded-lg px-3 py-2 font-semibold text-ink-muted hover:bg-paper">
                 Entrar
               </Link>
               <TrackedLink href="/registro" location="header" className="btn-primary ml-1 px-4 sm:ml-2 lg:px-5">
-                <span className="lg:hidden">Empieza gratis</span>
-                <span className="hidden lg:inline">Calcula tu cifra gratis</span>
+                Empieza gratis
               </TrackedLink>
             </>
           )}
@@ -68,7 +101,7 @@ export default async function Landing() {
 
       <main>
         {/* Hero editorial: propuesta de valor + tiquete interactivo */}
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-8 sm:px-6 md:grid-cols-[1.12fr_0.95fr] md:pb-28 md:pt-14">
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-6 sm:px-6 md:grid-cols-[1.12fr_0.95fr] md:pb-28 md:pt-10">
           <div>
             <p className="text-[13.5px] font-bold uppercase tracking-[0.08em] text-primary-dark">
               Claridad financiera diaria · Barrio conectado en Bogotá
@@ -76,16 +109,19 @@ export default async function Landing() {
             <h1 className="mt-3 text-balance font-display text-[42px] font-extrabold leading-[1.02] tracking-[-0.035em] sm:text-[56px] lg:text-[62px]">
               {HEADLINES[variant]}
             </h1>
-            <p className="mt-6 max-w-[35rem] text-pretty text-[18px] leading-relaxed text-ink-muted">
+            <p className="mt-5 max-w-[35rem] text-pretty text-[17.5px] leading-relaxed text-ink-muted">
               CIFRA lee tus movimientos sin pedirte la clave del banco, separa lo que ya está comprometido y te deja un solo número honesto: lo que tienes libre hasta tu próximo ingreso. Y además te conecta con beneficios reales en comercios independientes de tu cuadra.
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <TrackedLink href="/registro" location="hero" className="btn-primary min-h-14 px-7 text-[16px]">
-                Calcula tu cifra gratis
-                <ArrowRight size={18} aria-hidden="true" />
-              </TrackedLink>
-              <Link href="/demo" className="btn-ghost min-h-14 px-6 text-[16px]">
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link href="/app" className="btn-primary min-h-13 px-6 text-[15.5px]">
+                📱 Abrir App Persona
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+              <Link href="/negocio" className="btn-terra min-h-13 px-6 text-[15.5px]">
+                🏪 Abrir App Negocio
+              </Link>
+              <Link href="/demo" className="btn-ghost min-h-13 px-5 text-[15px]">
                 Probar Demo en 1 clic
               </Link>
             </div>

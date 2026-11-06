@@ -1,9 +1,17 @@
-/** Formato de pesos colombianos sin decimales: 1234500 centavos -> "$12.345". */
-export function cop(minor: number, opts: { sign?: boolean } = {}): string {
+/** Formatea un entero con separador de miles por comas: 1234567 -> "1,234,567". */
+export function formatThousands(value: number | string): string {
+  const num = typeof value === 'number' ? Math.round(value) : parseInt(String(value).replace(/[^0-9-]/g, ''), 10);
+  if (isNaN(num)) return '0';
+  return Math.abs(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/** Formato de pesos colombianos con comas para miles: 1234500 centavos -> "$12,345". */
+export function cop(minor: number, opts: { sign?: boolean; space?: boolean } = {}): string {
   const pesos = Math.round(minor / 100);
-  const abs = Math.abs(pesos).toLocaleString('es-CO', { maximumFractionDigits: 0 });
+  const formatted = formatThousands(Math.abs(pesos));
   const sign = pesos < 0 ? '-' : opts.sign && pesos > 0 ? '+' : '';
-  return `${sign}$${abs}`;
+  const space = opts.space ? ' ' : '';
+  return `${sign}$${space}${formatted}`;
 }
 
 /** Interpreta lo que escribe la persona ("45.000", "45000", "45 mil") como centavos. */

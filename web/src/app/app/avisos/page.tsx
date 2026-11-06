@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { Bell, CheckCheck } from 'lucide-react';
 import Link from 'next/link';
+import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { bogotaDate, loadNotifications } from '@/lib/data';
 import { db } from '@/lib/db';
@@ -26,6 +27,7 @@ export default async function AvisosPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Avisos</h1>

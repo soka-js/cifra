@@ -4,6 +4,7 @@ import { CheckCircle2, Save } from 'lucide-react';
 import { useActionState, useState } from 'react';
 import { updateMerchantProfile, type MerchantActionState } from '@/app/actions/merchant';
 import { LazyNeighborhoodMap } from '@/components/map/neighborhood-map-lazy';
+import { MoneyInput } from '@/components/ui/money-input';
 import type { Merchant } from '@/lib/db/schema';
 import { BOGOTA_ZONES } from '@/lib/zones';
 
@@ -136,13 +137,12 @@ export function MerchantProfileForm({ merchant }: { merchant: Merchant }) {
           <label htmlFor="typicalTicket" className="label">
             Pedido promedio de un cliente ($)
           </label>
-          <input
+          <MoneyInput
             id="typicalTicket"
             name="typicalTicket"
-            type="text"
-            inputMode="numeric"
-            defaultValue={String(Math.round(merchant.typicalTicketMinor / 100))}
-            className="field tnum"
+            defaultValue={Math.round(merchant.typicalTicketMinor / 100)}
+            placeholder="20,000"
+            presets={[10000, 20000, 35000, 50000]}
           />
         </div>
       </div>

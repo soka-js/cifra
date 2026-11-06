@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { updateBalances, type FormState } from '@/app/app/actions';
-import { cop } from '@/lib/format';
+import { MoneyInput } from '@/components/ui/money-input';
+import { cop, formatThousands } from '@/lib/format';
 
 export interface EditableAccount {
   id: string;
@@ -25,18 +26,14 @@ function BalanceForm({ accounts, autoFocus, onDone, onCancel }: { accounts: Edit
             <label htmlFor={`hoy-bal-${a.id}`} className={list.length === 1 ? 'sr-only' : 'mb-1 block text-[13px] font-semibold text-ink-muted'}>
               {a.name}
             </label>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint">$</span>
-              <input
-                id={`hoy-bal-${a.id}`}
-                name={`bal:${a.id}`}
-                inputMode="numeric"
-                autoComplete="off"
-                autoFocus={autoFocus && i === 0}
-                placeholder={a.balanceMinor !== null ? cop(a.balanceMinor).replace('$', '').trim() : '1.250.000'}
-                className="field tnum py-2.5 pl-8 text-[17px] font-semibold placeholder:font-normal"
-              />
-            </div>
+            <MoneyInput
+              id={`hoy-bal-${a.id}`}
+              name={`bal:${a.id}`}
+              defaultValue={a.balanceMinor !== null ? Math.round(a.balanceMinor / 100) : ''}
+              placeholder={a.balanceMinor !== null ? formatThousands(Math.round(a.balanceMinor / 100)) : '1,250,000'}
+              presets={[50000, 100000, 200000, 500000]}
+              autoFocus={autoFocus && i === 0}
+            />
           </div>
         ))}
       </div>

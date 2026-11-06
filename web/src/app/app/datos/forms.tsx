@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { MoneyInput } from '@/components/ui/money-input';
 import { addManualAccount, deleteSource, updateBalance, type FormState } from '../actions';
 
 export function BalanceForm({ accountId, current }: { accountId: string; current: string }) {
@@ -18,7 +19,7 @@ export function BalanceForm({ accountId, current }: { accountId: string; current
       <input type="hidden" name="accountId" value={accountId} />
       <div className="flex-1">
         <label htmlFor={`bal-${accountId}`} className="mb-1 block text-[13px] font-semibold">¿Cuánto tienes hoy?</label>
-        <input id={`bal-${accountId}`} name="balance" inputMode="numeric" defaultValue={current} className="field tnum py-2.5" autoFocus />
+        <MoneyInput id={`bal-${accountId}`} name="balance" defaultValue={current} autoFocus placeholder="0" presets={[50000, 100000, 200000]} />
       </div>
       <button type="submit" disabled={pending} className="btn-primary min-h-11 px-4">{pending ? 'Guardando' : 'Guardar'}</button>
       {state.status !== 'idle' && (
@@ -70,7 +71,7 @@ export function ManualAccountForm() {
         </div>
         <div>
           <label htmlFor="m-balance" className="mb-1 block text-[13px] font-semibold">Cuánto tienes hoy</label>
-          <input id="m-balance" name="balance" inputMode="numeric" placeholder="150.000" className="field tnum py-2.5" />
+          <MoneyInput id="m-balance" name="balance" placeholder="150,000" presets={[50000, 150000, 300000]} />
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">
