@@ -2,6 +2,7 @@ import { QrCode, Settings, Store } from 'lucide-react';
 import Link from 'next/link';
 import { LogoMark } from '@/components/logo';
 import { AppTopBar } from '@/components/app/app-top-bar';
+import { DemoTourController } from '@/components/demo/demo-tour-controller';
 import { MerchantBottomNav, MerchantSidebar } from '@/components/merchant/nav';
 import { isAdmin, requireMerchantAccess } from '@/lib/auth/session';
 
@@ -47,6 +48,7 @@ export default async function MerchantPortalLayout({
       </div>
 
       <MerchantBottomNav />
+      <DemoTourController isDemo={access.merchant.isDemo || access.user.isDemo} currentRole="negocio" />
     </div>
   );
 }

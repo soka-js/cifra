@@ -2,6 +2,7 @@ import { Bell, Settings, Store } from 'lucide-react';
 import Link from 'next/link';
 import { BottomNav, DesktopSidebar } from '@/components/app/nav';
 import { AppTopBar } from '@/components/app/app-top-bar';
+import { DemoTourController } from '@/components/demo/demo-tour-controller';
 import { LogoMark } from '@/components/logo';
 import { getMerchantAccess, isAdmin, requireUser } from '@/lib/auth/session';
 import { loadUnreadNotificationsCount } from '@/lib/data';
@@ -47,6 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <main className="mx-auto max-w-2xl px-4 pt-4 sm:px-6 lg:px-8 lg:pt-8">{children}</main>
       <BottomNav />
+      <DemoTourController isDemo={user.isDemo} currentRole="persona" />
     </div>
   );
 }

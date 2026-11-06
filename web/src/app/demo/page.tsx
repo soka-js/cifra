@@ -17,6 +17,7 @@ import {
   enterDemoAsPersona,
   resetDemoData,
 } from './actions';
+import { DemoTourHubBanner } from '@/components/demo/demo-tour-hub-banner';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Modo Demo Interactivo en Vivo · CIFRA' };
@@ -67,6 +68,7 @@ export default async function DemoHubPage({
             Sin formularios ni contraseñas. Explora cómo una persona joven conoce su disponible real antes de gastar, cómo una panadería de barrio gana clientes nuevos pagando solo después de vender, y cómo se miden las hipótesis falsables del negocio.
           </p>
         </div>
+        <DemoTourHubBanner />
 
         {/* Los 3 actores interactivos */}
         <div className="grid gap-5 md:grid-cols-3">
