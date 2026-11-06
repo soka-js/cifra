@@ -1,10 +1,22 @@
 import 'server-only';
-import { and, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, sql } from 'drizzle-orm';
 import { db } from './db';
-import { accessLog, accounts, commitments, dataSources, recurringMarks, transactions, type User } from './db/schema';
+import {
+  accessLog,
+  accounts,
+  commitments,
+  dataSources,
+  notifications,
+  recurringMarks,
+  savingsEvents,
+  transactions,
+  users,
+  type User,
+} from './db/schema';
 import { computeCifra, type CifraResult, type RecurringMarkValue } from './engine/cifra';
 import { addDays, todayInBogota } from './engine/dates';
 import type { IncomeFrequency } from './engine/types';
+import { loadCategoryOverrides } from './ingest';
 
 /** Fecha en Bogotá (AAAA-MM-DD) de un instante. */
 export function bogotaDate(d: Date): string {
@@ -17,7 +29,7 @@ const HISTORY_DAYS = 400;
 export async function loadCifra(user: User): Promise<CifraResult> {
   const today = todayInBogota();
   const since = addDays(today, -HISTORY_DAYS);
-  const [accts, txs, comms, marks] = await Promise.all([
+  const [accts, txs, comms, marks, categoryOverrides] = await Promise.all([
     db
       .select({ account: accounts, status: dataSources.status, kind: dataSources.kind })
       .from(accounts)
@@ -37,9 +49,10 @@ export async function loadCifra(user: User): Promise<CifraResult> {
       ),
     db.select().from(commitments).where(eq(commitments.userId, user.id)),
     db.select().from(recurringMarks).where(eq(recurringMarks.userId, user.id)),
+    loadCategoryOverrides(user.id),
   ]);
   const active = accts.filter((a) => a.status === 'activa');
-  return computeCifra({
+  const result = computeCifra({
     today,
     accounts: active.map(({ account: a, kind }) => ({
       accountId: a.id,
@@ -55,12 +68,72 @@ export async function loadCifra(user: User): Promise<CifraResult> {
     declaredDailyMinor: user.dailySpendMinor ?? null,
     commitments: comms.map((c) => ({ id: c.id, name: c.name, amountMinor: c.amountMinor, dayOfMonth: c.dayOfMonth, notSameAs: c.notSameAs })),
     marks: Object.fromEntries(marks.map((m) => [m.merchantKey, m.mark as RecurringMarkValue])),
+    categoryOverrides,
   });
+
+  // Registra la primera vez que la persona tiene su cifra lista (métrica "< 5 minutos", H.1.1) y su actividad reciente.
+  const now = new Date();
+  const staleActivity = !user.lastActiveAt || now.getTime() - user.lastActiveAt.getTime() > 3_600_000;
+  if (result.ready && !user.firstCifraAt) {
+    await db.update(users).set({ firstCifraAt: now, lastActiveAt: now }).where(eq(users.id, user.id));
+  } else if (staleActivity) {
+    await db.update(users).set({ lastActiveAt: now }).where(eq(users.id, user.id));
+  }
+
+  return result;
 }
 
 export async function loadMarks(userId: string): Promise<Record<string, RecurringMarkValue>> {
   const rows = await db.select().from(recurringMarks).where(eq(recurringMarks.userId, userId));
   return Object.fromEntries(rows.map((m) => [m.merchantKey, m.mark as RecurringMarkValue]));
+}
+
+export interface SavingsSummary {
+  monthMinor: number;
+  allTimeMinor: number;
+  recent: Array<{
+    id: string;
+    kind: 'cobro_cancelado' | 'oferta_redimida' | 'comision_evitada';
+    amountMinor: number;
+    label: string;
+    occurredOn: string;
+  }>;
+}
+
+export async function loadSavingsSummary(userId: string): Promise<SavingsSummary> {
+  const today = todayInBogota();
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const rows = await db
+    .select()
+    .from(savingsEvents)
+    .where(eq(savingsEvents.userId, userId))
+    .orderBy(desc(savingsEvents.occurredOn), desc(savingsEvents.createdAt));
+
+  let monthMinor = 0;
+  let allTimeMinor = 0;
+  for (const r of rows) {
+    allTimeMinor += r.amountMinor;
+    if (r.occurredOn >= monthStart) monthMinor += r.amountMinor;
+  }
+  return {
+    monthMinor,
+    allTimeMinor,
+    recent: rows.slice(0, 8).map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      amountMinor: r.amountMinor,
+      label: r.label,
+      occurredOn: r.occurredOn,
+    })),
+  };
+}
+
+export async function loadUnreadNotificationsCount(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+  return row?.n ?? 0;
 }
 
 export interface SourceView {

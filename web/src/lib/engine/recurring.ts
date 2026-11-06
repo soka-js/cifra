@@ -1,5 +1,5 @@
 import { addDays, daysBetween } from './dates';
-import { categoryOf, flowOf, identifyMerchant, type Category } from './merchant';
+import { categoryOf, flowOf, identifyMerchant, type Category, type UserCategoryOverride } from './merchant';
 import type { Tx } from './types';
 
 export type Cadence = 'semanal' | 'quincenal' | 'mensual' | 'bimestral' | 'trimestral' | 'anual';
@@ -31,6 +31,8 @@ export interface RecurringSeries {
   typicalMinor: number;
   /** Equivalente mensual en centavos. */
   monthlyMinor: number;
+  /** Acumulado histórico cobrado en los movimientos disponibles (H.1.3 e I.5). */
+  historicalTotalMinor: number;
   occurrences: number;
   firstDate: string;
   lastDate: string;
@@ -59,13 +61,17 @@ const SUBSCRIPTION_LIKE: Category[] = ['suscripciones', 'telefonia_internet', 's
  * Busca cobros que se repiten: mismo comercio, intervalos regulares y montos parecidos.
  * Con dos cobros basta si el comercio es de suscripción conocido; si no, se piden tres.
  */
-export function detectRecurring(txs: Tx[], today: string): RecurringSeries[] {
+export function detectRecurring(
+  txs: Tx[],
+  today: string,
+  overrides?: Record<string, UserCategoryOverride>,
+): RecurringSeries[] {
   const groups = new Map<string, Tx[]>();
   for (const tx of txs) {
     if (tx.amountMinor >= 0) continue;
     const flow = flowOf(tx.description, tx.amountMinor);
     if (flow === 'pago_tarjeta' || flow === 'efectivo') continue;
-    const key = identifyMerchant(tx.description).key;
+    const key = identifyMerchant(tx.description, overrides).key;
     if (key === 'sin_nombre') continue;
     const list = groups.get(key) ?? [];
     list.push(tx);
@@ -89,8 +95,8 @@ export function detectRecurring(txs: Tx[], today: string): RecurringSeries[] {
     if (regular / intervals.length < 0.75) continue;
 
     const first = list[0]!;
-    const merchant = identifyMerchant(first.description);
-    const category = categoryOf(first.description, first.amountMinor);
+    const merchant = identifyMerchant(first.description, overrides);
+    const category = categoryOf(first.description, first.amountMinor, overrides);
     const isTransfer = category === 'transferencias';
     const amounts = [...byDay.values()];
     const ratio = Math.max(...amounts) / Math.min(...amounts);
@@ -101,14 +107,15 @@ export function detectRecurring(txs: Tx[], today: string): RecurringSeries[] {
     const knownSubscription = SUBSCRIPTION_LIKE.includes(category);
     const needed = knownSubscription ? 2 : 3;
     if (dates.length < needed) continue;
-    // Comercios del día a día (mercado, comida, transporte) se repiten sin ser compromisos fijos.
-    if (['mercado', 'comida', 'transporte', 'combustible', 'salud', 'otros'].includes(category) && !isTransfer) {
+    // Comercios del día a día (mercado, comida, transporte, compras, ocio) se repiten sin ser compromisos fijos.
+    if (['mercado', 'comida', 'transporte', 'combustible', 'salud', 'compras', 'ocio', 'otros'].includes(category) && !isTransfer) {
       if (cadence !== 'mensual' || ratio > 1.05 || dates.length < 3) continue;
     }
 
     const lastDate = dates[dates.length - 1]!;
     const step = CADENCE_DAYS[cadence];
     const typical = Math.round(median(amounts));
+    const historicalTotalMinor = list.reduce((s, t) => s + -t.amountMinor, 0);
     let nextDate = addDays(lastDate, cadence === 'mensual' ? 0 : step);
     if (cadence === 'mensual') {
       // Mismo día del mes siguiente, ajustado si el mes es más corto.
@@ -129,6 +136,7 @@ export function detectRecurring(txs: Tx[], today: string): RecurringSeries[] {
       cadence,
       typicalMinor: typical,
       monthlyMinor: Math.round((typical * 30) / step),
+      historicalTotalMinor,
       occurrences: dates.length,
       firstDate: dates[0]!,
       lastDate,
