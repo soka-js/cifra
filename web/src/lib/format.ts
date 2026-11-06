@@ -37,3 +37,5 @@ export function toDailyMinor(amountMinor: number, period: SpendPeriod): number {
 }
 
 export const CONSENT_VERSION = 'v1-2026-11';
+export { shortDate } from './engine/dates';
+
