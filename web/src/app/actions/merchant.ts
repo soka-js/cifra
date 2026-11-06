@@ -1,6 +1,6 @@
 'use server';
 
-import { and, eq, gt, isNull, ne, sql } from 'drizzle-orm';
+import { and, eq, gt, gte, isNull, ne, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -103,7 +103,7 @@ export async function claimOfferCode(formData: FormData): Promise<void> {
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(redemptions)
-      .where(and(eq(redemptions.offerId, offerId), ne(redemptions.status, 'anulada'), gteOrZero(monthStart))),
+      .where(and(eq(redemptions.offerId, offerId), ne(redemptions.status, 'anulada'), gte(redemptions.redeemedAt, monthStart))),
     db
       .select({
         accountId: transactions.accountId,
@@ -189,10 +189,6 @@ export async function claimOfferCode(formData: FormData): Promise<void> {
 
   await recordEvent('generate_offer_code', { offerId: row.offer.id, merchant: row.merchant.slug }, user.id);
   revalidatePath('/app/ofertas');
-}
-
-function gteOrZero(d: Date) {
-  return sql`${redemptions.redeemedAt} >= ${d}`;
 }
 
 export async function confirmRedemptionByUser(formData: FormData): Promise<void> {

@@ -115,7 +115,7 @@ export default async function MerchantBillingPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-display text-[19px] font-bold capitalize text-ink">
+                        <h3 className="font-display text-[19px] font-bold first-letter:uppercase text-ink">
                           {formatPeriodMonth(inv.periodMonth)}
                         </h3>
                         {statusBadge}

@@ -46,7 +46,7 @@ export function Receipt() {
         </div>
         <dl className="mt-4 space-y-3">
           {LINES.map((l, i) => (
-            <div key={l.label} className="animate-print" style={{ animationDelay: `${250 + i * 420}ms` }}>
+            <div key={l.label} className="animate-print" style={{ animationDelay: `${60 + i * 90}ms` }}>
               <div className="flex items-baseline justify-between gap-4">
                 <dt className="text-[15px] font-medium">{l.label}</dt>
                 <dd className="tnum font-display text-[17px] font-semibold">
@@ -60,7 +60,7 @@ export function Receipt() {
         </dl>
         <div
           className="animate-print mt-4 border-t-2 border-dashed border-ink/25 pt-4"
-          style={{ animationDelay: `${250 + LINES.length * 420}ms` }}
+          style={{ animationDelay: `${60 + LINES.length * 90}ms` }}
         >
           <p className="text-[14px] font-medium text-ink-muted">Puedes gastar hasta el {EXAMPLE.payday}</p>
           <p className="tnum mt-1 font-display text-[52px] font-extrabold leading-none tracking-[-0.035em] text-primary-dark">

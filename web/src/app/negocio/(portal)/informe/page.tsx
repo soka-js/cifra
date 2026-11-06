@@ -44,7 +44,7 @@ export default async function MerchantOnePageReport({
             <Link
               key={m}
               href={`/negocio/informe?mes=${m}`}
-              className={`rounded-xl px-3 py-1.5 text-[13px] font-semibold capitalize transition ${
+              className={`inline-block rounded-xl px-3 py-1.5 text-[13px] font-semibold first-letter:uppercase transition ${
                 m === selectedMonth
                   ? 'bg-terra text-white'
                   : 'border border-line bg-white text-ink-muted hover:text-ink'
@@ -78,7 +78,7 @@ export default async function MerchantOnePageReport({
 
           <div className="text-left sm:text-right">
             <p className="text-[12px] font-semibold uppercase tracking-wider text-ink-muted">Periodo evaluado</p>
-            <p className="font-display text-[20px] font-bold capitalize text-ink">{report.periodLabel}</p>
+            <p className="font-display text-[20px] font-bold first-letter:uppercase text-ink">{report.periodLabel}</p>
             <p className="text-[12.5px] text-ink-muted">Propietario/a: {access.merchant.ownerName}</p>
           </div>
         </header>
