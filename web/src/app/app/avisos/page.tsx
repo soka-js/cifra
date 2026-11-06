@@ -1,16 +1,28 @@
+import { eq } from 'drizzle-orm';
 import { Bell, CheckCheck } from 'lucide-react';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth/session';
 import { bogotaDate, loadNotifications } from '@/lib/data';
+import { db } from '@/lib/db';
+import { pushSubscriptions } from '@/lib/db/schema';
 import { shortDate } from '@/lib/engine/dates';
 import { markAllNotificationsRead, markNotificationRead } from '../actions';
+import { PushToggleCard } from './push-toggle';
 
 export const metadata = { title: 'Avisos' };
 
 export default async function AvisosPage() {
   const user = await requireUser();
-  const list = await loadNotifications(user.id);
+  const [list, subs] = await Promise.all([
+    loadNotifications(user.id),
+    db
+      .select({ id: pushSubscriptions.id })
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.userId, user.id))
+      .limit(1),
+  ]);
   const unread = list.filter((n) => !n.readAt).length;
+  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || undefined;
 
   return (
     <div className="space-y-6">
@@ -18,7 +30,7 @@ export default async function AvisosPage() {
         <div>
           <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Avisos</h1>
           <p className="mt-1.5 text-[15px] text-ink-muted">
-            Alertas de ritmo semanal, cobros próximos, cierres de ciclo y redenciones confirmadas.
+            Alertas de ritmo semanal, cobros próximos, cierres de ciclo y descuentos confirmados.
           </p>
         </div>
         {unread > 0 && (
@@ -29,6 +41,8 @@ export default async function AvisosPage() {
           </form>
         )}
       </div>
+
+      <PushToggleCard vapidPublicKey={vapidPublicKey} initialSubscribed={subs.length > 0} />
 
       {list.length === 0 ? (
         <div className="surface-card flex flex-col items-center gap-2 p-8 text-center">
