@@ -100,11 +100,6 @@ export function MerchantSidebar({
             </span>
           </div>
         </Link>
-        {isDemo && (
-          <Link href="/demo" className="badge-terra" title="Cambiar actor del demo">
-            Demo
-          </Link>
-        )}
       </div>
 
       <div className="mx-4 mb-3 rounded-xl border border-terra/20 bg-terra-pale/70 px-3.5 py-2.5">

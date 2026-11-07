@@ -30,19 +30,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         isDemo={user.isDemo}
       />
 
-      {user.isDemo && (
-        <div className="no-print border-b border-terra/20 bg-terra-light px-4 py-2 text-center text-[13px] text-terra-dark">
-          Estás explorando una <strong>cuenta de demostración</strong> con datos simulados.{' '}
-          <Link href="/demo" className="font-semibold underline underline-offset-2">
-            Cambiar a vista Tendero o Data Room →
-          </Link>
-        </div>
-      )}
-
       <AppTopBar
         userName={user.name}
         unreadCount={unreadCount}
-        isDemo={user.isDemo}
+        isDemo={false}
         role="persona"
       />
 

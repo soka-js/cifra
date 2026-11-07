@@ -32,11 +32,14 @@ import { syncMerchantInvoice } from './merchant-data';
 export const DEMO_PERSONA_EMAIL = 'mariana.demo@cifra.co';
 export const DEMO_ROSA_EMAIL = 'rosa.demo@cifra.co';
 export const DEMO_ALLY_MEMBER_EMAIL = 'andres.demo@cifra.co';
+export const DEMO_ADMIN_EMAIL = 'admin@cifra.co';
 export const DEMO_PRIMARY_MERCHANT_SLUG = 'demo-panaderia-la-espiga';
 
 export interface DemoIds {
   marianaUserId: string;
   rosaUserId: string;
+  andresUserId?: string;
+  adminUserId?: string;
   espigaMerchantId: string;
   samplePendingCode: string;
 }
@@ -82,6 +85,33 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       .from(users)
       .where(eq(users.email, 'camila.demo@cifra.co'))
       .limit(1);
+    const [existingAndres] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, DEMO_ALLY_MEMBER_EMAIL))
+      .limit(1);
+
+    let [existingAdmin] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, DEMO_ADMIN_EMAIL))
+      .limit(1);
+
+    if (!existingAdmin) {
+      const demoPassHash = await hashPassword('CifraDemo2026!');
+      const [newAdmin] = await db
+        .insert(users)
+        .values({
+          email: DEMO_ADMIN_EMAIL,
+          passwordHash: demoPassHash,
+          name: 'Sebastián Socarrás (Fundador / Admin)',
+          role: 'admin',
+          isDemo: true,
+        })
+        .returning();
+      existingAdmin = newAdmin;
+    }
+
     // Asegurar que exista siempre un código fresco listo para probar en Caja durante el pitch
     const samplePendingCode = await ensureFreshDemoPosCode(
       existingEspiga.id,
@@ -95,6 +125,8 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     return {
       marianaUserId: existingMariana.id,
       rosaUserId: existingRosa.id,
+      andresUserId: existingAndres?.id,
+      adminUserId: existingAdmin?.id,
       espigaMerchantId: existingEspiga.id,
       samplePendingCode,
     };
@@ -207,6 +239,17 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       firstCifraAt: new Date(created195dAgo.getTime() + 165 * 1000),
       lastActiveAt: now,
       createdAt: created195dAgo,
+    })
+    .returning();
+
+  const [admin] = await db
+    .insert(users)
+    .values({
+      email: DEMO_ADMIN_EMAIL,
+      passwordHash: demoPassHash,
+      name: 'Sebastián Socarrás (Fundador / Admin)',
+      role: 'admin',
+      isDemo: true,
     })
     .returning();
 
@@ -837,6 +880,8 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
   return {
     marianaUserId: mariana!.id,
     rosaUserId: rosa!.id,
+    andresUserId: andres!.id,
+    adminUserId: admin?.id,
     espigaMerchantId: laEspiga!.id,
     samplePendingCode,
   };

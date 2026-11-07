@@ -112,24 +112,6 @@ export function AppTopBar({
             </Link>
           </div>
 
-          {/* Botón rápido de Tour Guiado en modo Demo */}
-          {isDemo && (
-            <button
-              type="button"
-              onClick={() => {
-                localStorage.setItem('cifra_demo_tour_active', '1');
-                const url = new URL(window.location.href);
-                url.searchParams.set('tour', '1');
-                router.push(url.pathname + '?' + url.searchParams.toString());
-              }}
-              className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary-pale px-2.5 py-1 text-[11.5px] font-bold text-primary-dark transition hover:bg-primary-light active:scale-95"
-              title="Iniciar recorrido automático guiado"
-            >
-              <Play size={10} className="fill-current" />
-              <span className="hidden sm:inline">Tour guiado</span>
-            </button>
-          )}
-
           {/* Avisos */}
           {role === 'persona' && (
             <Link

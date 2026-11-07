@@ -38,12 +38,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               Ir al portal de comercios →
             </Link>
           </p>
-          <p className="text-[13.5px]">
-            ¿Quieres explorar primero sin registrarte?{' '}
-            <Link href="/demo" className="font-semibold text-ink underline-offset-2 hover:underline">
-              Abrir Demo interactivo en 1 clic →
-            </Link>
-          </p>
         </div>
       }
     >

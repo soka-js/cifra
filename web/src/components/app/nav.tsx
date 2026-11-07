@@ -92,11 +92,6 @@ export function DesktopSidebar({
           <LogoMark size={28} />
           <span className="font-display text-[22px] font-bold tracking-[-0.025em] text-ink">cifra</span>
         </Link>
-        {isDemo && (
-          <Link href="/demo" className="badge-terra" title="Cambiar actor del demo">
-            Demo
-          </Link>
-        )}
       </div>
 
       {(userName || zoneLabel) && (

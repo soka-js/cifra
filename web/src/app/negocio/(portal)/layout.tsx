@@ -26,19 +26,10 @@ export default async function MerchantPortalLayout({
       />
 
       <div className="lg:pl-64 print:pl-0">
-        {(access.merchant.isDemo || access.user.isDemo) && (
-          <div className="no-print border-b border-terra/20 bg-terra-pale px-4 py-2 text-center text-[13px] text-terra-dark">
-            Estás viendo el negocio de demostración <strong>{access.merchant.name}</strong>.{' '}
-            <Link href="/demo" className="font-bold underline">
-              Cambiar vista (Persona / Tendero / Data Room)
-            </Link>
-          </div>
-        )}
-
         <AppTopBar
           merchantName={access.merchant.name}
           merchantSlug={access.merchant.slug}
-          isDemo={access.merchant.isDemo || access.user.isDemo}
+          isDemo={false}
           role="negocio"
         />
 

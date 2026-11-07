@@ -2,6 +2,7 @@ import { ArrowRight, CheckCircle2, QrCode, ShieldCheck, Store } from 'lucide-rea
 import { cookies, headers } from 'next/headers';
 import Image from 'next/image';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Faq } from '@/components/landing/faq';
 import { LeadForm } from '@/components/landing/lead-form';
 import { MerchantCalculator } from '@/components/landing/merchant-calculator';
@@ -27,75 +28,42 @@ export default async function Landing() {
   const variant = raw === 'B' ? 'B' : 'A';
   const user = await getCurrentUser();
 
+  if (user) {
+    redirect('/app');
+  }
+
   return (
     <div className="overflow-x-clip">
-      {/* Barra interactiva de acceso directo a la App */}
-      <div className="border-b border-primary/25 bg-primary-pale/90 px-4 py-2.5 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2.5 text-[13px]">
-          <div className="flex items-center gap-2 text-ink">
-            <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <strong className="font-semibold">Aplicación CIFRA en vivo:</strong>
-            <span className="text-ink-muted hidden sm:inline">Entra directamente al producto sin rodeos</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/app"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[12px] font-bold text-white shadow-sm transition hover:bg-primary-dark"
-            >
-              <span>📱 Abrir como Persona</span>
-            </Link>
-            <Link
-              href="/negocio"
-              className="inline-flex items-center gap-1.5 rounded-full bg-terra px-3 py-1 text-[12px] font-bold text-white shadow-sm transition hover:bg-terra-dark"
-            >
-              <span>🏪 Abrir como Negocio</span>
-            </Link>
-            <Link
-              href="/demo"
-              className="rounded-full border border-line bg-white px-2.5 py-1 text-[12px] font-semibold text-ink-muted transition hover:text-ink"
-            >
-              Centro Demo
-            </Link>
-          </div>
-        </div>
-      </div>
-
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <Logo />
-        <nav aria-label="Principal" className="flex items-center gap-1 text-[14.5px] sm:gap-2">
-          <Link
-            href="/app"
-            className="rounded-lg px-3 py-2 font-semibold text-primary-dark hover:bg-primary-light"
+        <nav aria-label="Principal" className="flex items-center gap-1 text-[14.5px] sm:gap-3">
+          <a
+            href="#como-funciona"
+            className="hidden sm:inline-block rounded-lg px-3 py-2 font-medium text-ink-muted transition hover:text-ink"
           >
-            📱 App Persona
-          </Link>
-          <Link
-            href="/negocio"
-            className="rounded-lg px-3 py-2 font-semibold text-terra-dark hover:bg-terra-pale"
+            Para personas
+          </a>
+          <a
+            href="#negocios"
+            className="hidden sm:inline-block rounded-lg px-3 py-2 font-medium text-ink-muted transition hover:text-ink"
           >
-            🏪 App Negocio
-          </Link>
-          <Link
-            href="/demo"
-            className="rounded-lg px-3 py-2 font-semibold text-ink hover:bg-paper-warm"
+            Para comercios
+          </a>
+          <a
+            href="#tus-datos"
+            className="hidden md:inline-block rounded-lg px-3 py-2 font-medium text-ink-muted transition hover:text-ink"
           >
-            Demo en vivo
+            Seguridad
+          </a>
+          <Link
+            href="/entrar"
+            className="rounded-lg px-3 py-2 font-semibold text-ink-muted transition hover:bg-paper hover:text-ink"
+          >
+            Entrar
           </Link>
-
-          {user ? (
-            <TrackedLink href="/app" location="header" className="btn-primary ml-1 sm:ml-2">
-              Ir a mi cifra
-            </TrackedLink>
-          ) : (
-            <>
-              <Link href="/entrar" className="rounded-lg px-3 py-2 font-semibold text-ink-muted hover:bg-paper">
-                Entrar
-              </Link>
-              <TrackedLink href="/registro" location="header" className="btn-primary ml-1 px-4 sm:ml-2 lg:px-5">
-                Empieza gratis
-              </TrackedLink>
-            </>
-          )}
+          <TrackedLink href="/registro" location="header" className="btn-primary ml-1 px-4 sm:ml-2 lg:px-5">
+            Empieza gratis
+          </TrackedLink>
         </nav>
       </header>
 
@@ -114,15 +82,15 @@ export default async function Landing() {
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
-              <Link href="/app" className="btn-primary min-h-13 px-6 text-[15.5px]">
-                📱 Abrir App Persona
+              <TrackedLink href="/registro" location="hero" className="btn-primary min-h-13 px-7 text-[16px]">
+                Empieza gratis
                 <ArrowRight size={17} aria-hidden="true" />
-              </Link>
-              <Link href="/negocio" className="btn-terra min-h-13 px-6 text-[15.5px]">
-                🏪 Abrir App Negocio
-              </Link>
-              <Link href="/demo" className="btn-ghost min-h-13 px-5 text-[15px]">
-                Probar Demo en 1 clic
+              </TrackedLink>
+              <Link
+                href="/entrar"
+                className="btn-ghost min-h-13 border border-line bg-white px-6 text-[15.5px] shadow-sm hover:bg-paper"
+              >
+                Ya tengo cuenta
               </Link>
             </div>
 
@@ -481,9 +449,6 @@ export default async function Landing() {
             <Link href="/entrar" className="text-ink-muted hover:text-ink">
               Iniciar sesión
             </Link>
-            <Link href="/demo" className="font-semibold text-primary-dark hover:underline">
-              Modo Demo en 1 clic
-            </Link>
           </nav>
           <nav aria-label="Comercios y Entidades" className="flex flex-col gap-2.5">
             <span className="font-semibold text-ink">Comercios y Aliados</span>
@@ -511,9 +476,15 @@ export default async function Landing() {
               </a>
             )}
           </nav>
-          <p className="text-[13px] text-ink-faint md:col-span-4">
-            CIFRA · Bogotá, Colombia · Diseño de Productos e Innovación en TI, Universidad de los Andes, 2026.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-ink-faint md:col-span-4">
+            <p>CIFRA · Bogotá, Colombia · Fintech para el bienestar financiero diario del barrio, 2026.</p>
+            <Link
+              href="/admin"
+              className="text-[12px] text-ink-faint/70 transition hover:text-ink-muted hover:underline"
+            >
+              Consola Privada (Jurados / Inversionistas)
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

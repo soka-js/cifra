@@ -6,13 +6,17 @@ import {
   Clock,
   ExternalLink,
   LineChart,
+  Lock,
   Play,
   Receipt,
+  RotateCcw,
   ShieldCheck,
+  Sparkles,
   Store,
+  UserRound,
 } from 'lucide-react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { resetDemoData } from '@/app/demo/actions';
 import { Logo } from '@/components/logo';
 import { getCurrentUser, isAdmin } from '@/lib/auth/session';
 import { bogotaDate } from '@/lib/data';
@@ -71,12 +75,212 @@ export default async function AdminPage({
   const user = await getCurrentUser();
   const realAdmin = isAdmin(user);
   const demoViewer = !realAdmin && Boolean(user?.isDemo);
+  const sp = await searchParams;
 
   if (!realAdmin && !demoViewer) {
-    notFound();
-  }
+    return (
+      <div className="min-h-screen bg-paper px-4 py-8 sm:px-6 sm:py-12">
+        <div className="mx-auto max-w-4xl space-y-8">
+          <header className="flex flex-wrap items-center justify-between gap-4">
+            <Logo />
+            <div className="flex items-center gap-3">
+              <Link href="/" className="text-[14px] font-semibold text-ink-muted transition hover:text-ink">
+                ← Volver al sitio público
+              </Link>
+            </div>
+          </header>
 
-  const sp = await searchParams;
+          {sp.reiniciado === '1' && (
+            <div className="flex items-center gap-2 rounded-2xl border border-primary/25 bg-primary-pale px-4 py-3 text-[14px] font-medium text-primary-dark">
+              <CheckCircle2 size={17} aria-hidden="true" />
+              <span>Datos del ecosistema piloto y credenciales de prueba restaurados exitosamente.</span>
+            </div>
+          )}
+
+          <div className="rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-8">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-[12px] font-bold tracking-wide text-white">
+                <Lock size={12} aria-hidden="true" />
+                CONSOLA PRIVADA DE VALIDACIÓN
+              </span>
+              <span className="rounded-full bg-terra-pale px-3 py-1 text-[12px] font-bold text-terra-dark">
+                Fundadores, Jurados Uniandes e Inversionistas
+              </span>
+            </div>
+
+            <h1 className="mt-4 font-display text-[32px] font-extrabold leading-[1.08] tracking-[-0.03em] text-ink sm:text-[40px]">
+              Credenciales Maestras y Herramientas de Pitch
+            </h1>
+            <p className="mt-3 text-[16px] leading-relaxed text-ink-muted">
+              CIFRA está construida y desplegada como un producto real en producción. Esta consola privada
+              centraliza el acceso con 1 clic para jurados y evaluadores, las credenciales maestras de cada rol,
+              el lanzador del recorrido guiado oficial y las métricas falsables del Data Room.
+            </p>
+
+            {/* Banner de Tour Guiado Oficial */}
+            <div className="mt-8 overflow-hidden rounded-2xl border border-primary/30 bg-primary-pale/70 p-5 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-primary-dark">
+                    <Sparkles size={14} className="fill-current" />
+                    <span>Recorrido Guiado Automático (Pitch)</span>
+                  </div>
+                  <h2 className="font-display text-[20px] font-bold text-ink">
+                    9 paradas integradas: De Mariana a Panadería La Espiga
+                  </h2>
+                  <p className="max-w-xl text-[14px] text-ink-muted">
+                    Inicia el recorrido con auto-avance o paso manual. Muestra la propuesta de valor limpia,
+                    el simulador «¿puedo gastar?», el QR de barrio y la validación en Caja POS del tendero.
+                  </p>
+                </div>
+                <a
+                  href="/api/demo/session?role=persona&redirect=/app?tour=1"
+                  className="btn-primary inline-flex shrink-0 items-center justify-center gap-2 px-5 py-3 text-[14.5px] font-bold shadow-sm"
+                >
+                  <Play size={16} className="fill-current" />
+                  <span>Iniciar Tour Pitch</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Matriz de Credenciales Maestras */}
+            <div className="mt-8 space-y-4">
+              <h2 className="text-[13px] font-bold uppercase tracking-wider text-ink-muted">
+                Credenciales Maestras de Validación (Acceso en 1 Clic)
+              </h2>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* 1. Persona */}
+                <div className="flex flex-col justify-between rounded-2xl border border-line bg-paper-warm/40 p-5 transition hover:border-primary/40">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-primary-dark">
+                        <UserRound size={15} /> Persona (Consumidor B2C)
+                      </span>
+                      <span className="rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-bold text-primary-dark">
+                        Mariana Rojas
+                      </span>
+                    </div>
+                    <div className="text-[13px] text-ink-muted">
+                      <p><strong>Email:</strong> <code className="rounded border border-line bg-white px-1.5 py-0.5">mariana.demo@cifra.co</code></p>
+                      <p className="mt-1"><strong>Clave:</strong> <code className="rounded border border-line bg-white px-1.5 py-0.5">CifraDemo2026!</code></p>
+                      <p className="mt-2 text-[12px] text-ink-faint">
+                        Ingreso quincenal Bancolombia + Nequi. Revisa su cifra limpia, simulador «¿puedo?» y mapa de beneficios.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href="/api/demo/session?role=persona&redirect=/app"
+                    className="btn-sm btn-primary mt-4 w-full justify-center"
+                  >
+                    <span>Entrar como Persona →</span>
+                  </a>
+                </div>
+
+                {/* 2. Tendero */}
+                <div className="flex flex-col justify-between rounded-2xl border border-line bg-paper-warm/40 p-5 transition hover:border-terra/40">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-terra-dark">
+                        <Store size={15} /> Tendero (Micronegocio B2B)
+                      </span>
+                      <span className="rounded-full bg-terra-pale px-2 py-0.5 text-[11px] font-bold text-terra-dark">
+                        La Espiga (Doña Rosa)
+                      </span>
+                    </div>
+                    <div className="text-[13px] text-ink-muted">
+                      <p><strong>Email:</strong> <code className="rounded border border-line bg-white px-1.5 py-0.5">rosa.demo@cifra.co</code></p>
+                      <p className="mt-1"><strong>Clave:</strong> <code className="rounded border border-line bg-white px-1.5 py-0.5">CifraDemo2026!</code></p>
+                      <p className="mt-2 text-[12px] text-ink-faint">
+                        Caja POS, cuadre diario, Bre-B, ofertas relámpago y corte quincenal de comisiones sin cobro por tique.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href="/api/demo/session?role=merchant&redirect=/negocio"
+                    className="btn-sm btn-terra mt-4 w-full justify-center"
+                  >
+                    <span>Entrar como Tendero →</span>
+                  </a>
+                </div>
+
+                {/* 3. Aliado */}
+                <div className="flex flex-col justify-between rounded-2xl border border-line bg-paper-warm/40 p-5 transition hover:border-ink/40">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-ink">
+                        <Building2 size={15} /> Aliado B2B2C (Entidad)
+                      </span>
+                      <span className="rounded-full bg-paper px-2 py-0.5 text-[11px] font-bold text-ink">
+                        Coopfuturo (Andrés)
+                      </span>
+                    </div>
+                    <div className="text-[13px] text-ink-muted">
+                      <p><strong>Email:</strong> <code className="rounded border border-line bg-white px-1.5 py-0.5">andres.demo@cifra.co</code></p>
+                      <p className="mt-1"><strong>Clave:</strong> <code className="rounded border border-line bg-white px-1.5 py-0.5">CifraDemo2026!</code></p>
+                      <p className="mt-2 text-[12px] text-ink-faint">
+                        Miembro de cooperativa con ingreso mensual. Reparto del 30 % de comisiones e integración API.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href="/api/demo/session?role=aliado&redirect=/admin?tab=aliados"
+                    className="btn-sm border border-line bg-white text-ink hover:bg-paper mt-4 w-full justify-center"
+                  >
+                    <span>Entrar como Aliado →</span>
+                  </a>
+                </div>
+
+                {/* 4. Admin / Data Room */}
+                <div className="flex flex-col justify-between rounded-2xl border border-line bg-paper-warm/40 p-5 transition hover:border-ink/40">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-ink">
+                        <ShieldCheck size={15} /> Administrador & Data Room
+                      </span>
+                      <span className="rounded-full bg-ink text-white px-2 py-0.5 text-[11px] font-bold">
+                        Sebastián Socarrás
+                      </span>
+                    </div>
+                    <div className="text-[13px] text-ink-muted">
+                      <p><strong>Email:</strong> <code className="rounded border border-line bg-white px-1.5 py-0.5">admin@cifra.co</code></p>
+                      <p className="mt-1"><strong>Clave:</strong> <code className="rounded border border-line bg-white px-1.5 py-0.5">CifraDemo2026!</code></p>
+                      <p className="mt-2 text-[12px] text-ink-faint">
+                        Data Room PMC completo: retención &gt; 40 %, renovación &gt; 50 %, TTFC &lt; 5 min, CRM y conciliación.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href="/api/demo/session?role=admin&redirect=/admin?tab=dataroom"
+                    className="btn-sm bg-ink text-white hover:bg-black mt-4 w-full justify-center"
+                  >
+                    <span>Entrar a Consola Admin →</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Herramientas de Reseteo y Soporte */}
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6 text-[13.5px]">
+              <div className="text-ink-muted">
+                ¿Deseas restaurar la base de datos de prueba a su estado limpio inicial?
+              </div>
+              <form action={resetDemoData}>
+                <button
+                  type="submit"
+                  className="btn-sm border border-line bg-white text-ink-muted hover:text-ink hover:border-ink/30"
+                  title="Restaurar estado inicial del barrio de prueba"
+                >
+                  <RotateCcw size={14} aria-hidden="true" />
+                  <span>Reiniciar datos piloto</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const tab = ['dataroom', 'negocios', 'conciliacion', 'aliados'].includes(sp.tab ?? '')
     ? (sp.tab as 'dataroom' | 'negocios' | 'conciliacion' | 'aliados')
     : 'dataroom';
@@ -326,14 +530,46 @@ export default async function AdminPage({
 
   return (
     <div className="min-h-screen bg-paper pb-16">
-      {demoViewer && (
-        <div className="border-b border-terra/20 bg-terra-pale px-4 py-2 text-center text-[13px] text-terra-dark">
-          Vista <strong>Data Room de Demostración</strong> (solo lectura sobre el barrio piloto simulado).{' '}
-          <Link href="/demo" className="font-bold underline">
-            Cambiar actor (Persona / Tendero / Data Room)
-          </Link>
+      {/* Barra Maestra Ejecutiva de Credenciales y Cambio Rápido de Rol */}
+      <div className="border-b border-primary/20 bg-primary-pale/90 px-4 py-2.5 text-[13px] text-ink backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold text-primary-dark">Credenciales Maestras:</span>
+            <span className="text-ink-muted">
+              Persona: <strong className="text-ink">mariana.demo@cifra.co</strong> · Tendero:{' '}
+              <strong className="text-ink">rosa.demo@cifra.co</strong> · Admin:{' '}
+              <strong className="text-ink">admin@cifra.co</strong> · Clave:{' '}
+              <code className="rounded border border-line bg-white px-1.5 py-0.5 text-[12px]">
+                CifraDemo2026!
+              </code>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href="/api/demo/session?role=persona&redirect=/app"
+              className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11.5px] font-bold text-white transition hover:bg-primary-dark"
+              title="Abrir como Mariana"
+            >
+              <span>📱 Mariana (Persona)</span>
+            </a>
+            <a
+              href="/api/demo/session?role=merchant&redirect=/negocio"
+              className="inline-flex items-center gap-1 rounded-full bg-terra px-3 py-1 text-[11.5px] font-bold text-white transition hover:bg-terra-dark"
+              title="Abrir como Doña Rosa"
+            >
+              <span>🏪 Doña Rosa (Tendero)</span>
+            </a>
+            <a
+              href="/api/demo/session?role=persona&redirect=/app?tour=1"
+              className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-white px-2.5 py-1 text-[11.5px] font-bold text-primary-dark transition hover:bg-primary-light"
+              title="Iniciar recorrido guiado de 9 pasos"
+            >
+              <Play size={11} className="fill-current" />
+              <span>Tour Pitch</span>
+            </a>
+          </div>
         </div>
-      )}
+      </div>
 
       <div className="mx-auto max-w-6xl px-4 pt-7 sm:px-6">
         <header className="flex flex-wrap items-center justify-between gap-4">
@@ -365,12 +601,18 @@ export default async function AdminPage({
               </div>
             )}
 
-            <Link href="/app" className="btn-sm border border-line bg-white text-ink">
+            <a
+              href="/api/demo/session?role=persona&redirect=/app"
+              className="btn-sm border border-line bg-white text-ink transition hover:bg-paper"
+            >
               Vista Persona
-            </Link>
-            <Link href="/negocio" className="btn-sm border border-line bg-white text-terra-dark">
+            </a>
+            <a
+              href="/api/demo/session?role=merchant&redirect=/negocio"
+              className="btn-sm border border-line bg-white text-terra-dark transition hover:bg-paper"
+            >
               Vista Negocio
-            </Link>
+            </a>
             {realAdmin && (
               <form action={triggerDailyCronFromAdmin}>
                 <button type="submit" className="btn-sm bg-ink text-white" title="Ejecutar evaluación diaria de avisos y vencimientos">

@@ -71,10 +71,7 @@ export function DemoTourController({
         }
       }
     } else {
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('cifra_demo_tour_active') : null;
-      if (saved === '1') {
-        setActive(true);
-      }
+      setActive(false);
     }
   }, [searchParams, steps.length]);
 
@@ -188,27 +185,8 @@ export function DemoTourController({
   // Si no está en demo, no renderizar nada
   if (!isDemo) return null;
 
-  // Botón flotante para abrir el tour si está inactivo
-  if (!active) {
-    return (
-      <div className="no-print fixed bottom-20 right-4 z-40 sm:bottom-6 sm:right-6">
-        <button
-          type="button"
-          onClick={() => startTour('all')}
-          className="group flex items-center gap-2 rounded-full border border-primary/40 bg-ink px-4 py-2.5 text-[13px] font-bold text-white shadow-xl transition-all duration-200 hover:scale-105 hover:bg-black active:scale-95"
-          title="Ver cómo funciona CIFRA y su propuesta de valor paso a paso"
-        >
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
-            <Play size={10} className="fill-white" />
-          </span>
-          <span>Recorrido Automático Demo</span>
-          <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-bold text-primary-light">
-            9 pasos
-          </span>
-        </button>
-      </div>
-    );
-  }
+  // Si no está activo el tour, no renderizar ningún botón flotante en la app
+  if (!active) return null;
 
   // Modo minimizado
   if (minimized) {
