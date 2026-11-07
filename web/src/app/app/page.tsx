@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { BalancePrompt, BalanceRow } from '@/components/app/balance-editor';
+import { CifraPrivacyHero } from '@/components/app/cifra-privacy-hero';
 import { DailyPulseCard } from '@/components/app/daily-pulse-card';
 import { GaOnce } from '@/components/app/ga-once';
 import { TrackView } from '@/components/app/track-view';
@@ -147,42 +148,19 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
       <TrackView name="view_cifra" props={{ status: c.status, ready: c.ready, daily: c.dailySource }} />
       {sp.listo === 'rapido' && <GaOnce name="quick_start" />}
 
-      {/* Tiquete principal CIFRA: número hero + resta transparente a la vista */}
-      <section aria-labelledby="cifra-label" className="ticket-surface p-5 sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className={statusBadge.cls}>{statusBadge.text}</span>
-          <span className="tnum text-[12.5px] font-medium text-ink-faint">
-            Próximo pago: {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'})
-          </span>
-        </div>
-
-        <p id="cifra-label" className="mt-4 text-[15px] font-medium text-ink-muted">
-          {negative
-            ? `Para cubrir tus fijos y tu ritmo hasta el ${shortDate(c.nextIncomeOn)} te faltarían`
-            : `Disponible seguro hasta el ${shortDate(c.nextIncomeOn)}`}
-        </p>
-        <p className={`tnum mt-1 font-display text-[52px] font-extrabold leading-none tracking-[-0.04em] sm:text-[62px] ${numberColor}`}>
-          {cop(big)}
-        </p>
-        <p className="mt-3 text-[15px] leading-snug text-ink-muted">
-          {negative
-            ? 'Sin sustos: este número solo mira de aquí a tu próximo ingreso. Abajo puedes ver qué cobro o gasto diario ajustar.'
-            : `Equivale a unos ${cop(c.perDayMinor)} libres por día durante ${c.daysLeft} ${
-                c.daysLeft === 1 ? 'día' : 'días'
-              }, además de tu día a día habitual.`}
-        </p>
-
-        <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          <Link id="cta-hoy-ask" href="/app/gasto" className="btn-primary">
-            <CircleHelp size={18} aria-hidden="true" /> ¿Puedo hacer un gasto?
-          </Link>
-          <Link href="/app/movimientos" className="btn-ghost">
-            En qué se me va
-          </Link>
-        </div>
-
-        <div className="ticket-divider" />
-
+      {/* Tiquete principal CIFRA con Modo Ojo (Privacidad TransMilenio), Quick Actions Hub y cálculo seguro */}
+      <CifraPrivacyHero
+        availableMinor={c.availableMinor}
+        negative={negative}
+        perDayMinor={c.perDayMinor}
+        daysLeft={c.daysLeft}
+        nextIncomeOn={c.nextIncomeOn}
+        statusBadge={statusBadge}
+        numberColor={numberColor}
+        captureAccounts={dailyBundle?.captureAccounts ?? editable}
+        todayIso={todayInBogota()}
+        currentHour={currentBogotaHour()}
+      >
         <div aria-labelledby="resta">
           <div className="flex items-baseline justify-between">
             <h2 id="resta" className="text-[13px] font-semibold uppercase tracking-wider text-ink-faint">
@@ -257,7 +235,7 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
             </div>
           </div>
         </div>
-      </section>
+      </CifraPrivacyHero>
 
       {dailyBundle && (
         <DailyPulseCard

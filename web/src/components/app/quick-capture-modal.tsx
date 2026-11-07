@@ -13,6 +13,8 @@ interface QuickCaptureModalProps {
   currentHour: number;
   buttonLabel?: string;
   buttonClassName?: string;
+  buttonId?: string;
+  children?: React.ReactNode;
 }
 
 const SAMPLE_BANCOLOMBIA =
@@ -29,6 +31,8 @@ export function QuickCaptureModal({
   currentHour,
   buttonLabel = 'Anotar gasto o pegar SMS (3 seg)',
   buttonClassName = 'btn-ink w-full sm:w-auto',
+  buttonId = 'btn-open-quick-capture',
+  children,
 }: QuickCaptureModalProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'rapido' | 'sms_banco' | 'comprobante'>('rapido');
@@ -56,13 +60,19 @@ export function QuickCaptureModal({
   return (
     <>
       <button
-        id="btn-open-quick-capture"
+        id={buttonId}
         type="button"
         onClick={() => setOpen(true)}
         className={buttonClassName}
       >
-        <Plus size={17} aria-hidden="true" />
-        <span>{buttonLabel}</span>
+        {children ? (
+          children
+        ) : (
+          <>
+            <Plus size={17} aria-hidden="true" />
+            <span>{buttonLabel}</span>
+          </>
+        )}
       </button>
 
       {open && (
