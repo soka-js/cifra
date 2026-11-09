@@ -10,15 +10,26 @@ import { db } from '@/lib/db';
 import {
   accessLog,
   accounts,
+  commitments,
   dataSources,
+  embedTokens,
+  merchantInvoices,
   merchantLedgerEntries,
+  merchantPayments,
   merchants,
   offerCodes,
   offers,
   paidCycleCharges,
+  partners,
+  recurringMarks,
   redemptions,
+  savingsEvents,
   transactions,
+  users,
   type MerchantFeaturedItem,
+  type MerchantMandateConfig,
+  type UserAppPreferences,
+  type UserConsentMandateConfig,
 } from '@/lib/db/schema';
 import {
   evaluateOfferEligibility,
@@ -28,8 +39,9 @@ import {
 import { computeHonestMerchantMargin } from '@/lib/engine/crossref';
 import { addDays, todayInBogota } from '@/lib/engine/dates';
 import { parseChatExpenses, parseColombianBankAlert } from '@/lib/engine/quick-capture';
-import { cop, parsePesosInput } from '@/lib/format';
+import { CONSENT_VERSION, cop, parsePesosInput } from '@/lib/format';
 import { loadCategoryOverrides } from '@/lib/ingest';
+import { currentPeriodMonth, loadMerchantDashboard } from '@/lib/merchant-data';
 import { currentBogotaHour } from '@/lib/v3-data';
 
 export type V3ActionState =
@@ -640,3 +652,623 @@ export async function saveMerchantFeaturedItemsAction(
   revalidatePath(`/b/${access.merchant.slug}`);
   return { status: 'ok', message: 'Vitrina pública actualizada y lista para compartir por WhatsApp o Instagram.' };
 }
+
+// ---------------------------------------------------------------------------
+// Persistencia Real en PostgreSQL: Metas de Ahorro, NBA, Gasto, Plan, Mandato Ley 1581 y Recaudo B2B
+// ---------------------------------------------------------------------------
+
+export async function saveUserSavingsGoalAction(input: {
+  goalPresetId: string;
+  goalTitle: string;
+  goalCategoryLabel: string;
+  goalTargetMinor: number;
+  goalSavedBaseMinor: number;
+  goalMonthlyPaceMinor: number;
+}): Promise<{ ok: boolean; message: string; preferences: UserAppPreferences }> {
+  const user = await requireUser();
+  const title = input.goalTitle.trim().slice(0, 80) || 'Mi meta en CIFRA';
+  const targetMinor = Math.max(100_000_00, Math.round(input.goalTargetMinor));
+  const savedBaseMinor = Math.max(0, Math.round(input.goalSavedBaseMinor));
+  const monthlyPaceMinor = Math.max(20_000_00, Math.round(input.goalMonthlyPaceMinor));
+
+  const nextPrefs: UserAppPreferences = {
+    ...(user.appPreferences ?? {}),
+    goalPresetId: input.goalPresetId,
+    goalTitle: title,
+    goalCategoryLabel: input.goalCategoryLabel.trim().slice(0, 50) || 'Meta personal',
+    goalTargetMinor: targetMinor,
+    goalSavedBaseMinor: savedBaseMinor,
+    goalMonthlyPaceMinor: monthlyPaceMinor,
+  };
+
+  await db.update(users).set({ appPreferences: nextPrefs }).where(eq(users.id, user.id));
+  await db.insert(accessLog).values({
+    userId: user.id,
+    actor: 'persona',
+    action: 'guardar_meta_ahorro',
+    detail: { title, targetMinor, monthlyPaceMinor },
+  });
+
+  revalidatePath('/app', 'layout');
+  return {
+    ok: true,
+    message: `Meta «${title}» (${cop(targetMinor)}) guardada en tu cuenta.`,
+    preferences: nextPrefs,
+  };
+}
+
+export async function addGoalContributionAction(input: {
+  amountMinor: number;
+  label?: string;
+  deductFromBalance?: boolean;
+}): Promise<{ ok: boolean; message: string }> {
+  const user = await requireUser();
+  const amountMinor = Math.round(input.amountMinor);
+  if (!Number.isFinite(amountMinor) || amountMinor <= 0) {
+    return { ok: false, message: 'Escribe un monto en pesos mayor a cero.' };
+  }
+
+  const now = new Date();
+  const today = todayInBogota(now);
+  const goalTitle = user.appPreferences?.goalTitle || 'Meta de ahorro';
+  const cleanLabel = (input.label?.trim() || `Abono a ${goalTitle}`).slice(0, 90);
+  const refKey = `abono_meta:${today}:${now.getTime()}`;
+
+  await db.insert(savingsEvents).values({
+    userId: user.id,
+    kind: 'comision_evitada',
+    amountMinor,
+    referenceKey: refKey,
+    label: cleanLabel,
+    occurredOn: today,
+  });
+
+  if (input.deductFromBalance) {
+    const acct = await ensureEditableLiquidAccount(user.id);
+    await db
+      .insert(transactions)
+      .values({
+        userId: user.id,
+        accountId: acct.id,
+        postedOn: today,
+        description: cleanLabel,
+        amountMinor: -Math.abs(amountMinor),
+        merchantKey: 'ahorro_meta_cifra',
+        merchantName: 'Meta de ahorro CIFRA',
+        category: 'ahorro_inversion',
+        categorySource: 'user',
+        spentHour: currentBogotaHour(now),
+        captureMethod: 'rapido',
+        dedupeKey: sha256(`goal_contrib:${user.id}:${refKey}`),
+      })
+      .onConflictDoNothing();
+
+    if (acct.balanceMinor !== null) {
+      await db
+        .update(accounts)
+        .set({ balanceMinor: acct.balanceMinor - Math.abs(amountMinor), balanceAt: now })
+        .where(eq(accounts.id, acct.id));
+    }
+  }
+
+  await db.insert(accessLog).values({
+    userId: user.id,
+    actor: 'persona',
+    action: 'abono_meta_ahorro',
+    detail: { amountMinor, label: cleanLabel, deductFromBalance: Boolean(input.deductFromBalance) },
+  });
+
+  revalidatePath('/app', 'layout');
+  return {
+    ok: true,
+    message: `Abonaste ${cop(amountMinor)} a tu meta «${goalTitle}». Tu progreso real se actualizó.`,
+  };
+}
+
+export async function toggleNbaCommitmentAction(input: {
+  nbaId: string;
+  nbaTitle: string;
+  monthlySavingsMinor: number;
+  merchantKey?: string;
+  recordImmediateWeekSaving?: boolean;
+}): Promise<{ ok: boolean; committedIds: string[]; message: string }> {
+  const user = await requireUser();
+  const current = new Set(user.appPreferences?.committedNbaIds ?? []);
+  const wasCommitted = current.has(input.nbaId);
+
+  if (wasCommitted && !input.recordImmediateWeekSaving) {
+    current.delete(input.nbaId);
+  } else {
+    current.add(input.nbaId);
+  }
+
+  const committedIds = Array.from(current);
+  const nextPrefs: UserAppPreferences = {
+    ...(user.appPreferences ?? {}),
+    committedNbaIds: committedIds,
+  };
+
+  await db.update(users).set({ appPreferences: nextPrefs }).where(eq(users.id, user.id));
+
+  const today = todayInBogota();
+  if (!wasCommitted && input.merchantKey) {
+    await db
+      .insert(recurringMarks)
+      .values({
+        userId: user.id,
+        merchantKey: input.merchantKey,
+        mark: 'no_lo_uso',
+        cancelledAt: new Date(),
+        savedMonthlyMinor: input.monthlySavingsMinor,
+      })
+      .onConflictDoUpdate({
+        target: [recurringMarks.userId, recurringMarks.merchantKey],
+        set: {
+          mark: 'no_lo_uso',
+          cancelledAt: new Date(),
+          savedMonthlyMinor: input.monthlySavingsMinor,
+          updatedAt: new Date(),
+        },
+      });
+
+    await db
+      .insert(savingsEvents)
+      .values({
+        userId: user.id,
+        kind: 'cobro_cancelado',
+        amountMinor: input.monthlySavingsMinor,
+        referenceKey: input.merchantKey,
+        label: `Suscripción cancelada: ${input.nbaTitle.slice(0, 60)}`,
+        occurredOn: today,
+      })
+      .onConflictDoNothing();
+  } else if (input.recordImmediateWeekSaving) {
+    const weeklyAmount = Math.max(5_000_00, Math.round(input.monthlySavingsMinor / 4));
+    await db
+      .insert(savingsEvents)
+      .values({
+        userId: user.id,
+        kind: 'comision_evitada',
+        amountMinor: weeklyAmount,
+        referenceKey: `nba_week:${input.nbaId}:${today}`,
+        label: `Ahorro semanal NBA: ${input.nbaTitle.slice(0, 55)}`,
+        occurredOn: today,
+      })
+      .onConflictDoNothing();
+  }
+
+  revalidatePath('/app', 'layout');
+  return {
+    ok: true,
+    committedIds,
+    message: wasCommitted && !input.recordImmediateWeekSaving
+      ? 'Jugada retirada de tu plan activo.'
+      : `Jugada comprometida en tu meta (+${cop(input.monthlySavingsMinor)}/mes).`,
+  };
+}
+
+export async function activateAllNbaPlanAction(
+  nbaIds: string[],
+): Promise<{ ok: boolean; committedIds: string[]; message: string }> {
+  const user = await requireUser();
+  const current = user.appPreferences?.committedNbaIds ?? [];
+  const allActive = nbaIds.length > 0 && nbaIds.every((id) => current.includes(id));
+  const committedIds = allActive ? [] : Array.from(new Set(nbaIds));
+
+  const nextPrefs: UserAppPreferences = {
+    ...(user.appPreferences ?? {}),
+    committedNbaIds: committedIds,
+  };
+  await db.update(users).set({ appPreferences: nextPrefs }).where(eq(users.id, user.id));
+  revalidatePath('/app', 'layout');
+
+  return {
+    ok: true,
+    committedIds,
+    message: allActive
+      ? 'Plan de jugadas reiniciado.'
+      : `Activaste las ${committedIds.length} jugadas en tu plan de ahorro mensual.`,
+  };
+}
+
+export async function executeEvaluatedSpendAction(input: {
+  amountMinor: number;
+  concept: string;
+  mode: 'registrar_gasto' | 'apartar_ciclo';
+}): Promise<{ ok: boolean; message: string }> {
+  const user = await requireUser();
+  const amountMinor = Math.abs(Math.round(input.amountMinor));
+  if (!Number.isFinite(amountMinor) || amountMinor <= 0) {
+    return { ok: false, message: 'Monto inválido.' };
+  }
+
+  const now = new Date();
+  const today = todayInBogota(now);
+  const label = (input.concept.trim() || 'Gasto evaluado en ¿Puedo?').slice(0, 75);
+
+  if (input.mode === 'registrar_gasto') {
+    const acct = await ensureEditableLiquidAccount(user.id);
+    const overrides = await loadCategoryOverrides(user.id);
+    const parsed = parseChatExpenses(`${label} ${Math.round(amountMinor / 100)}`, today, currentBogotaHour(now), overrides);
+    const cat = parsed[0]?.category ?? 'otros';
+    const mKey = parsed[0]?.merchantKey ?? 'gasto_evaluado';
+    const mName = parsed[0]?.merchantName ?? label;
+
+    await db
+      .insert(transactions)
+      .values({
+        userId: user.id,
+        accountId: acct.id,
+        postedOn: today,
+        description: label,
+        amountMinor: -amountMinor,
+        merchantKey: mKey,
+        merchantName: mName,
+        category: cat,
+        categorySource: 'auto',
+        spentHour: currentBogotaHour(now),
+        captureMethod: 'rapido',
+        dedupeKey: sha256(`ask_spend:${user.id}:${today}:${amountMinor}:${label}:${Math.floor(now.getTime() / 10000)}`),
+      })
+      .onConflictDoNothing();
+
+    if (acct.balanceMinor !== null) {
+      await db
+        .update(accounts)
+        .set({ balanceMinor: acct.balanceMinor - amountMinor, balanceAt: now })
+        .where(eq(accounts.id, acct.id));
+    }
+
+    await db.insert(accessLog).values({
+      userId: user.id,
+      actor: 'persona',
+      action: 'registrar_gasto_evaluado',
+      detail: { amountMinor, label, account: acct.name },
+    });
+
+    revalidatePath('/app', 'layout');
+    return {
+      ok: true,
+      message: `Gasto «${label}» (${cop(amountMinor)}) registrado en ${acct.name}. Tu cifra disponible ya se actualizó.`,
+    };
+  }
+
+  const dayOfMonth = Number(today.slice(8, 10)) || 15;
+  await db.insert(commitments).values({
+    userId: user.id,
+    name: label,
+    amountMinor,
+    dayOfMonth,
+  });
+
+  await db.insert(accessLog).values({
+    userId: user.id,
+    actor: 'persona',
+    action: 'apartar_compromiso_ciclo',
+    detail: { amountMinor, label, dayOfMonth },
+  });
+
+  revalidatePath('/app', 'layout');
+  return {
+    ok: true,
+    message: `Apartamos «${label}» (${cop(amountMinor)}) como compromiso de este ciclo para proteger tu disponible.`,
+  };
+}
+
+export async function updateUserPlanTierAction(
+  planTier: 'esencial' | 'plus',
+): Promise<{ ok: boolean; planTier: 'esencial' | 'plus'; message: string }> {
+  const user = await requireUser();
+  const cleanTier: 'esencial' | 'plus' = planTier === 'plus' ? 'plus' : 'esencial';
+  const nextPrefs: UserAppPreferences = {
+    ...(user.appPreferences ?? {}),
+    planTier: cleanTier,
+  };
+
+  await db.update(users).set({ appPreferences: nextPrefs }).where(eq(users.id, user.id));
+  await db.insert(accessLog).values({
+    userId: user.id,
+    actor: 'persona',
+    action: 'cambiar_plan_suscripcion',
+    detail: { planTier: cleanTier },
+  });
+
+  revalidatePath('/app', 'layout');
+  return {
+    ok: true,
+    planTier: cleanTier,
+    message:
+      cleanTier === 'plus'
+        ? 'Plan CIFRA Plus ($9,900/mes) activado en tu cuenta: canjes ilimitados y conciliación multi-banco sin tope.'
+        : 'Plan CIFRA Esencial ($0/mes) activo en tu cuenta.',
+  };
+}
+
+export async function updateConsentMandateAction(input: {
+  durationDays: 90 | 180 | 365;
+  scopeRecurring: boolean;
+  scopeGeoNba: boolean;
+  scopeFutureOpenFinanceApi: boolean;
+}): Promise<{ ok: boolean; mandate: UserConsentMandateConfig; message: string }> {
+  const user = await requireUser();
+  const durationDays: 90 | 180 | 365 =
+    input.durationDays === 90 ? 90 : input.durationDays === 365 ? 365 : 180;
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + durationDays * 86_400_000);
+
+  const fullHash = sha256(
+    `${user.id}:${CONSENT_VERSION}:${durationDays}:${input.scopeRecurring}:${input.scopeGeoNba}:${input.scopeFutureOpenFinanceApi}:${now.toISOString()}`,
+  );
+
+  const mandate: UserConsentMandateConfig = {
+    durationDays,
+    scopeRecurring: Boolean(input.scopeRecurring),
+    scopeGeoNba: Boolean(input.scopeGeoNba),
+    scopeFutureOpenFinanceApi: Boolean(input.scopeFutureOpenFinanceApi),
+    updatedAtIso: now.toISOString(),
+    mandateHash: fullHash,
+  };
+
+  const nextPrefs: UserAppPreferences = {
+    ...(user.appPreferences ?? {}),
+    consentMandate: mandate,
+  };
+
+  await db
+    .update(users)
+    .set({
+      appPreferences: nextPrefs,
+      consentVersion: CONSENT_VERSION,
+      consentAt: now,
+    })
+    .where(eq(users.id, user.id));
+
+  await db
+    .update(dataSources)
+    .set({ expiresAt })
+    .where(and(eq(dataSources.userId, user.id), eq(dataSources.status, 'activa')));
+
+  await db.insert(accessLog).values({
+    userId: user.id,
+    actor: 'persona',
+    action: 'actualizar_mandato_ley1581',
+    detail: {
+      durationDays,
+      scopeRecurring: mandate.scopeRecurring,
+      scopeGeoNba: mandate.scopeGeoNba,
+      scopeFutureOpenFinanceApi: mandate.scopeFutureOpenFinanceApi,
+      hashPrefix: fullHash.slice(0, 16),
+    },
+  });
+
+  revalidatePath('/app/datos');
+  return {
+    ok: true,
+    mandate,
+    message: `Mandato Ley 1581 actualizado (${durationDays} días de vigencia) y registrado en tu bitácora con huella SHA-256.`,
+  };
+}
+
+export async function saveMerchantMandateConfigAction(
+  partial: Partial<MerchantMandateConfig>,
+): Promise<{ ok: boolean; config: MerchantMandateConfig; message: string }> {
+  const access = await requireMerchantAccess();
+  const current: MerchantMandateConfig = {
+    collectionMethod: access.merchant.mandateConfig?.collectionMethod ?? 'debito_automatico',
+    mandateActive: access.merchant.mandateConfig?.mandateActive ?? true,
+    selectedChannel: access.merchant.mandateConfig?.selectedChannel ?? 'breb',
+    safetyCapMinor: access.merchant.mandateConfig?.safetyCapMinor ?? 150_000_00,
+    prepaidBalanceMinor: access.merchant.mandateConfig?.prepaidBalanceMinor ?? 85_000_00,
+    lastAutoSettledAtIso: access.merchant.mandateConfig?.lastAutoSettledAtIso,
+    lastAutoSettledRef: access.merchant.mandateConfig?.lastAutoSettledRef,
+    lastAutoSettledAmountMinor: access.merchant.mandateConfig?.lastAutoSettledAmountMinor,
+  };
+
+  const next: MerchantMandateConfig = {
+    ...current,
+    ...partial,
+  };
+
+  await db
+    .update(merchants)
+    .set({ mandateConfig: next })
+    .where(eq(merchants.id, access.merchant.id));
+
+  revalidatePath('/negocio/cuenta');
+  return {
+    ok: true,
+    config: next,
+    message: 'Configuración de recaudo automático guardada en la cuenta de tu comercio.',
+  };
+}
+
+export async function topUpMerchantPrepaidAction(
+  amountMinor: number,
+): Promise<{ ok: boolean; config: MerchantMandateConfig; message: string }> {
+  const access = await requireMerchantAccess();
+  const delta = Math.max(10_000_00, Math.round(amountMinor));
+  const currentBalance = access.merchant.mandateConfig?.prepaidBalanceMinor ?? 85_000_00;
+  const nextBalance = currentBalance + delta;
+
+  const res = await saveMerchantMandateConfigAction({
+    collectionMethod: 'bolsa_prepago',
+    prepaidBalanceMinor: nextBalance,
+  });
+
+  return {
+    ok: true,
+    config: res.config,
+    message: `Recarga de ${cop(delta)} abonada a tu Bolsa Prepago. Nuevo saldo disponible: ${cop(nextBalance)}.`,
+  };
+}
+
+export async function executeMerchantAutoDebitCutoffAction(): Promise<{
+  ok: boolean;
+  message: string;
+  reference: string;
+  settledAmountMinor: number;
+  config: MerchantMandateConfig;
+}> {
+  const access = await requireMerchantAccess();
+  const data = await loadMerchantDashboard(access.merchant);
+  const now = new Date();
+  const periodMonth = currentPeriodMonth();
+
+  const openInvoice =
+    data.invoices.find((inv) => inv.status === 'abierta' || inv.status === 'pendiente_pago') ??
+    data.invoices[0];
+
+  const settledAmountMinor = Math.max(
+    900_00,
+    openInvoice?.commissionTotalMinor || data.cycleSummary.accumulatedCommissionMinor || 4_860_00,
+  );
+
+  const channel = access.merchant.mandateConfig?.selectedChannel ?? 'breb';
+  const methodDb: 'breb' | 'nequi' | 'transferencia' =
+    channel === 'nequi' ? 'nequi' : channel === 'bancolombia_ach' ? 'transferencia' : 'breb';
+  const reference = `AUTODEB-${todayInBogota(now).replace(/-/g, '')}-${randomToken(3).toUpperCase()}`;
+
+  let targetInvoiceId = openInvoice?.id;
+  if (!targetInvoiceId) {
+    const [createdInv] = await db
+      .insert(merchantInvoices)
+      .values({
+        merchantId: access.merchant.id,
+        periodMonth,
+        redemptionsCount: Math.max(1, data.cycleSummary.salesCount),
+        grossSalesMinor: data.cycleSummary.grossSalesMinor,
+        discountsGrantedMinor: data.cycleSummary.discountsGrantedMinor,
+        netSalesMinor: data.cycleSummary.collectedInCashMinor,
+        commissionTotalMinor: settledAmountMinor,
+        status: 'pagada',
+        issuedAt: now,
+        paidAt: now,
+      })
+      .returning({ id: merchantInvoices.id });
+    targetInvoiceId = createdInv!.id;
+  } else {
+    await db
+      .update(merchantInvoices)
+      .set({
+        status: 'pagada',
+        paidAt: now,
+        commissionTotalMinor: settledAmountMinor,
+      })
+      .where(eq(merchantInvoices.id, targetInvoiceId));
+  }
+
+  await db.insert(merchantPayments).values({
+    invoiceId: targetInvoiceId,
+    merchantId: access.merchant.id,
+    method: methodDb,
+    amountMinor: settledAmountMinor,
+    reference,
+    note: `Liquidación automática de corte quincenal (${access.merchant.mandateConfig?.collectionMethod === 'bolsa_prepago' ? 'Bolsa Prepago' : `Mandato ${channel.toUpperCase()}`})`,
+    status: 'aprobado',
+    reviewedByUserId: access.user.id,
+    reviewedAt: now,
+  });
+
+  const currentPrepaid = access.merchant.mandateConfig?.prepaidBalanceMinor ?? 85_000_00;
+  const nextPrepaid =
+    access.merchant.mandateConfig?.collectionMethod === 'bolsa_prepago'
+      ? Math.max(0, currentPrepaid - settledAmountMinor)
+      : currentPrepaid;
+
+  const saved = await saveMerchantMandateConfigAction({
+    prepaidBalanceMinor: nextPrepaid,
+    lastAutoSettledAtIso: now.toISOString(),
+    lastAutoSettledRef: reference,
+    lastAutoSettledAmountMinor: settledAmountMinor,
+  });
+
+  revalidatePath('/negocio', 'layout');
+  return {
+    ok: true,
+    reference,
+    settledAmountMinor,
+    config: saved.config,
+    message: `Corte quincenal por ${cop(settledAmountMinor)} liquidado y conciliado en PostgreSQL (Ref. ${reference}).`,
+  };
+}
+
+export async function reopenMerchantCutoffInvoiceAction(): Promise<{
+  ok: boolean;
+  message: string;
+  config: MerchantMandateConfig;
+}> {
+  const access = await requireMerchantAccess();
+  const data = await loadMerchantDashboard(access.merchant);
+  const latestInvoice = data.invoices[0];
+
+  if (latestInvoice) {
+    await db
+      .update(merchantInvoices)
+      .set({ status: 'abierta', paidAt: null })
+      .where(eq(merchantInvoices.id, latestInvoice.id));
+  }
+
+  const saved = await saveMerchantMandateConfigAction({
+    lastAutoSettledAtIso: undefined,
+    lastAutoSettledRef: undefined,
+    lastAutoSettledAmountMinor: undefined,
+  });
+
+  revalidatePath('/negocio', 'layout');
+  return {
+    ok: true,
+    config: saved.config,
+    message: 'Corte quincenal reabierto para recibir nuevas ventas y liquidaciones.',
+  };
+}
+
+export async function launchRealEmbeddedPartnerSessionAction(
+  brandSlug?: string,
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const user = await requireUser();
+  const [partner] = await db
+    .select()
+    .from(partners)
+    .where(eq(partners.slug, 'coopfuturo'))
+    .limit(1);
+
+  let activePartner = partner;
+  if (!activePartner) {
+    const [created] = await db
+      .insert(partners)
+      .values({
+        name: 'Cooperativa Coopfuturo',
+        slug: 'coopfuturo',
+        revenueShareBps: 3000,
+        contactEmail: 'alianzas@coopfuturo.co',
+        active: true,
+        isDemo: true,
+      })
+      .returning();
+    activePartner = created!;
+  }
+
+  const [partnerUser] = await db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.email}) in ('andres.demo@cifra.co', 'mariana.demo@cifra.co')`)
+    .limit(1);
+
+  const targetUserId = partnerUser?.id ?? user.id;
+  const rawToken = randomToken(24);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await db.insert(embedTokens).values({
+    tokenHash: sha256(rawToken),
+    userId: targetUserId,
+    partnerId: activePartner.id,
+    expiresAt,
+  });
+
+  await recordEvent('click_cta', { location: 'b2b2c_embed', brandSlug: brandSlug ?? 'coopfuturo' }, targetUserId);
+  return {
+    ok: true,
+    url: `/e/${rawToken}`,
+  };
+}
+

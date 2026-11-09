@@ -24,7 +24,7 @@ export default async function GastoPage() {
         {c.ready && (
           <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
             Lo cruzamos al instante con tus <span className="tnum font-semibold text-ink">{cop(c.availableMinor)}</span> libres hasta el{' '}
-            {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'}), simulamos qué pasa si lo difieres a cuotas y te mostramos alternativas más baratas en tu cuadra.
+            {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'}), calculamos el costo real si lo difieres a cuotas y te mostramos alternativas más baratas en tu cuadra.
           </p>
         )}
       </div>

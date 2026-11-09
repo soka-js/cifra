@@ -60,6 +60,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
         userName={user.name}
         userEmail={user.email}
         consentGrantedAtIso={consentDateIso}
+        initialMandate={user.appPreferences?.consentMandate}
       />
 
       {/* Portabilidad en un clic (JSON completo + CSV de movimientos) */}

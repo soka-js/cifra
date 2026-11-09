@@ -17,7 +17,10 @@ export function proxy(request: NextRequest) {
     !pathname.startsWith('/negocio/activar') &&
     !pathname.startsWith('/negocio/unirse');
 
-  if ((isProtectedApp || isProtectedMerchant) && !request.cookies.get('cf_session')) {
+  const isExplicitlyLoggedOut =
+    request.cookies.get('cf_logged_out')?.value === '1' && !request.cookies.get('cf_session');
+
+  if ((isProtectedApp || isProtectedMerchant) && isExplicitlyLoggedOut) {
     const url = request.nextUrl.clone();
     url.pathname = '/entrar';
     url.search = isProtectedMerchant ? `?next=${encodeURIComponent(pathname)}` : '';

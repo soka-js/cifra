@@ -247,6 +247,8 @@ export default async function MerchantBillingPage() {
         cutDateIso={billingHealth.activeCycle.cutDate}
         daysUntilCut={billingHealth.activeCycle.daysUntilCut}
         salesCount={cycleSummary.salesCount}
+        initialConfig={access.merchant.mandateConfig}
+        isCurrentInvoicePaid={Boolean(data.invoices[0]?.status === 'pagada')}
       />
 
       {/* Banner de Garantía Operativa de Karol Benavides */}

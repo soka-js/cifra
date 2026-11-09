@@ -1,15 +1,16 @@
+import { ShieldCheck, Store, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AuthShell } from '@/components/auth/shell';
-import { getCurrentUser } from '@/lib/auth/session';
+import { getExplicitSessionUser } from '@/lib/auth/session';
 import { LoginForm } from './form';
 
-export const metadata = { title: 'Entrar' };
+export const metadata = { title: 'Entrar · CIFRA' };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   const nextPath = sp.next && sp.next.startsWith('/') && !sp.next.startsWith('//') ? sp.next : undefined;
-  if (await getCurrentUser()) redirect(nextPath ?? '/app');
+  if (await getExplicitSessionUser()) redirect(nextPath ?? '/app');
 
   const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
@@ -54,6 +55,45 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </p>
       )}
       <LoginForm nextPath={nextPath} googleEnabled={googleEnabled} />
+
+      {/* Selector rápido de cuentas activas para entrar en 1 clic */}
+      <div className="mt-6 border-t border-line pt-5">
+        <p className="text-[12px] font-bold uppercase tracking-wider text-ink-muted">
+          Cuentas activas en este dispositivo (1 clic)
+        </p>
+        <div className="mt-2.5 grid gap-2">
+          <a
+            href="/api/demo/session?role=persona&redirect=/app"
+            className="flex items-center justify-between rounded-xl border border-line bg-paper/60 px-3.5 py-2.5 text-[13px] transition hover:border-primary/40 hover:bg-primary-pale/40"
+          >
+            <span className="flex items-center gap-2 font-semibold text-ink">
+              <UserRound size={15} className="text-primary-dark" />
+              <span>Mariana Rojas · App Persona</span>
+            </span>
+            <span className="text-[12px] font-bold text-primary-dark">Entrar →</span>
+          </a>
+          <a
+            href="/api/demo/session?role=merchant&redirect=/negocio"
+            className="flex items-center justify-between rounded-xl border border-line bg-paper/60 px-3.5 py-2.5 text-[13px] transition hover:border-terra/40 hover:bg-terra-pale/40"
+          >
+            <span className="flex items-center gap-2 font-semibold text-ink">
+              <Store size={15} className="text-terra-dark" />
+              <span>Panadería La Espiga · Portal Comercio</span>
+            </span>
+            <span className="text-[12px] font-bold text-terra-dark">Entrar →</span>
+          </a>
+          <a
+            href="/api/demo/session?role=admin&redirect=/admin?tab=dataroom"
+            className="flex items-center justify-between rounded-xl border border-line bg-paper/60 px-3.5 py-2.5 text-[13px] transition hover:border-ink/40 hover:bg-white"
+          >
+            <span className="flex items-center gap-2 font-semibold text-ink">
+              <ShieldCheck size={15} className="text-ink-muted" />
+              <span>Consola Admin & Data Room</span>
+            </span>
+            <span className="text-[12px] font-bold text-ink">Abrir →</span>
+          </a>
+        </div>
+      </div>
     </AuthShell>
   );
 }

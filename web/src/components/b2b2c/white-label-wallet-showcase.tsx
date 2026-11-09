@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Code2,
   Coffee,
+  ExternalLink,
   Layers,
   RotateCcw,
   ShieldCheck,
@@ -11,7 +12,9 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
+import { launchRealEmbeddedPartnerSessionAction } from '@/app/actions/v3';
 import { cop } from '@/lib/format';
 
 type PartnerSkin = 'coffee_wallet' | 'neobank' | 'cooperativa';
@@ -114,6 +117,8 @@ const SKINS: Record<PartnerSkin, SkinConfig> = {
 };
 
 export function WhiteLabelWalletShowcase() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [activeSkin, setActiveSkin] = useState<PartnerSkin>('coffee_wallet');
   const [executedSkins, setExecutedSkins] = useState<Record<PartnerSkin, boolean>>({
     coffee_wallet: false,
@@ -129,6 +134,15 @@ export function WhiteLabelWalletShowcase() {
       ...prev,
       [activeSkin]: !prev[activeSkin],
     }));
+  }
+
+  function handleLaunchRealEmbed() {
+    startTransition(async () => {
+      const res = await launchRealEmbeddedPartnerSessionAction(activeSkin);
+      if (res.ok && res.url) {
+        router.push(res.url);
+      }
+    });
   }
 
   return (
@@ -305,6 +319,20 @@ export function WhiteLabelWalletShowcase() {
             <p className="mt-1 text-ink-soft">
               Por cada compra atribuida en la red de comercios, el aliado B2B2C recibe el <strong>30 % de la comisión</strong> liquidado automáticamente al cierre de quincena.
             </p>
+            <button
+              id="btn-launch-real-b2b2c-embed"
+              type="button"
+              disabled={isPending}
+              onClick={handleLaunchRealEmbed}
+              className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 py-2.5 text-[12.5px] font-bold text-white shadow-xs transition hover:bg-primary-dark"
+            >
+              <ExternalLink size={14} aria-hidden="true" />
+              <span>
+                {isPending
+                  ? 'Firmando token efímero en PostgreSQL...'
+                  : 'Abrir sesión embebida firmada en vivo (/e/[token])'}
+              </span>
+            </button>
           </div>
         </div>
       </div>

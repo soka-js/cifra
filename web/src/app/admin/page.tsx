@@ -567,6 +567,13 @@ export default async function AdminPage({
               <Play size={11} className="fill-current" />
               <span>Tour Pitch</span>
             </a>
+            <Link
+              href="/admin/presentacion"
+              className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-2.5 py-1 text-[11.5px] font-bold text-ink-muted transition hover:text-ink"
+              title="Abrir página comercial / brochure"
+            >
+              <span>📄 Brochure</span>
+            </Link>
           </div>
         </div>
       </div>

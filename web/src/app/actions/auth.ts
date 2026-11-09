@@ -204,8 +204,8 @@ export async function resetPassword(_prev: AuthState, form: FormData): Promise<A
 }
 
 export async function logout(): Promise<void> {
-  await destroySession();
-  redirect('/');
+  await destroySession(true);
+  redirect('/entrar');
 }
 
 export async function markOnboarded(userId: string) {

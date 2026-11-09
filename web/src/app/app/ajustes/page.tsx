@@ -1,10 +1,10 @@
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, ne } from 'drizzle-orm';
 import Link from 'next/link';
 import { logout } from '@/app/actions/auth';
 import { FreemiumPlanCard } from '@/components/app/freemium-plan-card';
 import { BackButton } from '@/components/ui/back-button';
 import { db } from '@/lib/db';
-import { commitments } from '@/lib/db/schema';
+import { commitments, merchants, redemptions } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
 import { cop } from '@/lib/format';
 import { removeCommitment } from '../actions';
@@ -24,9 +24,16 @@ function Section({ id, title, children }: { id?: string; title: string; children
 
 export default async function AjustesPage() {
   const user = await requireUser();
-  const [comms, cifra] = await Promise.all([
+  const [comms, cifra, userRedemptions] = await Promise.all([
     db.select().from(commitments).where(eq(commitments.userId, user.id)),
     loadCifra(user),
+    db
+      .select({ merchantName: merchants.name })
+      .from(redemptions)
+      .innerJoin(merchants, eq(merchants.id, redemptions.merchantId))
+      .where(and(eq(redemptions.userId, user.id), ne(redemptions.status, 'anulada')))
+      .orderBy(desc(redemptions.redeemedAt))
+      .limit(10),
   ]);
   const matched = new Set(cifra.matchedCommitments);
   return (
@@ -39,7 +46,11 @@ export default async function AjustesPage() {
         </Link>
       </div>
 
-      <FreemiumPlanCard />
+      <FreemiumPlanCard
+        initialPlanTier={user.appPreferences?.planTier ?? 'esencial'}
+        monthlyRedemptionsUsed={userRedemptions.length}
+        recentMerchantNames={Array.from(new Set(userRedemptions.map((r) => r.merchantName)))}
+      />
 
       <Section id="ingreso" title="Tu ingreso">
         <IncomeForm frequency={user.incomeFrequency ?? null} days={user.incomeDays ?? null} />

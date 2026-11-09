@@ -1,8 +1,10 @@
 'use client';
 
-import { CheckCircle2, Clock, CreditCard, Sparkles, Tag, TriangleAlert } from 'lucide-react';
+import { BookmarkPlus, CheckCircle2, Clock, CreditCard, PlusCircle, Sparkles, Tag, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useMemo, useState, useTransition } from 'react';
+import { executeEvaluatedSpendAction } from '@/app/actions/v3';
 import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
 import { MoneyInput } from '@/components/ui/money-input';
 import { track } from '@/lib/analytics/client';
@@ -38,20 +40,41 @@ export function Ask({
   nearbyOffers?: NearbyOfferHint[];
   smartMapBundle?: SmartMapBundle;
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [naturalText, setNaturalText] = useState('');
   const [raw, setRaw] = useState('');
   const [what, setWhat] = useState('');
   const [eaRate, setEaRate] = useState<number>(30.8);
   const [answer, setAnswer] = useState<ReturnType<typeof canISpend> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [executedMessage, setExecutedMessage] = useState<string | null>(null);
 
   function evaluate(amountMinor: number, concept: string) {
     setError(null);
+    setExecutedMessage(null);
     const a = canISpend(cifra as CifraResult, amountMinor);
     setWhat(concept);
     setRaw(String(Math.round(amountMinor / 100)));
     setAnswer(a);
     track('ask_spend', { where: 'app', verdict: a.verdict });
+  }
+
+  function handleExecuteSpend(mode: 'registrar_gasto' | 'apartar_ciclo') {
+    if (!answer) return;
+    startTransition(async () => {
+      const res = await executeEvaluatedSpendAction({
+        amountMinor: answer.amountMinor,
+        concept: what || naturalText || 'Gasto evaluado en ¿Puedo?',
+        mode,
+      });
+      if (res.ok) {
+        setExecutedMessage(res.message);
+        router.refresh();
+      } else {
+        setError(res.message);
+      }
+    });
   }
 
   function handleNaturalSubmit(text: string) {
@@ -105,7 +128,7 @@ export function Ask({
             className="field flex-1"
           />
           <button id="btn-ask-natural" type="submit" className="btn-ink shrink-0">
-            Simular
+            Evaluar gasto
           </button>
         </form>
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -298,6 +321,42 @@ export function Ask({
               </ul>
             </div>
           )}
+
+          {/* Ejecución real en PostgreSQL: Registrar gasto o apartarlo en el ciclo */}
+          <div className="mt-4 rounded-2xl border border-line bg-white/95 p-4">
+            <p className="text-[12.5px] font-bold uppercase tracking-wider text-ink-muted">
+              ¿Decidiste hacerlo? Ejecútalo en tu cifra real:
+            </p>
+            {executedMessage ? (
+              <p role="status" className="mt-2 flex items-center gap-2 rounded-xl bg-primary-pale px-3.5 py-2.5 text-[13.5px] font-semibold text-primary-dark">
+                <CheckCircle2 size={16} aria-hidden="true" />
+                <span>{executedMessage}</span>
+              </p>
+            ) : (
+              <div className="mt-2.5 flex flex-wrap gap-2.5">
+                <button
+                  id="btn-record-evaluated-spend"
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => handleExecuteSpend('registrar_gasto')}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-bold text-white shadow-xs transition hover:bg-primary-dark"
+                >
+                  <PlusCircle size={15} aria-hidden="true" />
+                  <span>{isPending ? 'Guardando...' : `Registrar gasto (${cop(answer.amountMinor)})`}</span>
+                </button>
+                <button
+                  id="btn-reserve-evaluated-spend"
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => handleExecuteSpend('apartar_ciclo')}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-line-strong bg-white px-4 py-2 text-[13px] font-bold text-ink transition hover:bg-paper"
+                >
+                  <BookmarkPlus size={15} aria-hidden="true" />
+                  <span>Apartar como compromiso de este ciclo</span>
+                </button>
+              </div>
+            )}
+          </div>
         </section>
       )}
 

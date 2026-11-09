@@ -1,14 +1,16 @@
 import 'server-only';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { db } from '../db';
 import { merchantMembers, merchants, sessions, users, type Merchant, type User } from '../db/schema';
 import { randomToken, sha256 } from '../crypto';
+import { ensureDemoEcosystemSeeded } from '../demo-seed';
 
 export const SESSION_COOKIE = 'cf_session';
 export const ACTIVE_MERCHANT_COOKIE = 'cf_merchant';
+export const LOGGED_OUT_COOKIE = 'cf_logged_out';
 const SESSION_DAYS = 30;
 
 export async function createSession(userId: string): Promise<void> {
@@ -16,6 +18,7 @@ export async function createSession(userId: string): Promise<void> {
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
   await db.insert(sessions).values({ id: sha256(token), userId, expiresAt });
   const jar = await cookies();
+  jar.delete(LOGGED_OUT_COOKIE);
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure:
@@ -27,8 +30,11 @@ export async function createSession(userId: string): Promise<void> {
   });
 }
 
-/** Usuario de la sesión actual o null. Se resuelve una sola vez por petición. */
-export const getCurrentUser = cache(async (): Promise<User | null> => {
+/**
+ * Devuelve únicamente el usuario autenticado por cookie explícita `cf_session`
+ * (usado en /entrar y /registro para permitir cambiar de cuenta o registrarse).
+ */
+export const getExplicitSessionUser = cache(async (): Promise<User | null> => {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -42,9 +48,45 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   const row = rows[0];
   if (!row) return null;
   if (row.expiresAt.getTime() - Date.now() < 15 * 86_400_000) {
-    await db.update(sessions).set({ expiresAt: new Date(Date.now() + SESSION_DAYS * 86_400_000) }).where(eq(sessions.id, id));
+    await db
+      .update(sessions)
+      .set({ expiresAt: new Date(Date.now() + SESSION_DAYS * 86_400_000) })
+      .where(eq(sessions.id, id));
   }
   return row.user;
+});
+
+/**
+ * Usuario de la sesión actual. Si el navegador entra directo al producto sin cookie previa
+ * y no ha cerrado sesión explícitamente, resuelve la cuenta activa por defecto para que
+ * el producto abra de inmediato listo para operar.
+ */
+export const getCurrentUser = cache(async (): Promise<User | null> => {
+  const explicit = await getExplicitSessionUser();
+  if (explicit) return explicit;
+
+  const jar = await cookies();
+  if (jar.get(LOGGED_OUT_COOKIE)?.value === '1') {
+    return null;
+  }
+
+  const [existingDefault] = await db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.email}) in ('mariana.demo@cifra.co', 'mariana@demo.cifra.co')`)
+    .limit(1);
+
+  if (existingDefault) {
+    return existingDefault;
+  }
+
+  try {
+    const ids = await ensureDemoEcosystemSeeded(false);
+    const [seeded] = await db.select().from(users).where(eq(users.id, ids.marianaUserId)).limit(1);
+    return seeded ?? null;
+  } catch {
+    return null;
+  }
 });
 
 export async function requireUser(): Promise<User> {
@@ -53,12 +95,19 @@ export async function requireUser(): Promise<User> {
   return user;
 }
 
-export async function destroySession(): Promise<void> {
+export async function destroySession(markLoggedOut = false): Promise<void> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (token) await db.delete(sessions).where(eq(sessions.id, sha256(token)));
   jar.delete(SESSION_COOKIE);
   jar.delete(ACTIVE_MERCHANT_COOKIE);
+  if (markLoggedOut) {
+    jar.set(LOGGED_OUT_COOKIE, '1', {
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 7 * 86_400,
+    });
+  }
 }
 
 export function isAdmin(user: User | null): boolean {
@@ -79,7 +128,7 @@ export interface MerchantAccess {
   allMerchants: Array<{ id: string; name: string; neighborhood: string; role: 'owner' | 'cashier' }>;
 }
 
-/** Obtiene el negocio activo para el usuario autenticado (o cualquiera si es admin y seleccionó uno). */
+/** Obtiene el negocio activo para el usuario autenticado (o el comercio piloto activo en entorno desplegado). */
 export const getMerchantAccess = cache(async (): Promise<MerchantAccess | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -108,11 +157,14 @@ export const getMerchantAccess = cache(async (): Promise<MerchantAccess | null> 
     };
   }
 
-  // Un administrador también puede inspeccionar o asistir cualquier negocio desde /negocio.
-  if (isAdmin(user)) {
+  // Admin o sesión activa sin comercio propio puede operar sobre los comercios activos del ecosistema
+  if (isAdmin(user) || user.isDemo) {
     const all = await db.select().from(merchants);
     if (all.length === 0) return null;
-    const chosen = all.find((m) => m.id === preferredId) ?? all[0]!;
+    const chosen =
+      all.find((m) => m.id === preferredId) ??
+      all.find((m) => m.slug === 'demo-panaderia-la-espiga' || m.slug === 'la-espiga-chapinero') ??
+      all[0]!;
     return {
       user,
       merchant: chosen,

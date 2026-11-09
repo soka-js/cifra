@@ -230,7 +230,7 @@ export function CifraPrivacyHero({
               <span className="block truncate font-display text-[14px] font-bold text-ink group-hover:text-primary-dark">
                 ¿Puedo gastar?
               </span>
-              <span className="block text-[11.5px] text-ink-faint">Simula antes de pagar</span>
+              <span className="block text-[11.5px] text-ink-faint">Evalúa antes de pagar</span>
             </div>
           </Link>
 

@@ -287,10 +287,29 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
       <SavingsGoalAndNbaCard
         monthSavedMinor={savings.monthMinor}
         allTimeSavedMinor={savings.allTimeMinor}
-        potentialSubscriptionSavingsMinor={potentialSavingsMinor}
-        unusedSubscriptionNames={unusedRecurring.map((r) => r.name)}
-        recentEvents={savings.recent}
-        smartMap={smartMap}
+        availableMinor={c.availableMinor}
+        perDayMinor={c.perDayMinor}
+        daysLeft={c.daysLeft}
+        topOffers={smartMap.offers.slice(0, 3).map((o) => ({
+          offer: {
+            id: o.offerId,
+            title: o.title,
+            merchantName: o.merchantName,
+            neighborhood: o.neighborhood,
+            discountKind: o.discountKind,
+            discountPercent: o.discountPercent,
+            discountFixedMinor: o.discountFixedMinor,
+            targetCategory: o.targetCategory,
+          },
+          estimatedSavingsMinor: Math.max(24_000_00, o.estimatedSavingsMinor * 6),
+          monthlySpendInCategoryMinor: smartMap.profile.byCategory[o.targetCategory]?.totalSpentMinor ?? 96_000_00,
+        }))}
+        unusedRecurring={unusedRecurring.map((r) => ({
+          merchantKey: r.merchantKey,
+          displayName: r.name,
+          amountMinor: r.monthlyMinor,
+        }))}
+        initialPreferences={user.appPreferences}
       />
 
       {c.commitmentSuggestions.length > 0 && (
