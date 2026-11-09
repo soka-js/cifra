@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Wallet,
 } from 'lucide-react';
+import { AutoDebitMandateCard } from '@/components/merchant/auto-debit-mandate-card';
 import { BackButton } from '@/components/ui/back-button';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { bogotaDate } from '@/lib/data';
@@ -236,6 +237,17 @@ export default async function MerchantBillingPage() {
           </div>
         </div>
       </section>
+
+      {/* Mandato de Débito Automático Quincenal y Bolsa Prepago (Garantía de Recaudo Automático) */}
+      <AutoDebitMandateCard
+        merchantName={access.merchant.name}
+        merchantNequi={access.merchant.nequiNumber}
+        merchantBrebKey={access.merchant.brebKey}
+        accumulatedCommissionMinor={cycleSummary.accumulatedCommissionMinor}
+        cutDateIso={billingHealth.activeCycle.cutDate}
+        daysUntilCut={billingHealth.activeCycle.daysUntilCut}
+        salesCount={cycleSummary.salesCount}
+      />
 
       {/* Banner de Garantía Operativa de Karol Benavides */}
       <section className="rounded-2xl border border-line bg-paper p-5 sm:p-6">

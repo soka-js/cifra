@@ -1,6 +1,7 @@
 import { AlertOctagon, Coffee, Search, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import { QuickCaptureModal } from '@/components/app/quick-capture-modal';
+import { SpendingDashboardChart } from '@/components/app/spending-dashboard-chart';
 import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
 import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
@@ -70,6 +71,20 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
         </div>
       </div>
 
+      {/* Dashboard Gráfico Interactivo (Anillo de categorías + Ritmo diario 14d) */}
+      {!q && breakdown.rows.length > 0 && (
+        <SpendingDashboardChart
+          currentTotalMinor={breakdown.currentTotalMinor}
+          previousTotalMinor={breakdown.previousTotalMinor}
+          deltaPct={deltaPct}
+          rows={breakdown.rows}
+          movements={movements}
+          dailyAllowanceMinor={dailyBundle.pulse.dailyAllowanceMinor}
+          activeCat={activeCat}
+          todayIso={todayInBogota()}
+        />
+      )}
+
       {/* Radiografía de Fugas con Nombre Propio (Fase 6) */}
       {!q && !activeCat && dailyBundle.leaks.length > 0 && (
         <section className="surface-card border-neg/20 bg-gradient-to-br from-neg-light/45 via-white to-terra-pale/40 p-5 sm:p-6">
@@ -120,70 +135,6 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
           compactTitle="Reemplaza sobrecostos de apps con tiendas a minutos de ti"
           compactSubtitle="Cruzamos tus gastos del mes con comercios independientes de tu barrio que tienen descuento activo hoy."
         />
-      )}
-
-      {/* Comparativo de ciclo actual (30d) vs ciclo anterior (30d previos) */}
-      {!q && breakdown.rows.length > 0 && (
-        <section className="surface-card p-5 sm:p-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <div>
-              <h2 className="text-[13px] font-semibold uppercase tracking-wider text-ink-faint">
-                Últimos 30 días (sin traslados propios)
-              </h2>
-              <p className="tnum mt-1 font-display text-[34px] font-extrabold leading-none tracking-[-0.03em] text-ink">
-                {cop(breakdown.currentTotalMinor)}
-              </p>
-            </div>
-            {deltaPct !== null && (
-              <span className={deltaPct <= 0 ? 'badge-primary tnum' : 'badge-warn tnum'}>
-                {deltaPct > 0 ? `+${deltaPct}%` : `${deltaPct}%`} vs. 30 días previos ({cop(breakdown.previousTotalMinor)})
-              </span>
-            )}
-          </div>
-
-          <ul className="tnum mt-5 space-y-3 text-[14.5px]">
-            {breakdown.rows.slice(0, 8).map((row) => {
-              const isSelected = activeCat === row.category;
-              return (
-                <li key={row.category}>
-                  <Link
-                    href={isSelected ? '/app/movimientos' : `/app/movimientos?cat=${row.category}`}
-                    className={`block rounded-xl px-2.5 py-2 transition-colors ${
-                      isSelected ? 'bg-primary-pale ring-1 ring-primary/30' : 'hover:bg-paper'
-                    }`}
-                  >
-                    <div className="flex items-baseline justify-between gap-3">
-                      <span className="font-medium text-ink">
-                        {row.label}{' '}
-                        <span className="text-[12px] font-normal text-ink-faint">
-                          ({row.txCount} {row.txCount === 1 ? 'compra' : 'compras'})
-                        </span>
-                      </span>
-                      <span className="flex items-baseline gap-2">
-                        {row.deltaPercent !== null && row.previousMinor > 0 && (
-                          <span
-                            className={`text-[12px] font-semibold ${
-                              row.deltaPercent > 10 ? 'text-warn' : row.deltaPercent < -5 ? 'text-primary-dark' : 'text-ink-faint'
-                            }`}
-                          >
-                            {row.deltaPercent > 0 ? `+${row.deltaPercent}%` : `${row.deltaPercent}%`}
-                          </span>
-                        )}
-                        <span className="font-semibold text-ink">{cop(row.currentMinor)}</span>
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 rounded-full bg-paper-deep" aria-hidden="true">
-                      <div
-                        className="h-1.5 rounded-full bg-primary"
-                        style={{ width: `${Math.max(3, row.sharePercent)}%` }}
-                      />
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
       )}
 
       {/* Detector de gastos hormiga (Etapa 1 del mapa C.5) */}

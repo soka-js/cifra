@@ -14,6 +14,7 @@ import { BalancePrompt, BalanceRow } from '@/components/app/balance-editor';
 import { CifraPrivacyHero } from '@/components/app/cifra-privacy-hero';
 import { DailyPulseCard } from '@/components/app/daily-pulse-card';
 import { GaOnce } from '@/components/app/ga-once';
+import { SavingsGoalAndNbaCard } from '@/components/app/savings-goal-nba-card';
 import { TrackView } from '@/components/app/track-view';
 import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
 import { requireUser } from '@/lib/auth/session';
@@ -282,51 +283,15 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
         </section>
       )}
 
-      {/* Contador de pesos reales ahorrados con CIFRA (suscripciones canceladas + ofertas de barrio redimidas) */}
-      <section className="surface-card px-5 py-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-light text-primary-dark">
-              <PiggyBank size={20} aria-hidden="true" />
-            </span>
-            <div>
-              <p className="text-[13px] font-semibold text-ink-muted">Pesos ahorrados con CIFRA este mes</p>
-              <p className="tnum mt-0.5 font-display text-[28px] font-extrabold leading-tight tracking-[-0.03em] text-primary-dark">
-                {cop(savings.monthMinor)}
-              </p>
-              {savings.allTimeMinor > savings.monthMinor && (
-                <p className="tnum text-[12.5px] text-ink-faint">Acumulado histórico: {cop(savings.allTimeMinor)}</p>
-              )}
-            </div>
-          </div>
-          {potentialSavingsMinor > 0 ? (
-            <Link href="/app/cobros" className="badge-terra shrink-0">
-              +{cop(potentialSavingsMinor)}/mes por rescatar
-            </Link>
-          ) : (
-            <Link href="/app/ofertas" className="text-[13px] font-semibold text-primary-dark underline-offset-2 hover:underline">
-              Ver ofertas →
-            </Link>
-          )}
-        </div>
-        {savings.recent.length > 0 ? (
-          <ul className="tnum mt-3 divide-y divide-line border-t border-line pt-2.5 text-[13px]">
-            {savings.recent.slice(0, 2).map((ev) => (
-              <li key={ev.id} className="flex items-center justify-between gap-2 py-1.5">
-                <span className="truncate text-ink-muted">
-                  {ev.label} <span className="text-ink-faint">· {shortDate(ev.occurredOn)}</span>
-                </span>
-                <span className="shrink-0 font-semibold text-primary-dark">+{cop(ev.amountMinor)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-2.5 text-[13.5px] text-ink-muted">
-            Cada suscripción que canceles en <Link href="/app/cobros" className="font-semibold text-ink underline">Cobros</Link> o descuento que uses en{' '}
-            <Link href="/app/ofertas" className="font-semibold text-ink underline">Ofertas cerca</Link> se suma aquí con pesos reales.
-          </p>
-        )}
-      </section>
+      {/* Meta de Ahorro Conectada + Motor Next Best Action (NBA) contextualizado */}
+      <SavingsGoalAndNbaCard
+        monthSavedMinor={savings.monthMinor}
+        allTimeSavedMinor={savings.allTimeMinor}
+        potentialSubscriptionSavingsMinor={potentialSavingsMinor}
+        unusedSubscriptionNames={unusedRecurring.map((r) => r.name)}
+        recentEvents={savings.recent}
+        smartMap={smartMap}
+      />
 
       {c.commitmentSuggestions.length > 0 && (
         <Link href="/app/cobros#escritos" className="flex gap-2.5 rounded-xl bg-warn-light px-4 py-3 text-[14px] leading-snug text-warn">

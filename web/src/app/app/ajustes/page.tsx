@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { logout } from '@/app/actions/auth';
+import { FreemiumPlanCard } from '@/components/app/freemium-plan-card';
 import { BackButton } from '@/components/ui/back-button';
 import { db } from '@/lib/db';
 import { commitments } from '@/lib/db/schema';
@@ -37,6 +38,8 @@ export default async function AjustesPage() {
           Ir a Tus datos (Ley 1581) →
         </Link>
       </div>
+
+      <FreemiumPlanCard />
 
       <Section id="ingreso" title="Tu ingreso">
         <IncomeForm frequency={user.incomeFrequency ?? null} days={user.incomeDays ?? null} />
