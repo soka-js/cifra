@@ -188,12 +188,15 @@ export function detectMoneyLeaks(input: {
       (s, t) => s + Math.max(6_500_00, Math.round(Math.abs(t.amountMinor) * 0.26)),
       0,
     );
+    const grossFormatted = `$${Math.round(grossMinor / 100)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
     leaks.push({
       id: 'sobrecosto_domicilios',
       title: 'Recargos ocultos en apps de domicilio',
       monthlyLossMinor: hiddenFeesMinor,
       recoverableMonthlyMinor: Math.round(hiddenFeesMinor * 0.65),
-      evidence: `${deliveryTxs.length} pedidos en los últimos 30 días (gasto total pagado en apps: ${Math.round(grossMinor / 100).toLocaleString('es-CO')} COP).`,
+      evidence: `${deliveryTxs.length} pedidos en los últimos 30 días (gasto total pagado en apps: ${grossFormatted}).`,
       concreteAction:
         'Cambiando la mitad de tus pedidos a locales independientes a menos de 4 cuadras te ahorras envío, tarifa de servicio y sobreprecio de menú.',
       neighborhoodCategory: 'comida',

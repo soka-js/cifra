@@ -63,7 +63,7 @@ export function PaymentReportForm({
             className="btn-sm border border-line bg-white text-[12px] text-ink-soft hover:bg-paper-deep"
           >
             <Sparkles size={13} aria-hidden="true" className="text-terra" />
-            Llenar comprobante de prueba (Demo)
+            Autocompletar referencia de hoy
           </button>
         </div>
 

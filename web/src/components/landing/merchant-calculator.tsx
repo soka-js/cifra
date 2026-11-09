@@ -40,10 +40,10 @@ export function MerchantCalculator() {
             onChange={(e) => setTicketPesos(Number(e.target.value))}
             className="field py-2.5 text-[15px] tnum"
           >
-            <option value={12000}>$12.000 (café + panadería)</option>
-            <option value={20000}>$20.000 (pedido típico barrio)</option>
-            <option value={35000}>$35.000 (almuerzo o fruver)</option>
-            <option value={50000}>$50.000 (compra familiar)</option>
+            <option value={12000}>$12,000 (café + panadería)</option>
+            <option value={20000}>$20,000 (pedido típico barrio)</option>
+            <option value={35000}>$35,000 (almuerzo o fruver)</option>
+            <option value={50000}>$50,000 (compra familiar)</option>
           </select>
         </div>
 

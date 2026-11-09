@@ -7,8 +7,8 @@ import { saveCycleClosure, type FormState } from '../actions';
 const SUGGESTED_COMMITMENTS = [
   'Cancelar 1 suscripción que marqué como «no la uso» antes del próximo cobro',
   'Limitar domicilios y cafés fuera de casa a dos veces por semana',
-  'Apartar un colchón de $100.000 apenas entre mi próximo ingreso',
-  'Preguntar en ¿Puedo? antes de cualquier gasto mayor a $60.000',
+  'Apartar un colchón de $100,000 apenas entre mi próximo ingreso',
+  'Preguntar en ¿Puedo? antes de cualquier gasto mayor a $60,000',
 ];
 
 export function CycleClosureForm({ initialCommitment }: { initialCommitment?: string | null }) {

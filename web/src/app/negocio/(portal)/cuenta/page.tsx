@@ -45,7 +45,7 @@ export default async function MerchantBillingPage() {
 
   return (
     <div className="space-y-6">
-      <BackButton href="/negocio" label="Volver a Inicio de Negocio" className="mb-2" />
+      <BackButton href="/negocio" label="Volver al resumen" className="mb-2" />
 
       {/* Cabecera principal */}
       <div>

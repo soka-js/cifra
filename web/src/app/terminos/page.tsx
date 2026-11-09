@@ -26,8 +26,12 @@ export default function TermsPage() {
       </ul>
       <h2>Uso permitido</h2>
       <p>No intentes acceder a datos de otras personas, saturar el servicio ni usarlo para fines ilegales. Podemos suspender cuentas que lo hagan.</p>
-      <h2>Disponibilidad</h2>
-      <p>CIFRA es un proyecto en desarrollo. Hacemos lo posible para que funcione siempre, pero puede tener interrupciones o errores.</p>
+      <h2>Disponibilidad y continuidad del servicio</h2>
+      <p>
+        CIFRA opera con alta disponibilidad sobre infraestructura en la nube con respaldos cifrados y monitoreo continuo. En caso de
+        ventanas programadas de mantenimiento o actualizaciones de seguridad, tus datos permanecen íntegros y disponibles para
+        exportación en cualquier momento desde la sección «Tus datos».
+      </p>
       <h2>Ley aplicable</h2>
       <p>Estos términos se rigen por las leyes de la República de Colombia.</p>
     </LegalPage>

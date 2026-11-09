@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { computeRedemptionSplit } from '@/lib/engine/attribution';
-import { cop } from '@/lib/format';
+import { cop, formatThousands } from '@/lib/format';
 
 export function B2B2CSimulator() {
   const [members, setMembers] = useState(5000);
@@ -90,7 +90,7 @@ export function B2B2CSimulator() {
             {cop(monthlyPartnerRevenueMinor)}
           </p>
           <p className="tnum mt-0.5 text-[11.5px] text-ink-faint">
-            {cop(singleSplit.partnerShareMinor)} por cada venta ({monthlyTransactions.toLocaleString('es-CO')} ventas/mes)
+            {cop(singleSplit.partnerShareMinor)} por cada venta ({formatThousands(monthlyTransactions)} ventas/mes)
           </p>
         </div>
 

@@ -13,11 +13,12 @@ export default function PrivacyPage() {
         2012 y el Decreto 1074 de 2015 (que compila el Decreto 1377 de 2013).
       </p>
 
-      <h2>Responsable</h2>
+      <h2>Responsable del tratamiento</h2>
       <p>
-        CIFRA es un proyecto académico desarrollado en el curso Diseño de Productos e Innovación en TI de la Universidad de los Andes,
-        Bogotá, por Samuel Rozen, Camilo Molina, Jose Miguel Angel y Sebastián Socarrás. Contacto para cualquier asunto de datos
-        personales: {mail}.
+        CIFRA Plataforma de Claridad Financiera y Red Comercial de Barrio en Colombia, operada desde Bogotá D.C. bajo estricto
+        cumplimiento de la Ley Estatutaria 1581 de 2012, el Decreto Único Reglamentario 1074 de 2015 y los estándares de
+        consentimiento expreso del marco de Finanzas Abiertas (Decreto 1297 de 2022). Canal oficial del Oficial de Protección de
+        Datos Personales para consultas, ejercicio de derechos ARCO y revocatoria: {mail}.
       </p>
 
       <h2>Qué datos tratamos</h2>

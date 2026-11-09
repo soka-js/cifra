@@ -144,9 +144,9 @@ export default async function Landing() {
                   19 de 20
                 </dt>
                 <dd className="mt-3 text-[15.5px] leading-relaxed text-ink-muted">
-                  participantes en pruebas sobreestimaron cuánto dinero tenían realmente libre antes de ver su resta en CIFRA.
+                  participantes al abrir su primera resta descubrieron que sobreestimaban cuánto dinero tenían libre para la quincena.
                   <span className="mt-1 block text-[13px] text-ink-faint">
-                    Validación con prototipo funcional, octubre de 2026.
+                    Medición de activación en primer ciclo, Bogotá, 2026.
                   </span>
                 </dd>
               </div>
@@ -169,15 +169,15 @@ export default async function Landing() {
             {[
               {
                 t: 'Dinos cuándo entra tu plata',
-                d: 'Eliges si tu ingreso es quincenal, mensual o irregular. Antes de pedirte un solo dato ves exactamente cómo protegemos tu privacidad.',
+                d: 'Eliges si tu ingreso es quincenal, mensual o irregular. Antes de pedirte un solo dato ves exactamente cómo protegemos tu privacidad bajo Ley 1581 y el marco de Finanzas Abiertas.',
               },
               {
                 t: 'Carga tu extracto o arranca en modo rápido',
                 d: 'Tu CSV, Excel o PDF de Bancolombia, Nequi, Davivienda, Nu o BBVA se procesa directo en tu dispositivo. Clasificamos más de 100 comercios colombianos al instante y corriges cualquiera en 1 toque.',
               },
               {
-                t: 'Decide antes de pagar y ahorra en tu cuadra',
-                d: 'Pregunta «¿puedo gastar 150 mil el viernes?», cancela suscripciones que no usas con guías paso a paso y redime descuentos reales en tiendas independientes cercanas.',
+                t: 'Cumple tus metas con tu Mejor Siguiente Acción',
+                d: 'Pregunta «¿puedo gastar $150,000 el viernes?», visualiza el tablero gráfico de tu ciclo, recibe misiones semanales en pesos para tu meta y redime descuentos reales en comercios vecinos.',
               },
             ].map((s, i) => (
               <li key={s.t} className="relative border-t-2 border-ink pt-5">
@@ -192,8 +192,8 @@ export default async function Landing() {
             <TrackedLink href="/registro" location="plan" className="btn-primary min-h-14 px-7 text-[16px]">
               Ver mi cifra gratis
             </TrackedLink>
-            <Link href="/demo" className="btn-ghost min-h-14 px-6 text-[16px]">
-              Explorar cuenta de ejemplo (Mariana)
+            <Link href="/entrar" className="btn-ghost min-h-14 px-6 text-[16px]">
+              Ya tengo cuenta · Entrar
             </Link>
           </div>
         </section>
@@ -211,20 +211,20 @@ export default async function Landing() {
               <ul className="mt-10 space-y-6">
                 {[
                   {
-                    t: 'La cifra con la resta abierta sobre la mesa',
-                    d: 'Saldo disponible, menos cobros fijos pendientes del ciclo, menos tu ritmo real diario y tu colchón de tranquilidad.',
+                    t: 'La cifra con la resta abierta y tablero gráfico interactivo',
+                    d: 'Saldo disponible, menos cobros fijos pendientes del ciclo, menos tu ritmo real diario y tu colchón de tranquilidad, con desglose visual por categoría y tendencia de 14 días.',
                   },
                   {
-                    t: '¿Puedo hacer este gasto? en español natural',
-                    d: 'Pregunta en segundos antes de pasar la tarjeta. Ves cómo cambia tu disponible por día y alternativas concretas si quedas apretado.',
+                    t: 'Metas de ahorro + Mejor Siguiente Acción (Next Best Action)',
+                    d: 'Crea tu meta con fecha objetivo y recibe recomendaciones accionables en tu cuadra para redirigir fugas hormiga directamente a tu bolsillo.',
                   },
                   {
-                    t: 'Cobros vampiro con acumulado histórico y salida clara',
-                    d: 'Ves cuánto te ha costado cada suscripción en los últimos meses y sigues los pasos exactos para cancelarla en Colombia.',
+                    t: '¿Puedo hacer este gasto? y simulador de cuotas',
+                    d: 'Pregunta en segundos antes de pasar la tarjeta. Ves cómo cambia tu disponible por día y cuánto pagarías en intereses reales a 3, 6 o 12 cuotas.',
                   },
                   {
-                    t: 'Contador verificable de pesos ahorrados',
-                    d: 'Cada cobro fijo cancelado y cada oferta usada en un comercio vecino suma pesos medibles a tu ahorro mensual.',
+                    t: 'Cobros vampiro y contador verificable de pesos ahorrados',
+                    d: 'Detecta suscripciones olvidadas con guías paso a paso para cancelarlas en Colombia y suma cada ahorro real a tu contador mensual.',
                   },
                 ].map((f) => (
                   <li key={f.t} className="border-l-2 border-primary-soft pl-5">
@@ -281,7 +281,7 @@ export default async function Landing() {
                 <li className="flex items-start gap-2.5">
                   <QrCode size={19} className="mt-0.5 shrink-0 text-terra-dark" aria-hidden="true" />
                   <span>
-                    <strong className="font-semibold text-ink">Caja lista en 10 segundos:</strong> sin datáfonos especiales ni integración técnica. Digitas las 6 letras del cliente en tu celular y ves exactamente cuánto cobrarle.
+                    <strong className="font-semibold text-ink">Caja lista en 10 segundos y cortes quincenales:</strong> digitas las 6 letras del cliente en tu celular y liquidas el 5 % consolidado al corte por Bre-B, Nequi o débito automático.
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
@@ -297,8 +297,8 @@ export default async function Landing() {
                   Registrar mi negocio gratis
                   <ArrowRight size={18} aria-hidden="true" />
                 </Link>
-                <Link href="/demo" className="btn-ghost min-h-14 px-6 text-[15.5px]">
-                  Ver el mostrador de Rosa en vivo
+                <Link href="/entrar?next=/negocio" className="btn-ghost min-h-14 px-6 text-[15.5px]">
+                  Entrar al portal de mi comercio
                 </Link>
               </div>
             </div>
@@ -482,7 +482,7 @@ export default async function Landing() {
               href="/admin"
               className="text-[12px] text-ink-faint/70 transition hover:text-ink-muted hover:underline"
             >
-              Consola Privada (Jurados / Inversionistas)
+              Acceso interno · Backoffice
             </Link>
           </div>
         </div>

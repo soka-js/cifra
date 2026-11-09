@@ -31,7 +31,7 @@ export default function DevelopersPage() {
       </p>
       <Code>{`Authorization: Bearer cfk_...`}</Code>
       <p>
-        Todos los montos viajan en centavos enteros de peso colombiano (<code>amount_minor</code>): $45.000 es <code>4500000</code>. Negativo indica salida de dinero; positivo indica entrada. Límite: 600 peticiones por minuto por entidad.
+        Todos los montos viajan en centavos enteros de peso colombiano (<code>amount_minor</code>): $45,000 es <code>4500000</code>. Negativo indica salida de dinero; positivo indica entrada. Límite: 600 peticiones por minuto por entidad.
       </p>
 
       <h2>1. Crear o actualizar un asociado</h2>
@@ -59,7 +59,7 @@ export default function DevelopersPage() {
 
       <h2>3. Enviar movimientos (idempotente)</h2>
       <p>
-        Hasta 1.000 movimientos por lote. Reenviar un mismo <code>id</code> externo nunca duplica registros. Recomendamos enviar 90 días al activar para detectar cobros recurrentes y luego sincronizar novedades diarias.
+        Hasta 1,000 movimientos por lote. Reenviar un mismo <code>id</code> externo nunca duplica registros. Recomendamos enviar 90 días al activar para detectar cobros recurrentes y luego sincronizar novedades diarias.
       </p>
       <Code>{`POST ${site}/api/v1/members/{member_id}/accounts/{account_id}/transactions
 {

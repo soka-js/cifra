@@ -488,7 +488,7 @@ export function CuadreClient({
                 placeholder={
                   entryKind === 'venta_mostrador'
                     ? 'Ej. Corte de mediodía'
-                    : 'Ej. Bulto harina 50kg subió $8.000'
+                    : 'Ej. Bulto harina 50kg subió $8,000'
                 }
                 className="field"
               />

@@ -602,8 +602,8 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       },
       {
         merchantId: fruverParque!.id,
-        title: '$4.000 de descuento en mercado de fruta y verdura',
-        description: 'Aplica en compras desde $25.000 para vecinos nuevos.',
+        title: '$4,000 de descuento en mercado de fruta y verdura',
+        description: 'Aplica en compras desde $25,000 para vecinos nuevos.',
         targetCategory: 'mercado',
         discountKind: 'fixed',
         discountFixedMinor: 4_000_00,
@@ -665,7 +665,7 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       },
       {
         merchantId: fruverParque!.id,
-        title: '$4.000 de descuento en canasta fresca desde $25.000',
+        title: '$4,000 de descuento en canasta fresca desde $25,000',
         description: 'Fruta seleccionada del día en el Parkway.',
         targetCategory: 'mercado',
         discountKind: 'fixed',
@@ -720,7 +720,7 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     daysAgo: number;
     confirmed: boolean;
   }> = [
-    // Andrés (vía Coopfuturo) conoció Panadería La Espiga este mes ($20.000 exacto como en G.10!)
+    // Andrés (vía Coopfuturo) conoció Panadería La Espiga este mes ($20,000 exacto como en G.10!)
     {
       userId: andres!.id,
       merchantId: laEspiga!.id,
@@ -854,15 +854,15 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     {
       userId: mariana!.id,
       kind: 'redencion_confirmada',
-      title: 'Ahorraste $4.000 en Fruver El Parque',
-      body: 'Pagaste $30.000 en vez de $34.000. Puedes confirmar en Ofertas que recibiste el beneficio.',
+      title: 'Ahorraste $4,000 en Fruver El Parque',
+      body: 'Pagaste $30,000 en vez de $34,000. Puedes confirmar en Ofertas que recibiste el beneficio.',
       actionUrl: '/app/ofertas#recientes',
       dedupeKey: 'demo-notif-redeem',
     },
     {
       userId: mariana!.id,
       kind: 'cobro_recurrente',
-      title: 'Disney+ marcado como «No lo uso» ($34.900/mes)',
+      title: 'Disney+ marcado como «No lo uso» ($34,900/mes)',
       body: 'Ya sumamos este ahorro mensual verificado a tu contador de pesos ahorrados con CIFRA.',
       actionUrl: '/app/cobros',
       dedupeKey: 'demo-notif-cancel',

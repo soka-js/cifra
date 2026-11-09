@@ -37,11 +37,13 @@ export function AppTopBar({
   // Título según la ruta actual para que el usuario siempre sepa dónde está
   function getSectionTitle(): string {
     if (pathname === '/app') return 'Tu Cifra de Hoy';
+    if (pathname.startsWith('/app/bienvenida')) return 'Configuración inicial';
     if (pathname.startsWith('/app/gasto')) return '¿Puedo hacer este gasto?';
     if (pathname.startsWith('/app/movimientos')) return 'En qué se me va y fugas';
     if (pathname.startsWith('/app/ofertas')) return 'Beneficios de tu barrio';
     if (pathname.startsWith('/app/cobros')) return 'Cobros fijos y suscripciones';
     if (pathname.startsWith('/app/cierre')) return 'Cierre de ciclo';
+    if (pathname.startsWith('/app/datos/importar')) return 'Subir extracto';
     if (pathname.startsWith('/app/datos')) return 'Tus datos (Ley 1581)';
     if (pathname.startsWith('/app/avisos')) return 'Avisos y alertas';
     if (pathname.startsWith('/app/ajustes')) return 'Ajustes';

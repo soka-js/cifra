@@ -514,7 +514,7 @@ export async function updateMerchantBreakEvenTargetsAction(
   const monthlyFixedCostMinor = parsePesosInput(String(formData.get('monthlyFixedCost') ?? ''));
 
   if (!dailyBreakEvenMinor || dailyBreakEvenMinor < 20_000_00) {
-    return { status: 'error', message: 'Define una meta diaria realista (por ejemplo $350.000).' };
+    return { status: 'error', message: 'Define una meta diaria realista (por ejemplo $350,000).' };
   }
 
   await db

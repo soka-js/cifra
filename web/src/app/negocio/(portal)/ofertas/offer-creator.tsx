@@ -62,7 +62,7 @@ const TEMPLATES = [
   {
     id: 'bono-fijo',
     badge: 'Monto fijo en pesos',
-    title: '$3.000 de descuento por compras desde $20.000',
+    title: '$3,000 de descuento por compras desde $20,000',
     description: 'Descuento fijo fácil de entender en mostrador.',
     kind: 'fixed' as const,
     percent: 10,

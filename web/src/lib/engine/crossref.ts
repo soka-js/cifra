@@ -240,9 +240,12 @@ export function crossReferenceOffers(params: {
     const habitTimeMatched = Boolean(habit && habit.bandCounts[targetBandForCheck] >= 1);
 
     const netOfferTicket = Math.max(0, offer.typicalTicketMinor - offer.estimatedSavingsMinor);
+    const comparableHabitTicket = habit
+      ? Math.min(habit.avgTicketMinor, Math.round(offer.typicalTicketMinor * 1.45))
+      : 0;
     const vsHabitualSavingsMinor =
-      habit && habit.avgTicketMinor > netOfferTicket
-        ? habit.avgTicketMinor - netOfferTicket
+      comparableHabitTicket > netOfferTicket
+        ? Math.max(offer.estimatedSavingsMinor, comparableHabitTicket - netOfferTicket)
         : offer.estimatedSavingsMinor;
 
     // Puntaje compuesto 0..100
