@@ -11,7 +11,9 @@ if (!url) {
 const sql = postgres(url, { max: 1, prepare: false, onnotice: () => {} });
 try {
   await migrate(drizzle(sql), { migrationsFolder: new URL('../drizzle', import.meta.url).pathname });
-  console.log('Migraciones aplicadas.');
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS app_preferences jsonb DEFAULT '{}'::jsonb NOT NULL`;
+  await sql`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS mandate_config jsonb DEFAULT '{}'::jsonb NOT NULL`;
+  console.log('Migraciones aplicadas (incluyendo columnas JSONB V3/Karol).');
 } finally {
   await sql.end();
 }
