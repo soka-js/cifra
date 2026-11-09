@@ -61,27 +61,25 @@ export function AppTopBar({
   return (
     <header className="no-print sticky top-0 z-30 border-b border-line/80 bg-white/90 px-3.5 py-2.5 backdrop-blur-md">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-        {/* Izquierda: Logo o botón atrás según dónde esté */}
-        <div className="flex items-center gap-2">
-          {!isRoot ? (
+        {/* Izquierda: Miga de pan contextual limpia (sin duplicar el BackButton de página) */}
+        <div className="flex min-w-0 items-center gap-2">
+          <Link
+            href={role === 'persona' ? '/app' : '/negocio'}
+            className="flex shrink-0 items-center gap-1.5 lg:hidden"
+          >
+            <LogoMark size={22} />
+          </Link>
+
+          <div className="flex min-w-0 items-center gap-1.5 text-[13px]">
             <Link
               href={role === 'persona' ? '/app' : '/negocio'}
-              onClick={handleBack}
-              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-3 py-1.5 text-[12.5px] font-bold text-ink transition hover:border-ink hover:bg-white active:scale-95"
-              aria-label="Volver a la pantalla principal"
+              onClick={!isRoot ? handleBack : undefined}
+              className="shrink-0 font-semibold text-ink-muted transition hover:text-ink"
             >
-              <ArrowLeft size={15} aria-hidden="true" />
-              <span>{role === 'persona' ? 'Hoy' : 'Resumen'}</span>
+              {role === 'persona' ? 'Hoy' : 'Negocio'}
             </Link>
-          ) : (
-            <Link href={role === 'persona' ? '/app' : '/negocio'} className="flex items-center gap-2">
-              <LogoMark size={24} />
-              <span className="font-display text-[19px] font-extrabold tracking-tight text-ink">cifra</span>
-            </Link>
-          )}
-
-          <div className="hidden sm:block">
-            <span className="text-[14px] font-bold text-ink">{getSectionTitle()}</span>
+            <ChevronRight size={14} className="shrink-0 text-ink-faint" aria-hidden="true" />
+            <span className="truncate font-bold text-ink">{getSectionTitle()}</span>
           </div>
         </div>
 
