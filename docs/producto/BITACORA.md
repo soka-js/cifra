@@ -174,7 +174,7 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
 
 ### 2026-11-11 16:20, Etapa 0: base de trabajo y plan
 
-- Rama y commits: `producto-v1`, creada desde `main` en `b709ac9`. Un commit local, sin subir.
+- Rama y commits: `producto-v1`, creada desde `main` en `b709ac9`. Commit local `8047d88` (más uno de ajuste a esta bitácora), sin subir.
 - Qué cambió (archivos principales):
   - `docs/producto/BITACORA.md`: plan, estado y esta entrada. `docs/producto/BRIEF.md` y `evidencia/` entran al repositorio; agregué 5 capturas `e0-*.jpg` de mi recorrido.
   - `.gitattributes`: `* text=auto eol=lf` y binarios declarados.
@@ -188,6 +188,7 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
   - `npx next build`: sin errores, 43,9 s.
   - `npm run db:migrate` contra la base local: "Migraciones aplicadas" (antes del arreglo fallaba).
   - `devdb`: `npm start` en una carpeta limpia crea `cifra_dev` y `cifra_test` (`show server_version` = 18.6); `npm run stop` libera el puerto.
+  - Fin de línea: con `.gitattributes`, `git status` da 0 archivos modificados con `core.autocrlf` en `true`, `false` e `input` (el brief reportaba 206; el "antes" no lo medí yo).
   - Recorridos a 390x844 con Chrome: 13 rutas como visitante sin cookies, 17 pantallas como usuario nuevo, 12 como tendero nuevo y la validación en caja del código `9M6GCR`. Resultados en "Lo que comprobé yo mismo".
   - Ningún cambio en `web/src`: el producto se comporta igual que en `b709ac9`.
 - Qué revisar en la vista previa: nada todavía; esta etapa no cambia la app y la rama no está subida.
@@ -196,4 +197,4 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
   - El riesgo de producción descrito arriba sigue abierto hasta desplegar la Etapa 1.
   - No medí el tiempo de una persona real del QR a la cifra; hoy hay tres pantallas antes de la primera pregunta (registro, confianza, paso 1). Se mide en la Etapa 4.
   - `embedded-postgres` es una dependencia nueva solo de desarrollo (109 MB instalados en Windows), fija en la versión `18.6.0-beta.19`.
-  - Los archivos de trabajo quedaron en LF después de aplicar `.gitattributes`; si otra copia del repositorio muestra archivos modificados, basta con `git add --renormalize .`.
+  - En esta copia, 205 archivos siguen con CRLF en disco. Git ya no los marca; pasan a LF a medida que se tocan o con un clon nuevo. No los reescribí en bloque: es una sobrescritura forzada de todo el árbol de trabajo y no hace falta.
