@@ -1,0 +1,18 @@
+{
+  "name": "cifra-devdb",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Postgres local desechable para desarrollo y pruebas de CIFRA. Vive fuera de web/ para que Vercel no lo instale.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node start.mjs",
+    "reset": "node start.mjs --reset",
+    "stop": "node start.mjs --stop"
+  },
+  "dependencies": {
+    "embedded-postgres": "18.6.0-beta.19"
+  }
+}
