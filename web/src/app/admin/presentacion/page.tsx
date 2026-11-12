@@ -9,6 +9,7 @@ import { Receipt } from '@/components/landing/receipt';
 import { Testimonios } from '@/components/landing/testimonios';
 import { TrackedLink } from '@/components/landing/tracked-link';
 import { Logo } from '@/components/logo';
+import { requireAdmin } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Presentación Comercial · CIFRA', robots: { index: false } };
@@ -21,6 +22,8 @@ const HEADLINES = {
 const contact = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
 
 export default async function PresentacionComercialPage() {
+  // Todo /admin es solo para un admin real, también esta presentación.
+  await requireAdmin();
   const h = await headers();
   const jar = await cookies();
   const raw = h.get('x-cf-ab') ?? jar.get('cf_ab')?.value;
