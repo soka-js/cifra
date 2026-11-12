@@ -10,14 +10,12 @@ export function AppTopBar({
   merchantName,
   merchantSlug,
   unreadCount = 0,
-  isDemo = false,
   role = 'persona',
 }: {
   userName?: string | null;
   merchantName?: string | null;
   merchantSlug?: string | null;
   unreadCount?: number;
-  isDemo?: boolean;
   role?: 'persona' | 'negocio';
 }) {
   const pathname = usePathname();

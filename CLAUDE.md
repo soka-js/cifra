@@ -26,6 +26,7 @@ Antes de tocar nada, lee:
   - `src/app/admin/`: operación y demo. Solo `ADMIN_EMAILS`.
   - `src/app/actions/`, `src/app/app/actions.ts`, `src/app/admin/actions.ts`: acciones del servidor. Todo `export` de un archivo `'use server'` es un endpoint público: valida sesión y dueño adentro.
   - `src/lib/db/schema.ts` y `drizzle/`: esquema y migraciones.
+  - `test/integration/`: pruebas contra Postgres local. `acciones.matriz.ts` tiene una entrada por acción del servidor; una metaprueba falla si agregas una acción y no la registras ahí.
 - `devdb/`: Postgres local desechable. Vive fuera de `web/` para que Vercel no lo instale.
 - `docs/producto/`: brief, bitácora y evidencia.
 
@@ -47,12 +48,15 @@ cp .env.example .env.local    # DATABASE_URL=postgres://cifra:cifra_local@127.0.
 npm install
 npm run db:migrate
 npm run dev                   # http://localhost:3000
-npm run typecheck
-npm test                      # pruebas unitarias (Vitest)
+npm run typecheck             # next typegen + tsc
+npm test                      # pruebas unitarias (Vitest, sin base de datos)
+npm run test:int              # pruebas de permisos y sesión contra cifra_test (necesita devdb corriendo)
 npm run build
 ```
 
-`npm run lint` no funciona: `next lint` ya no existe en Next.js 16.
+No hay `npm run lint`: `next lint` ya no existe en Next.js 16.
+
+Para entrar a `/admin` en local: pon tu correo en `ADMIN_EMAILS` de `web/.env.local`, crea la cuenta y verifica el correo con "Olvidé mi contraseña" (en desarrollo, la pantalla muestra el enlace cuando no hay servicio de correo).
 
 ## Convenciones
 

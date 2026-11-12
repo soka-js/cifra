@@ -100,6 +100,8 @@ export async function claimOfferCode(formData: FormData): Promise<void> {
     .limit(1);
 
   if (!row) return;
+  // Lo real y la demo no se cruzan: una persona real no reclama ofertas de ejemplo, ni al revés.
+  if (row.merchant.isDemo !== user.isDemo) return;
   if (row.offer.stockRemaining !== null && row.offer.stockRemaining <= 0) return;
 
   const today = todayInBogota();
@@ -248,6 +250,10 @@ export async function redeemMerchantInvite(_prev: MerchantActionState, formData:
   }
 
   let currentUser = await getCurrentUser();
+  // Lo real y la demo no se cruzan: quien mira la demo no puede quedar de dueño de un negocio real.
+  if (currentUser && currentUser.isDemo !== inv.merchant.isDemo) {
+    return { status: 'error', message: 'Este enlace no se puede usar desde la demo. Sal de la demo y ábrelo de nuevo.' };
+  }
   if (!currentUser) {
     const email = String(formData.get('email') ?? '').trim().toLowerCase();
     const password = String(formData.get('password') ?? '');
@@ -433,11 +439,19 @@ export async function selfRegisterMerchant(_prev: MerchantActionState, formData:
 }
 
 export async function switchActiveMerchant(formData: FormData): Promise<void> {
-  await requireUser();
+  const user = await requireUser();
   const id = String(formData.get('merchantId') ?? '').trim();
   if (id) {
-    const jar = await cookies();
-    jar.set(ACTIVE_MERCHANT_COOKIE, id, { path: '/', sameSite: 'lax', maxAge: 30 * 86_400 });
+    // Solo entre los negocios de los que la persona es miembro.
+    const [membership] = await db
+      .select({ id: merchantMembers.id })
+      .from(merchantMembers)
+      .where(and(eq(merchantMembers.userId, user.id), eq(merchantMembers.merchantId, id)))
+      .limit(1);
+    if (membership) {
+      const jar = await cookies();
+      jar.set(ACTIVE_MERCHANT_COOKIE, id, { path: '/', sameSite: 'lax', maxAge: 30 * 86_400 });
+    }
   }
   revalidatePath('/negocio', 'layout');
   redirect('/negocio');

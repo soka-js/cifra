@@ -71,14 +71,12 @@ export function DesktopSidebar({
   unreadCount,
   hasMerchant,
   isAdmin,
-  isDemo,
 }: {
   userName: string | null;
   zoneLabel: string | null;
   unreadCount: number;
   hasMerchant: boolean;
   isAdmin: boolean;
-  isDemo: boolean;
 }) {
   const pathname = usePathname();
 
@@ -152,7 +150,7 @@ export function DesktopSidebar({
         </div>
       </nav>
 
-      {(hasMerchant || isAdmin || isDemo) && (
+      {(hasMerchant || isAdmin) && (
         <div className="space-y-1.5 border-t border-line p-3">
           {hasMerchant && (
             <Link

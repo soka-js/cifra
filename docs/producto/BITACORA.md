@@ -171,7 +171,7 @@ Siguen abiertas las decisiones 5, 6 y 7. Ninguna bloquea la Etapa 1.
 | Etapa | Qué | Estado | Solicitud de cambio |
 | --- | --- | --- | --- |
 | 0 | Base de trabajo y plan | Hecha, commit local en `producto-v1` | Sin subir (ver decisión 3) |
-| 1 | Cerrar la puerta (seguridad) | En curso | Sin subir (ver decisión 3) |
+| 1 | Cerrar la puerta (seguridad) | Código y pruebas de permisos listos (256 de 257 en verde, 1 por repetir). Falta el recorrido en navegador: la base local quedó detenida por memoria | Sin subir (ver decisión 3) |
 | 2 | Cada número con recibo | Pendiente | |
 | 3 | Hoy en dos pantallas | Pendiente | |
 | 4 | Del QR a la cifra sin cuenta | Pendiente | |
@@ -180,6 +180,54 @@ Siguen abiertas las decisiones 5, 6 y 7. Ninguna bloquea la Etapa 1.
 | 7 | Feria | Pendiente | |
 
 ## Entradas
+
+### 2026-11-12 08:55, Etapa 1: cerrar la puerta (código y pruebas de permisos listos; falta el recorrido en navegador)
+
+**La etapa no está cerrada.** El código y las pruebas de permisos están hechos y en verde, pero falta la prueba de punta a punta en un navegador. No pude hacerla: el sistema detuvo el Postgres local por falta de memoria (quedaban 1,9 GB libres de 15,7) y no lo reinicio sin que SOKA lo pida.
+
+- Rama y commits: `producto-v1`, un commit local sobre `ebfa31d`. Sin subir.
+- Qué cambió (67 archivos: 14 nuevos, 37 modificados, 16 borrados; +2.560 y −5.435 líneas):
+  - **Sesión** (`web/src/lib/auth/session.ts`, reescrito): la identidad sale solo de la cookie `cf_session`. Ya no existe usuario por defecto ni se siembra la demo en una visita anónima. `web/src/proxy.ts` manda a `/entrar` a quien abre `/app`, `/negocio` o `/admin` sin cookie; `/negocio` sin sesión va a `/negocio/unirse`, así que un tendero nuevo ya puede registrarse.
+  - **Admin**: `isAdmin` exige correo en `ADMIN_EMAILS`, correo verificado y que no sea usuario demo. La columna `users.role` ya no otorga nada. `requireAdmin` responde 404 a quien tiene sesión sin permiso. `/admin` completo es solo para admin; salió la pantalla y la barra de "credenciales maestras".
+  - **Correo verificado** (nuevo, no estaba en el plan): el registro no comprueba de quién es el correo, así que con solo `ADMIN_EMAILS` cualquiera podía registrarse con el correo de SOKA antes que él y quedar de admin. Ahora hace falta haber entrado con Google o haber abierto el enlace de "Olvidé mi contraseña" (`users.email_verified_at`).
+  - **Demo aislada**: borradas `/api/demo/session`, `/demo`, sus acciones, los accesos de un clic de `/entrar` y el recorrido guiado. La demo se abre desde `/admin` con "Ver como persona" o "Ver como tendero": queda anotado en la sesión del admin (`sessions.acting_as_user_id`) y solo vale si quien mira es admin y el destino tiene `is_demo`, revisado en cada petición. Franja negra fija "Demo · datos de ejemplo" con cambio Persona/Tendero y Salir (`web/src/components/demo/demo-bar.tsx`). Los usuarios demo se siembran sin clave y sin rol; ya no se crea `admin@cifra.co`. No pueden entrar por clave, por Google, por enlace de cambio de clave ni por enlace embebido. Las vitrinas `/b/demo-*` dan 404 fuera de la demo y una persona real no puede reclamar una oferta de ejemplo (ni al revés).
+  - **Negocio**: se entra solo por membresía. El admin y la demo ya no son "dueños" de todos los negocios; salió "abrir negocio como admin". Cambiar de negocio activo valida la membresía.
+  - **Acciones del servidor: de 77 a 62.** Salieron las 11 que escribían plata simulada o datos inventados (marcar la propia factura como pagada, recargar la bolsa prepago, plan Plus, meta de ahorro y "jugadas", mandato Ley 1581, sesión embebida de demo) y `markOnboarded`. `ensureEditableLiquidAccount` pasó a `web/src/lib/manual.ts`: ya no es un endpoint.
+  - **Componentes borrados** (dependían de esas acciones): meta de ahorro y recomendaciones, planes, "blindaje" de consentimiento, mandato de débito, vitrina de marca blanca, recorrido guiado. La cuenta del negocio ya no muestra canales de pago de relleno: salen solo de `CIFRA_BREB_KEY` y `CIFRA_NEQUI_NUMBER`.
+  - **Otros cierres**: Google solo enlaza cuentas con `email_verified`; cambiar la clave cierra las demás sesiones; "borrar cuenta" no opera dentro de la demo; el cron mira al admin real.
+  - **Migración** `web/drizzle/0007_seguridad.sql`: columnas `users.email_verified_at` y `sessions.acting_as_user_id`, más el saneamiento autorizado (`role = 'user'` para todos; usuarios demo sin clave, sin sesiones, sin Google, sin enlaces pendientes). No borra datos de producto.
+  - **Pruebas nuevas** (`web/test/integration/`, `web/vitest.integration.config.ts`, `npm run test:int`): corren las acciones y los manejadores de ruta contra `cifra_test`. Se niegan a arrancar contra cualquier base que no sea local y terminada en `_test`.
+  - `npm run typecheck` ahora es `next typegen && tsc --noEmit`; salió `npm run lint` (no existe en Next 16). `CLAUDE.md`, los README y `.env.example` quedaron al día. Borrados los 5 scripts de punta a punta viejos, que dependían de la puerta demo.
+- Por qué: es la primera regla del brief y bloqueaba la meta 2 (un tendero no podía registrarse porque ya "era" el dueño de La Espiga).
+- Verificación (comando y resultado, con números):
+  - `npm run typecheck`: 0 errores, incluidos los archivos de prueba.
+  - `npx vitest run` (unitarias): 12 archivos, 96 de 96, 1,73 s.
+  - `npx next build`: sin errores, 36,9 s. La lista de rutas ya no trae `/api/demo/session` ni `/demo`.
+  - Pruebas de integración, corridas archivo por archivo antes de que se detuviera la base, con el mismo código de `src/` que queda en el commit:
+    - `permisos-acciones.itest.ts`: 174 de 175 en 107,9 s. Son 50 acciones con sesión, cada una probada sin sesión, con la sesión de otra persona y con la del dueño (más "persona sin negocio" en las de negocio y "dueño de negocio no es admin" en las de admin). La que falló es la metaprueba que busca los archivos de las acciones con prueba propia, que en ese momento aún no existían. Después comprobé con un script que los 12 `describe` están (12 de 12) y que las 62 acciones exportadas están cubiertas; **no la volví a correr**.
+    - `sesion-admin-demo.itest.ts`: 35 de 35 en 24,0 s.
+    - `acciones-publicas.itest.ts` y `rutas-api.itest.ts`: 47 de 47 en 23,8 s.
+    - Total: 257 pruebas, 256 en verde y 1 pendiente de repetir.
+  - Lo que estas pruebas demuestran, entre otras cosas: sin cookie no hay usuario aunque Mariana exista en la base; `role = 'admin'` en la base no da admin; registrarse con el correo de `ADMIN_EMAILS` no da admin; un usuario demo no entra ni con una clave válida guardada; "ver como" hacia una persona real se rechaza y, si alguien lo escribe a mano en la base, se ignora; reiniciar la demo no cambia un solo campo de los datos reales; `/api/export` sin sesión responde 401.
+  - **Sin hacer:** recorrido de punta a punta en navegador (visitante sin sesión por todas las rutas, usuario nuevo, tendero nuevo hasta la caja, admin abriendo y cerrando la demo). No he visto con mis ojos la franja de demo ni el lanzador de `/admin`.
+- Qué revisar en la vista previa: no hay vista previa (la rama no está subida). Para verlo en local: `cd devdb && npm start`; en otra terminal `cd web && npm run db:migrate && npm run dev`. Entonces:
+  1. Sin sesión, abre `/app`, `/negocio/caja` y `/admin`: los tres deben llevar a `/entrar`. `/negocio` debe llevar al registro de negocio.
+  2. Pon tu correo en `ADMIN_EMAILS` de `web/.env.local`, crea la cuenta, usa "Olvidé mi contraseña" (en local la pantalla muestra el enlace) y abre `/admin`.
+  3. En `/admin`: "Ver como persona", pasa a "Tendero" en la franja negra, y "Salir".
+  4. Con otra cuenta cualquiera, `/admin` debe dar 404.
+- Decisiones que necesito de SOKA:
+  1. **Avísame cuando pueda volver a levantar la base local** (o levántala tú con `cd devdb && npm start`). Con eso corro la suite completa, escribo y corro el recorrido en navegador y cierro la etapa.
+  2. **Antes de desplegar esto a producción:** para entrar a `/admin` vas a necesitar el correo verificado. ¿Producción tiene "Continuar con Google" configurado, o un servicio de correo (`RESEND_API_KEY` o `SMTP_URL`) para que llegue el enlace de cambio de clave? Si no tiene ninguno de los dos, quedarías fuera de `/admin` hasta configurarlo.
+  3. Siguen abiertas las decisiones 5, 6 y 7 del plan.
+- Pendientes y riesgos:
+  - El riesgo de producción sigue abierto hasta que esto se despliegue.
+  - `/` sin sesión lleva por ahora a `/entrar`; la página pública llega en la Etapa 4.
+  - El Hoy todavía muestra el "tope de hoy" con el factor 0,65 y los pesos con coma: es la Etapa 2. El selector Persona/Negocio sigue visible: Etapa 3.
+  - `web/src/app/admin/page.tsx` conserva una constante `realAdmin = true` y condicionales que ya no deciden nada; se limpian en la Etapa 5, cuando se rehace el tablero.
+  - En las bases que ya existen quedan sin uso las columnas `users.app_preferences`, `merchants.mandate_config` y `users.role`. No las borré.
+  - No toqué: el webhook de Wompi (compara la firma sin tiempo constante y no valida el monto), la cabecera que bloquea la cámara (Etapa 6) ni la verificación del correo de las personas normales al registrarse.
+  - El rol "cajero" existe en el esquema pero hoy tiene los mismos permisos que el dueño; no hay pantalla para crear cajeros.
+  - La suite de integración tarda unos 2 min 35 s porque reconstruye el mundo de prueba en cada caso.
 
 ### 2026-11-11 16:20, Etapa 0: base de trabajo y plan
 

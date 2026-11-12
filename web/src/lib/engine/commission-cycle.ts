@@ -244,7 +244,7 @@ export const COMMISSION_POLICY = {
   feePercent: 5,
   model: 'Corte consolidado quincenal',
   guaranteeText:
-    'Cero cobros sorpresa y cero micro-pagos por cliente: No te cobramos $900 tras cada venta ni tienes que sacar tu celular cada vez que atiendes a alguien. Todo se acumula en un solo corte quincenal consolidado con 5 días calendario de gracia para liquidar por Bre-B, Nequi o débito automático.',
+    'Cero cobros sorpresa y cero micro-pagos por cliente: No te cobramos $900 tras cada venta ni tienes que sacar tu celular cada vez que atiendes a alguien. Todo se acumula en un solo corte quincenal consolidado con 5 días calendario de gracia para pagarlo.',
   delinquencyRule:
     'Protección mutua de recaudo: si un corte acumulado supera 5 días calendario de mora, las ofertas relámpago se pausan de forma preventiva para que no acumules cobros pendientes. Al registrar tu liquidación por Bre-B o Nequi, tus ofertas vuelven a activarse al instante.',
 };

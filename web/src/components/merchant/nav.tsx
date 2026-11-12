@@ -74,14 +74,12 @@ export function MerchantSidebar({
   neighborhood,
   allMerchants,
   isAdmin,
-  isDemo,
 }: {
   merchantId: string;
   merchantName: string;
   neighborhood: string;
   allMerchants: Array<{ id: string; name: string; neighborhood: string }>;
   isAdmin: boolean;
-  isDemo: boolean;
 }) {
   const pathname = usePathname();
 

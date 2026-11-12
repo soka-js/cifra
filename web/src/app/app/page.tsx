@@ -1,29 +1,13 @@
-import {
-  AlertTriangle,
-  CalendarCheck2,
-  ChevronRight,
-  CircleHelp,
-  PencilLine,
-  PiggyBank,
-  Repeat,
-  TrendingUp,
-  Upload,
-} from 'lucide-react';
+import { AlertTriangle, CalendarCheck2, ChevronRight, PencilLine, Repeat, TrendingUp, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { BalancePrompt, BalanceRow } from '@/components/app/balance-editor';
 import { CifraPrivacyHero } from '@/components/app/cifra-privacy-hero';
 import { DailyPulseCard } from '@/components/app/daily-pulse-card';
 import { GaOnce } from '@/components/app/ga-once';
-import { SavingsGoalAndNbaCard } from '@/components/app/savings-goal-nba-card';
 import { TrackView } from '@/components/app/track-view';
 import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
 import { requireUser } from '@/lib/auth/session';
-import {
-  loadCifra,
-  loadMarksDetailed,
-  loadSavingsSummary,
-  loadSpendDeviation,
-} from '@/lib/data';
+import { loadCifra, loadMarksDetailed, loadSpendDeviation } from '@/lib/data';
 import { STALE_BALANCE_WARNING } from '@/lib/engine/cifra';
 import { shortDate, todayInBogota } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
@@ -55,10 +39,9 @@ function ageNote(days: number | null, on: string | null): string {
 
 export default async function HoyPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
-  const [c, marksDetail, savings, smartMap, sp] = await Promise.all([
+  const [c, marksDetail, smartMap, sp] = await Promise.all([
     loadCifra(user),
     loadMarksDetailed(user.id),
-    loadSavingsSummary(user.id),
     loadSmartMapBundle(user),
     searchParams,
   ]);
@@ -125,10 +108,6 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
 
   const recurringActive = c.recurring.filter((r) => r.active && marksDetail[r.merchantKey]?.mark !== 'no_es_fijo');
   const monthlyRecurring = recurringActive.reduce((s, r) => s + r.monthlyMinor, 0);
-  const unusedRecurring = recurringActive.filter(
-    (r) => marksDetail[r.merchantKey]?.mark === 'no_lo_uso' && !marksDetail[r.merchantKey]?.cancelledAt,
-  );
-  const potentialSavingsMinor = unusedRecurring.reduce((s, r) => s + r.monthlyMinor, 0);
 
   const written = c.commitments.filter((x) => !c.matchedCommitments.includes(x.id));
   const fixedCount = recurringActive.length + written.length;
@@ -282,35 +261,6 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
           </div>
         </section>
       )}
-
-      {/* Meta de Ahorro Conectada + Motor Next Best Action (NBA) contextualizado */}
-      <SavingsGoalAndNbaCard
-        monthSavedMinor={savings.monthMinor}
-        allTimeSavedMinor={savings.allTimeMinor}
-        availableMinor={c.availableMinor}
-        perDayMinor={c.perDayMinor}
-        daysLeft={c.daysLeft}
-        topOffers={smartMap.offers.slice(0, 3).map((o) => ({
-          offer: {
-            id: o.offerId,
-            title: o.title,
-            merchantName: o.merchantName,
-            neighborhood: o.neighborhood,
-            discountKind: o.discountKind,
-            discountPercent: o.discountPercent,
-            discountFixedMinor: o.discountFixedMinor,
-            targetCategory: o.targetCategory,
-          },
-          estimatedSavingsMinor: Math.max(24_000_00, o.estimatedSavingsMinor * 6),
-          monthlySpendInCategoryMinor: smartMap.profile.byCategory[o.targetCategory]?.totalSpentMinor ?? 96_000_00,
-        }))}
-        unusedRecurring={unusedRecurring.map((r) => ({
-          merchantKey: r.merchantKey,
-          displayName: r.name,
-          amountMinor: r.monthlyMinor,
-        }))}
-        initialPreferences={user.appPreferences}
-      />
 
       {c.commitmentSuggestions.length > 0 && (
         <Link href="/app/cobros#escritos" className="flex gap-2.5 rounded-xl bg-warn-light px-4 py-3 text-[14px] leading-snug text-warn">

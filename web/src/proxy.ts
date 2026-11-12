@@ -2,28 +2,34 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const YEAR = 60 * 60 * 24 * 365;
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+const SESSION_COOKIE = 'cf_session';
+
+const under = (pathname: string, base: string) => pathname === base || pathname.startsWith(`${base}/`);
 
 /**
- * - Asigna un id anónimo de visitante y la variante A/B del titular de la landing (cookies propias).
+ * - Sin cookie de sesión, manda a entrar a quien abre /app, /negocio o /admin. Es un primer filtro
+ *   barato: la verificación real (que la sesión exista y de quién es) ocurre en el servidor, en
+ *   lib/auth/session.ts, en cada página y en cada acción.
+ * - Asigna un id anónimo de visitante y la variante A/B del titular (cookies propias).
  * - Guarda los UTM de la primera visita para atribuir registros y contactos a su fuente.
- * - Manda a /entrar a quien abre /app o /negocio (salvo /negocio/activar) sin sesión.
  */
 export function proxy(request: NextRequest) {
-  const { pathname, searchParams } = request.nextUrl;
+  const { pathname, search, searchParams } = request.nextUrl;
 
-  const isProtectedApp = pathname.startsWith('/app');
-  const isProtectedMerchant =
-    pathname.startsWith('/negocio') &&
-    !pathname.startsWith('/negocio/activar') &&
-    !pathname.startsWith('/negocio/unirse');
+  const merchantPublic = under(pathname, '/negocio/unirse') || under(pathname, '/negocio/activar');
+  const needsSession =
+    under(pathname, '/app') || under(pathname, '/admin') || (under(pathname, '/negocio') && !merchantPublic);
 
-  const isExplicitlyLoggedOut =
-    request.cookies.get('cf_logged_out')?.value === '1' && !request.cookies.get('cf_session');
-
-  if ((isProtectedApp || isProtectedMerchant) && isExplicitlyLoggedOut) {
+  if (needsSession && !request.cookies.get(SESSION_COOKIE)?.value) {
     const url = request.nextUrl.clone();
-    url.pathname = '/entrar';
-    url.search = isProtectedMerchant ? `?next=${encodeURIComponent(pathname)}` : '';
+    if (pathname === '/negocio') {
+      // Un tendero que llega por primera vez va directo a registrar su negocio.
+      url.pathname = '/negocio/unirse';
+      url.search = '';
+    } else {
+      url.pathname = '/entrar';
+      url.search = pathname === '/app' ? '' : `?next=${encodeURIComponent(`${pathname}${search}`)}`;
+    }
     return NextResponse.redirect(url);
   }
 

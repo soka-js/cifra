@@ -19,7 +19,13 @@ export async function GET(req: Request, ctx: Ctx) {
     .where(and(eq(embedTokens.tokenHash, sha256(token)), isNull(embedTokens.usedAt), gt(embedTokens.expiresAt, new Date())))
     .returning({ userId: embedTokens.userId });
   if (!row) return NextResponse.redirect(`${origin}/entrar?enlace=vencido`);
+  const [user] = await db
+    .select({ onboardedAt: users.onboardedAt, isDemo: users.isDemo })
+    .from(users)
+    .where(eq(users.id, row.userId))
+    .limit(1);
+  // Un usuario de demostración no tiene entrada propia: a la demo se llega solo desde /admin.
+  if (!user || user.isDemo) return NextResponse.redirect(`${origin}/entrar?enlace=invalido`);
   await createSession(row.userId);
-  const [user] = await db.select({ onboardedAt: users.onboardedAt }).from(users).where(eq(users.id, row.userId)).limit(1);
   return NextResponse.redirect(`${origin}${user?.onboardedAt ? '/app' : '/app/bienvenida'}`);
 }

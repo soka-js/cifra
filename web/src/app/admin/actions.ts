@@ -2,9 +2,8 @@
 
 import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { ACTIVE_MERCHANT_COOKIE, getCurrentUser, isAdmin } from '@/lib/auth/session';
+import { getSessionContext, isAdmin, requireAdmin, startDemoView, stopDemoView } from '@/lib/auth/session';
 import { randomToken, sha256 } from '@/lib/crypto';
 import { db } from '@/lib/db';
 import {
@@ -19,6 +18,7 @@ import {
   redemptions,
   savingsEvents,
 } from '@/lib/db/schema';
+import { ensureDemoEcosystemSeeded } from '@/lib/demo-seed';
 import { parsePesosInput } from '@/lib/format';
 import { syncMerchantInvoice } from '@/lib/merchant-data';
 import { runDailyRetentionAndOpsJob } from '@/lib/notify/daily-job';
@@ -35,12 +35,13 @@ export type AdminActionResult =
     }
   | { status: 'error'; message: string };
 
+/**
+ * Toda acción de este archivo empieza aquí. Exige un admin REAL (correo en ADMIN_EMAILS y verificado),
+ * mirando siempre a quien inició sesión y nunca al usuario de demostración que esté viendo.
+ * Sin sesión redirige a /entrar; con sesión sin permiso responde 404.
+ */
 async function assertAdmin() {
-  const user = await getCurrentUser();
-  if (!user || !isAdmin(user)) {
-    throw new Error('Acceso administrativo requerido.');
-  }
-  return user;
+  return requireAdmin();
 }
 
 function slugify(s: string): string {
@@ -170,16 +171,6 @@ export async function generateNewInviteLink(
     inviteUrl,
     whatsappHref: `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}`,
   };
-}
-
-export async function openMerchantAsAdmin(formData: FormData): Promise<void> {
-  await assertAdmin();
-  const merchantId = String(formData.get('merchantId') ?? '').trim();
-  if (merchantId) {
-    const jar = await cookies();
-    jar.set(ACTIVE_MERCHANT_COOKIE, merchantId, { path: '/', sameSite: 'lax', maxAge: 30 * 86_400 });
-  }
-  redirect('/negocio');
 }
 
 export async function adminModerateOffer(formData: FormData): Promise<void> {
@@ -328,4 +319,36 @@ export async function triggerDailyCronFromAdmin(): Promise<void> {
   await assertAdmin();
   await runDailyRetentionAndOpsJob();
   revalidatePath('/admin');
+}
+
+// ---------------------------------------------------------------------------
+// Demo: solo un admin real la abre, la reinicia o la siembra. Nadie más.
+// ---------------------------------------------------------------------------
+
+/** Abre la demo sobre la sesión del admin: ve la app como la persona o como la tendera de ejemplo. */
+export async function openDemoAs(formData: FormData): Promise<void> {
+  await assertAdmin();
+  const asMerchant = formData.get('role') === 'tendero';
+  const ids = await ensureDemoEcosystemSeeded(false);
+  await startDemoView(asMerchant ? ids.rosaUserId : ids.marianaUserId);
+  revalidatePath('/', 'layout');
+  redirect(asMerchant ? '/negocio' : '/app');
+}
+
+/** Sale de la demo y vuelve a /admin. Quitar el "ver como" de la propia sesión no necesita permiso. */
+export async function exitDemo(): Promise<void> {
+  const ctx = await getSessionContext();
+  if (!ctx) redirect('/entrar');
+  await stopDemoView();
+  revalidatePath('/', 'layout');
+  redirect(isAdmin(ctx.realUser) ? '/admin' : '/app');
+}
+
+/** Borra todo lo marcado is_demo y lo vuelve a sembrar. No toca ningún dato real. */
+export async function resetDemoData(): Promise<void> {
+  await assertAdmin();
+  await stopDemoView();
+  await ensureDemoEcosystemSeeded(true);
+  revalidatePath('/', 'layout');
+  redirect('/admin?demo=reiniciada');
 }

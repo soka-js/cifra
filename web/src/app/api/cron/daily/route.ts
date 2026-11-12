@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getCurrentUser, isAdmin } from '@/lib/auth/session';
+import { getSessionContext, isAdmin } from '@/lib/auth/session';
 import { runDailyRetentionAndOpsJob } from '@/lib/notify/daily-job';
 
 async function isAuthorized(request: NextRequest): Promise<boolean> {
@@ -8,8 +8,7 @@ async function isAuthorized(request: NextRequest): Promise<boolean> {
   if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
     return true;
   }
-  const user = await getCurrentUser();
-  return isAdmin(user);
+  return isAdmin((await getSessionContext())?.realUser);
 }
 
 export async function GET(request: NextRequest) {

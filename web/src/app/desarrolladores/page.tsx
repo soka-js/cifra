@@ -1,4 +1,3 @@
-import { WhiteLabelWalletShowcase } from '@/components/b2b2c/white-label-wallet-showcase';
 import { LegalPage } from '@/components/legal/page';
 import { B2B2CSimulator } from './api-playground';
 
@@ -21,7 +20,6 @@ export default function DevelopersPage() {
         Con esta API una cooperativa, fondo de empleados, caja de compensación, billetera digital o wallet de retail (como Starbucks) integra CIFRA dentro de su propia aplicación usando los saldos y movimientos que ya custodia. No requiere esperar regulación de finanzas abiertas: la entidad mantiene la relación con su usuario, le entrega bienestar financiero inmediato y recibe el <strong>30 % de las comisiones</strong> generadas cuando sus usuarios redimen ofertas en comercios de barrio.
       </p>
 
-      <WhiteLabelWalletShowcase />
 
       <B2B2CSimulator />
 

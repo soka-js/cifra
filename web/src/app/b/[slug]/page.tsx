@@ -33,7 +33,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const [merchant] = await db.select().from(merchants).where(eq(merchants.slug, slug)).limit(1);
-  if (!merchant) return { title: 'Comercio no encontrado · CIFRA' };
+  if (!merchant || merchant.isDemo) return { title: 'Comercio no encontrado · CIFRA' };
   return {
     title: `${merchant.name} (${merchant.neighborhood}) · Vitrina CIFRA`,
     description:
@@ -53,6 +53,8 @@ export default async function PublicMerchantStorefrontPage({
 
   const today = todayInBogota();
   const user = await getCurrentUser();
+  // Un negocio de demostración solo existe para quien está mirando la demo (un admin, desde /admin).
+  if (merchant.isDemo && !user?.isDemo) notFound();
 
   const activeOffers = (
     await db

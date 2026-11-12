@@ -292,7 +292,7 @@ export default async function PresentacionComercialPage() {
                 <li className="flex items-start gap-2.5">
                   <QrCode size={19} className="mt-0.5 shrink-0 text-terra-dark" aria-hidden="true" />
                   <span>
-                    <strong className="font-semibold text-ink">Caja lista en 10 segundos y cortes quincenales:</strong> digitas las 6 letras del cliente en tu celular y liquidas el 5 % consolidado al corte por Bre-B, Nequi o débito automático.
+                    <strong className="font-semibold text-ink">Caja lista en 10 segundos y cortes quincenales:</strong> digitas las 6 letras del cliente en tu celular y pagas el 5 % consolidado al corte quincenal.
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">

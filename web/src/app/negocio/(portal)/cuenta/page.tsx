@@ -10,7 +10,6 @@ import {
   TrendingUp,
   Wallet,
 } from 'lucide-react';
-import { AutoDebitMandateCard } from '@/components/merchant/auto-debit-mandate-card';
 import { BackButton } from '@/components/ui/back-button';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { bogotaDate } from '@/lib/data';
@@ -29,11 +28,14 @@ export default async function MerchantBillingPage() {
   const access = await requireMerchantAccess();
   const data = await loadMerchantDashboard(access.merchant);
 
-  const cifraBrebKey = process.env.CIFRA_BREB_KEY ?? '@cifrapagos';
-  const cifraNequi = process.env.CIFRA_NEQUI_NUMBER ?? '300 555 0199';
+  // Los canales de pago salen SOLO de la configuración. Si no están, no se muestra ninguno:
+  // un número de relleno aquí haría que un negocio le transfiera plata a un desconocido.
+  const cifraBrebKey = process.env.CIFRA_BREB_KEY?.trim() || null;
+  const cifraNequi = process.env.CIFRA_NEQUI_NUMBER?.trim() || null;
+  const hasPaymentChannel = Boolean(cifraBrebKey || cifraNequi);
   const wompiPublicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || undefined;
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  const brebQrSvg = await generateBrebQrSvg(cifraBrebKey);
+  const brebQrSvg = cifraBrebKey ? await generateBrebQrSvg(cifraBrebKey) : null;
 
   const { billingHealth, cycleSummary } = data;
 
@@ -57,7 +59,7 @@ export default async function MerchantBillingPage() {
           Corte de comisiones y facturación
         </h1>
         <p className="mt-1 text-[15px] text-ink-muted">
-          Tranquilidad operativa total: Olvídate de hacer pagos micro cliente por cliente ($900 cada vez). CIFRA consolida tus ventas en cortes quincenales claros con 5 días de gracia para liquidar por Bre-B, Nequi o débito automático.
+          Tranquilidad operativa total: Olvídate de hacer pagos micro cliente por cliente ($900 cada vez). CIFRA consolida tus ventas en cortes quincenales claros con 5 días de gracia para pagar.
         </p>
       </div>
 
@@ -238,20 +240,7 @@ export default async function MerchantBillingPage() {
         </div>
       </section>
 
-      {/* Mandato de Débito Automático Quincenal y Bolsa Prepago (Garantía de Recaudo Automático) */}
-      <AutoDebitMandateCard
-        merchantName={access.merchant.name}
-        merchantNequi={access.merchant.nequiNumber}
-        merchantBrebKey={access.merchant.brebKey}
-        accumulatedCommissionMinor={cycleSummary.accumulatedCommissionMinor}
-        cutDateIso={billingHealth.activeCycle.cutDate}
-        daysUntilCut={billingHealth.activeCycle.daysUntilCut}
-        salesCount={cycleSummary.salesCount}
-        initialConfig={access.merchant.mandateConfig}
-        isCurrentInvoicePaid={Boolean(data.invoices[0]?.status === 'pagada')}
-      />
-
-      {/* Banner de Garantía Operativa de Karol Benavides */}
+      {/* Cómo funciona el cobro de la comisión */}
       <section className="rounded-2xl border border-line bg-paper p-5 sm:p-6">
         <div className="flex items-start gap-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary-dark">
@@ -271,34 +260,49 @@ export default async function MerchantBillingPage() {
         </div>
       </section>
 
-      {/* Datos oficiales de recaudo y formulario de liquidación */}
+      {/* Cómo pagar la comisión y formulario para reportar el pago */}
       <section className="surface-card p-5 sm:p-6">
-        <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-          <div
-            className="shrink-0 overflow-hidden rounded-2xl border border-line bg-white p-2 shadow-sm"
-            dangerouslySetInnerHTML={{ __html: brebQrSvg }}
-          />
-          <div className="space-y-2">
-            <p className="flex items-center gap-1.5 text-[12.5px] font-bold uppercase tracking-wider text-primary-dark">
-              <ShieldCheck size={15} aria-hidden="true" />
-              Canales oficiales de liquidación CIFRA
-            </p>
-            <h2 className="font-display text-[20px] font-bold text-ink">
-              Liquida tu corte quincenal en segundos por Bre-B o Nequi
-            </h2>
-            <div className="flex flex-wrap gap-3 pt-1 text-[14px]">
-              <span className="rounded-xl border border-line bg-paper px-3.5 py-2">
-                Llave Bre-B: <strong className="font-mono text-ink">{cifraBrebKey}</strong>
-              </span>
-              <span className="rounded-xl border border-line bg-paper px-3.5 py-2">
-                Nequi: <strong className="font-mono text-ink">{cifraNequi}</strong>
-              </span>
+        {hasPaymentChannel ? (
+          <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+            {brebQrSvg && (
+              <div
+                className="shrink-0 overflow-hidden rounded-2xl border border-line bg-white p-2 shadow-sm"
+                dangerouslySetInnerHTML={{ __html: brebQrSvg }}
+              />
+            )}
+            <div className="space-y-2">
+              <p className="flex items-center gap-1.5 text-[12.5px] font-bold uppercase tracking-wider text-primary-dark">
+                <ShieldCheck size={15} aria-hidden="true" />
+                Dónde pagar la comisión
+              </p>
+              <h2 className="font-display text-[20px] font-bold text-ink">Paga tu corte por transferencia</h2>
+              <div className="flex flex-wrap gap-3 pt-1 text-[14px]">
+                {cifraBrebKey && (
+                  <span className="rounded-xl border border-line bg-paper px-3.5 py-2">
+                    Llave Bre-B: <strong className="font-mono text-ink">{cifraBrebKey}</strong>
+                  </span>
+                )}
+                {cifraNequi && (
+                  <span className="rounded-xl border border-line bg-paper px-3.5 py-2">
+                    Nequi: <strong className="font-mono text-ink">{cifraNequi}</strong>
+                  </span>
+                )}
+              </div>
+              <p className="text-[13px] text-ink-muted">
+                Transfiere el valor exacto de tu corte y reporta el comprobante abajo. Nuestro equipo lo revisa y marca
+                el corte como pagado.
+              </p>
             </div>
-            <p className="text-[13px] text-ink-muted">
-              Transfiere el valor exacto de tu estado de cuenta y reporta el comprobante abajo. La plataforma lo concilia y actualiza tu cuenta al día al instante.
+          </div>
+        ) : (
+          <div className="flex items-start gap-3 text-[14px] text-ink-muted">
+            <ShieldCheck size={19} className="mt-0.5 shrink-0 text-primary-dark" aria-hidden="true" />
+            <p>
+              Todavía no hay un canal de pago publicado. Cuando tengas un corte por pagar, el equipo de CIFRA te escribe
+              al WhatsApp del negocio con los datos. No le transfieras a ningún número que no aparezca en esta pantalla.
             </p>
           </div>
-        </div>
+        )}
 
         {payableInvoice && (
           <div className="mt-5 border-t border-line pt-5">
