@@ -12,11 +12,17 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
   if (await getCurrentUser()) redirect(nextPath ?? '/app');
 
   const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  // Viene de calcular su cifra en la página pública: la cuenta es para guardarla.
+  const fromTrial = sp.desde === 'prueba';
 
   return (
     <AuthShell
-      title="Crea tu cuenta en CIFRA"
-      subtitle="En menos de 5 minutos sabrás exactamente cuánto puedes gastar hasta tu próximo pago, con tus extractos o escribiendo cuatro números."
+      title={fromTrial ? 'Guarda tu cifra' : 'Crea tu cuenta en CIFRA'}
+      subtitle={
+        fromTrial
+          ? 'Crea tu cuenta y queda lista con lo que acabas de escribir. No tienes que repetirlo.'
+          : 'Sabrás cuánto puedes gastar hasta tu próximo pago, con tus extractos o escribiendo cuatro números.'
+      }
       footer={
         <>
           ¿Ya tienes cuenta?{' '}

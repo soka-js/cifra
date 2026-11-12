@@ -182,12 +182,35 @@ Siguen abiertas la 6 (canales reales de pago), la 7 (fecha de la feria y negocio
 | 1 | Cerrar la puerta (seguridad) | **Cerrada en local.** 162 unitarias, 257 de integración y 38 pasos en navegador, todo en verde | Sin subir (falta confirmar la base de Preview) |
 | 2 | Cada número con recibo | En curso: pesos con punto y guardián de montos listos (104 de 104 unitarias). Falta quitar los números inventados que quedan y la pasada de lenguaje | Sin subir |
 | 3 | Hoy en dos pantallas | Pendiente | |
-| 4 | Del QR a la cifra sin cuenta | En curso: `/` pública con la prueba sin cuenta, comprobada en navegador (11 de 11). Falta que "Guardar mi cifra" guarde de verdad | Sin subir |
+| 4 | Del QR a la cifra sin cuenta | Hecho lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy, comprobado en navegador (17 pasos). Falta unificar los dos formularios y medir a una persona | Sin subir |
 | 5 | Demo para el Pitch Day | Pendiente | |
 | 6 | El tendero se registra solo | Pendiente | |
 | 7 | Feria | Pendiente | |
 
 ## Entradas
+
+### 2026-11-12 14:40, Etapa 4 (avance): "Guardar mi cifra" ya guarda
+
+- Rama y commits: `producto-v1`, un commit local sobre `a2aab6a`. Sin subir.
+- Qué cambió (5 archivos de código y 2 capturas):
+  - `web/src/components/probar/trial-handoff.tsx` (nuevo): al entrar a `/app/bienvenida` con una cuenta recién creada, si en el dispositivo está lo que la persona escribió en la prueba, lo guarda con la misma acción del modo rápido (`saveQuickStart`) y la lleva al Hoy. Lo intenta una sola vez y borra lo guardado en el dispositivo. Si no hay nada, o falla, muestra las preguntas de siempre. No hay acción de servidor nueva.
+  - `web/src/app/app/bienvenida/page.tsx`: usa ese puente solo para cuentas que aún no han pasado por el inicio.
+  - `web/src/app/registro/page.tsx`: con `?desde=prueba` el título es "Guarda tu cifra". También quité del subtítulo normal el "en menos de 5 minutos", que nadie midió.
+  - `web/e2e/guardar-cifra.e2e.mjs` (nuevo): 6 pasos.
+  - Evidencia: `e4-guardar-1-registro.jpg` y `e4-guardar-2-hoy.jpg`.
+- Por qué: era el tramo que faltaba de la meta 1. Sin esto, quien calculaba su cifra en el stand tenía que escribir todo otra vez después de crear la cuenta.
+- Verificación (comando y resultado, con números):
+  - `npx tsc --noEmit`: 0 errores. `npx next build`: sin errores.
+  - `npm run e2e`: 3 archivos, **44 de 44 pasos** (6 de guardar, 11 de la prueba sin cuenta, 27 de seguridad).
+  - Lo que comprueba el recorrido nuevo: con saldo $1.234.567, arriendo $654.321 y $23.456 al día, la persona ve su cifra, toca "Guardar mi cifra", crea la cuenta y llega a `/app` sin pasar por las preguntas; el Hoy muestra la misma cifra; en la base quedan el saldo, el cobro fijo, la frecuencia de pago y el gasto diario exactos; al volver a `/app/bienvenida` no se duplica nada.
+  - No repetí unitarias ni integración para este cambio: no toca ninguna acción ni el motor.
+- Qué revisar en la vista previa: no hay vista previa. En local, con `devdb` y la app corriendo: abre `/`, responde las cuatro preguntas, toca "Guardar mi cifra" y crea una cuenta. Debes caer en el Hoy con el mismo número.
+- Decisiones que necesito de SOKA: ninguna nueva.
+- Pendientes y riesgos (lo que falta de la Etapa 4):
+  - Sigue habiendo dos formularios parecidos (el de la prueba y el del modo rápido con cuenta). Falta dejar uno.
+  - Si la persona entra con una cuenta que ya existía en vez de crear una, lo calculado en la prueba no se guarda (a propósito: no se pisa una cuenta con datos).
+  - Con "Continuar con Google" el puente debería funcionar igual (la pestaña conserva lo escrito), pero no lo probé: no hay Google configurado en local.
+  - Nadie ha medido a una persona real del QR a la cifra.
 
 ### 2026-11-12 14:25, Etapa 1: cerrada
 
