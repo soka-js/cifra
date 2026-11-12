@@ -23,7 +23,7 @@ Formato de cada entrada:
 
 ## Plan
 
-Escrito el 11 de noviembre de 2026 después de explorar (commit base `b709ac9`). **Aprobación de SOKA: pendiente.** Hasta tenerla solo está hecha la Etapa 0, que no cambia el producto.
+Escrito el 11 de noviembre de 2026 después de explorar (commit base `b709ac9`). **Aprobado por SOKA el mismo día** (detalle en "Qué aprobó SOKA"), con una condición: no se sube la rama hasta confirmar que el entorno Preview de Vercel no comparte la base de producción.
 
 ### En una frase
 
@@ -155,14 +155,23 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
 
 ### Qué aprobó SOKA
 
-(Nada todavía.)
+11 de noviembre de 2026, 16:25, por el cuadro de preguntas de la sesión:
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| 1. Plan y orden | **Aprobado, sigue.** |
+| 2. Migración de saneamiento en producción (`role = 'user'` a todos, usuarios demo sin clave y sin sesiones; no borra datos) | **Sí, incluirla** en la Etapa 1. Corre cuando SOKA despliegue. |
+| 3. ¿Preview de Vercel tiene base propia? | **"No sé, no subas."** Trabajo con commits locales y base local. No hay `git push` ni solicitudes de cambio hasta que SOKA lo confirme en Vercel. |
+| 4. Lo que se corta | **Borrar** el código (queda en el historial de Git). |
+
+Siguen abiertas las decisiones 5, 6 y 7. Ninguna bloquea la Etapa 1.
 
 ## Estado
 
 | Etapa | Qué | Estado | Solicitud de cambio |
 | --- | --- | --- | --- |
 | 0 | Base de trabajo y plan | Hecha, commit local en `producto-v1` | Sin subir (ver decisión 3) |
-| 1 | Cerrar la puerta (seguridad) | Espera aprobación | |
+| 1 | Cerrar la puerta (seguridad) | En curso | Sin subir (ver decisión 3) |
 | 2 | Cada número con recibo | Pendiente | |
 | 3 | Hoy en dos pantallas | Pendiente | |
 | 4 | Del QR a la cifra sin cuenta | Pendiente | |
