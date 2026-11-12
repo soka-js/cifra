@@ -174,12 +174,48 @@ Siguen abiertas las decisiones 5, 6 y 7. Ninguna bloquea la Etapa 1.
 | 1 | Cerrar la puerta (seguridad) | Código y pruebas de permisos listos (256 de 257 en verde, 1 por repetir). Falta el recorrido en navegador: la base local quedó detenida por memoria | Sin subir (ver decisión 3) |
 | 2 | Cada número con recibo | En curso: pesos con punto y guardián de montos listos (104 de 104 unitarias). Falta quitar los números inventados que quedan y la pasada de lenguaje | Sin subir |
 | 3 | Hoy en dos pantallas | Pendiente | |
-| 4 | Del QR a la cifra sin cuenta | Pendiente | |
+| 4 | Del QR a la cifra sin cuenta | En curso: `/` pública con la prueba sin cuenta, comprobada en navegador (11 de 11). Falta que "Guardar mi cifra" guarde de verdad | Sin subir |
 | 5 | Demo para el Pitch Day | Pendiente | |
 | 6 | El tendero se registra solo | Pendiente | |
 | 7 | Feria | Pendiente | |
 
 ## Entradas
+
+### 2026-11-12 09:15, Etapa 4 (avance): la prueba sin cuenta en `/`
+
+Me salí del orden del plan a propósito: con el Postgres local detenido, esta es la única pieza grande que se puede construir y comprobar en un navegador sin base, porque calcula en el celular. Las etapas 1, 2 y 3 siguen abiertas.
+
+- Rama y commits: `producto-v1`, un commit local sobre `c8c013e`. Sin subir.
+- Qué cambió (12 archivos sin contar esta bitácora: 8 nuevos, 4 modificados):
+  - `web/src/app/page.tsx`: `/` ya es pública. Su primera pantalla es la primera pregunta. Con sesión sigue llevando a `/app`.
+  - `web/src/components/probar/try-cifra.tsx` (nuevo): las cuatro preguntas, la cifra con su resta, "¿Puedo gastar?" contestado ahí mismo y el botón "Guardar mi cifra". Incluye, como campo opcional del último paso, "¿cuánto crees que puedes gastar?" (decisión 5, que sigue abierta: si SOKA dice que no, se quita un campo).
+  - `web/src/lib/engine/quick.ts` y `web/src/lib/quick-form.ts` (nuevos): funciones puras. El cálculo es el mismo `computeCifra` de la app; no hay una segunda fórmula.
+  - `web/src/lib/analytics/shared.ts`: tres eventos anónimos nuevos (`try_cifra_start`, `try_cifra_done`, `try_cifra_save`). Llevan estado y conteos, nunca montos.
+  - `web/e2e/prueba-sin-cuenta.e2e.mjs` (nuevo) y `npm run e2e:prueba`: primera prueba de punta a punta del repo.
+  - `web/src/lib/engine/__tests__/quick-trial.test.ts` (nuevo): 13 pruebas.
+  - Evidencia: `docs/producto/evidencia/e4-prueba-1-inicio.jpg`, `e4-prueba-2-resultado.jpg`, `e4-prueba-3-puedo.jpg`.
+- Por qué: es la meta 1 del brief (del QR a la cifra en un minuto, con sus propios números) y la idea del equipo de probar sin cuenta.
+- Verificación (comando y resultado, con números):
+  - `npx tsc --noEmit`: 0 errores. `npx vitest run`: 14 archivos, 117 de 117, 2,82 s. `npx next build`: sin errores, 28,3 s.
+  - `npm run e2e:prueba` contra `next start`, Chrome a 390x844, sin base de datos: 11 de 11 pasos. Lo que comprueba:
+    - `/` responde 200 sin sesión y no redirige.
+    - El botón "Seguir" de la primera pregunta termina en el píxel 615 de 844: se ve sin desplazar.
+    - Con saldo $1.234.567, arriendo $654.321 y $23.456 al día, la pantalla muestra exactamente saldo − fijos − día a día (hoy, a 3 días del pago: $509.878).
+    - Todo monto visible en el resultado está en el conjunto que se deriva de lo escrito. Ningún otro número.
+    - "¿Puedo gastar?" responde contra esa misma cifra.
+    - Durante todo el recorrido el navegador solo le habla a `/api/events`, y ningún envío contiene una secuencia de cuatro dígitos o más. En una corrida de control aparte fueron 7 envíos: vista de página, inicio, fin (con estado, dirección de la diferencia y número de cobros), el veredicto de "¿Puedo?" y tres de profundidad de desplazamiento.
+  - Con los datos del brief (saldo $1.200.000, $25.000 al día, quincenal): prueba unitaria con fecha fija del 11 de noviembre da $1.100.000; en el navegador hoy, 12 de noviembre, da $1.125.000 (un día menos de gasto).
+  - Tiempo: el guion contesta las cuatro preguntas en 343 ms, que no dice nada de una persona. **No medí a una persona.** El mínimo es 5 toques y 2 montos escritos.
+- Qué revisar en la vista previa: no hay vista previa. En local basta `cd web && npm run build && npm run start` y abrir `http://localhost:3000` en el celular o con el navegador a 390 de ancho. Las tres capturas `e4-*` muestran lo que debe verse.
+- Decisiones que necesito de SOKA:
+  1. Sigue pendiente lo de la entrada anterior: cuándo puedo levantar la base local.
+  2. El rótulo de la cifra. En la prueba puse "Puedes gastar hasta el 15 nov". En el Hoy dice "Disponible seguro hasta el 15 nov". ¿Con cuál se hicieron las 21 sesiones? Quiero una sola frase en los dos lados.
+  3. Decisión 5 del plan: el campo opcional "¿cuánto crees que puedes gastar?" ya está puesto; dime si se queda.
+- Pendientes y riesgos:
+  - **"Guardar mi cifra" todavía no guarda.** Lleva a `/registro?desde=prueba` y deja las respuestas en el dispositivo (`sessionStorage`), pero el registro aún no las recoge: hoy la persona tendría que volver a escribirlas después de crear la cuenta. Ese tramo escribe en la base, así que lo hago cuando vuelva Postgres.
+  - El formulario de la prueba y el del modo rápido con cuenta (`web/src/app/app/bienvenida/quick-start.tsx`) son dos componentes parecidos. Al cerrar la etapa debe quedar uno solo.
+  - `/api/events` no se probó con los eventos nuevos contra una base real (sin Postgres responde error; la página no depende de eso).
+  - La página pública tiene solo dos secciones debajo de la prueba. La presentación larga sigue en `/admin/presentacion`.
 
 ### 2026-11-12 09:00, Etapa 2 (avance): pesos con punto y guardián de montos escritos a mano
 

@@ -13,6 +13,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:int": "vitest run -c vitest.integration.config.ts",
+    "e2e:prueba": "node e2e/prueba-sin-cuenta.e2e.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/migrate.mjs",
     "vercel-build": "node scripts/migrate.mjs && next build",
