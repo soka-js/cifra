@@ -5,11 +5,7 @@ import {
   computeMerchantBreakEven,
   crossReferenceOffers,
 } from '../crossref';
-import {
-  computeDailyPulse,
-  detectMoneyLeaks,
-  simulateCreditInstallments,
-} from '../daily-value';
+import { detectMoneyLeaks, simulateCreditInstallments } from '../daily-value';
 import {
   parseChatExpenses,
   parseColombianBankAlert,
@@ -54,21 +50,7 @@ Pagaste $18.500,00 en PANADERIA LA ESPIGA con tu Nequi a las 5:20 p. m.`;
   });
 });
 
-describe('daily-value: tope diario vivo, simulador de cuotas TC y radiografía de fugas', () => {
-  it('calcula el tope diario vivo y premia el ahorro diario hacia mañana', () => {
-    const pulse = computeDailyPulse({
-      safeAvailableMinor: 500_000_00,
-      dailyVariableBaselineMinor: 20_000_00,
-      daysUntilNextIncome: 10,
-      todaySpentMinor: 10_000_00,
-      todayTxCount: 1,
-    });
-    expect(pulse.dailyAllowanceMinor).toBeGreaterThan(40_000_00);
-    expect(pulse.remainingTodayMinor).toBe(pulse.dailyAllowanceMinor - 10_000_00);
-    expect(pulse.tomorrowDeltaMinor).toBeGreaterThan(0);
-    expect(pulse.status).toBe('holgado');
-  });
-
+describe('daily-value: simulador de cuotas de tarjeta y gastos que se repiten', () => {
   it('simula cuotas de tarjeta de crédito con tasa efectiva anual colombiana', () => {
     const sim = simulateCreditInstallments(300_000_00, 30.8, [1, 3, 6, 12]);
     expect(sim.options[0]?.interestLostMinor).toBe(0);

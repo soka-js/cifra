@@ -144,13 +144,13 @@ await step('dice cuánto se alejó de lo que creía', async () => {
 });
 
 await step('"¿Puedo gastar?" responde contra la misma cifra', async () => {
-  await page.fill('#pc-ask', String(IN.ask));
-  await page.click('#btn-probar-preguntar');
+  await page.fill('#ask-prueba', String(IN.ask));
+  await page.click('#btn-ask-prueba');
   const answer = await page.textContent('[data-testid="respuesta-puedo"]');
   const left = cifra - IN.ask;
   if (left >= 0) assert.ok(answer.includes(pesos(left)), `esperaba que quedaran ${pesos(left)}: ${answer}`);
   else assert.ok(answer.includes(pesos(-left)) && /no te alcanza/i.test(answer), answer);
-  await page.locator('#pc-ask').scrollIntoViewIfNeeded();
+  await page.locator('#ask-prueba').scrollIntoViewIfNeeded();
   await shot('e4-prueba-3-puedo');
 });
 

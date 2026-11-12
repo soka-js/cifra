@@ -180,14 +180,59 @@ Siguen abiertas la 6 (canales reales de pago), la 7 (fecha de la feria y negocio
 | --- | --- | --- | --- |
 | 0 | Base de trabajo y plan | Hecha, commit local en `producto-v1` | Sin subir (ver decisión 3) |
 | 1 | Cerrar la puerta (seguridad) | **Cerrada en local.** 162 unitarias, 257 de integración y 38 pasos en navegador, todo en verde | Sin subir (falta confirmar la base de Preview) |
-| 2 | Cada número con recibo | En curso: pesos con punto y guardián de montos listos (104 de 104 unitarias). Falta quitar los números inventados que quedan y la pasada de lenguaje | Sin subir |
-| 3 | Hoy en dos pantallas | Pendiente | |
+| 2 | Cada número con recibo | En curso: pesos con punto, guardián de montos y el Hoy sin "tope de hoy" listos. Falta el 0,65 de ¿Puedo?, las etiquetas `$1.2M` de la gráfica, los valores por defecto del negocio y la pasada de lenguaje fuera del Hoy | Sin subir |
+| 3 | Hoy en dos pantallas | **Cerrada en local.** Mide 1,58 pantallas con usuario nuevo (antes 4,1). 161 unitarias, 257 de integración y 54 pasos en navegador, todo en verde | Sin subir |
 | 4 | Del QR a la cifra sin cuenta | Hecho lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy, comprobado en navegador (17 pasos). Falta unificar los dos formularios y medir a una persona | Sin subir |
 | 5 | Demo para el Pitch Day | Pendiente | |
 | 6 | El tendero se registra solo | Pendiente | |
 | 7 | Feria | Pendiente | |
 
 ## Entradas
+
+### 2026-11-12 15:30, Etapa 3: el Hoy en dos pantallas (cerrada en local)
+
+Esta etapa empezó en una sesión que se cortó antes del commit. La retomé desde el árbol de trabajo, la revisé, corregí dos fallas que encontró la prueba nueva y corrí todo.
+
+- Rama y commits: `producto-v1`, un commit local sobre `756c6b0`. Sin subir.
+- Qué cambió (21 archivos de código: 4 nuevos, 15 modificados, 2 borrados; +217 y −419 líneas en los modificados, sin contar los nuevos, los borrados ni las capturas):
+  - `web/src/app/app/page.tsx` (reescrito): el Hoy queda así: la cifra con "Puedes gastar hasta el…", una sola equivalencia por día ("Son unos $X por día durante N días"), la resta "De dónde sale", "¿Puedo gastar?" contestado ahí mismo, "Anotar un gasto" y una lista corta de accesos (extracto, cobros fijos, ofertas si hay, cierre del ciclo, próximo pago). Salieron del Hoy el mapa de ofertas y la tarjeta del "tope de hoy".
+  - `web/src/components/app/cifra-hero.tsx` (nuevo, reemplaza a `cifra-privacy-hero.tsx`): la tarjeta de la cifra, con el modo discreto que ya existía.
+  - `web/src/components/app/ask-inline.tsx` (nuevo): "¿Puedo gastar?" en un solo componente para la prueba sin cuenta y para el Hoy. Antes la prueba tenía su propia copia.
+  - `web/src/components/app/pending-charges.tsx` (nuevo): los cobros del ciclo, para marcar uno como ya pagado, ahora debajo de su renglón de la resta.
+  - **Fuera el "tope de hoy" (factor 0,65), pendiente de la Etapa 2:** borrados `computeDailyPulse` de `web/src/lib/engine/daily-value.ts`, su prueba y `daily-pulse-card.tsx`. `web/src/lib/v3-data.ts` separa `loadCycleExtras` (lo que el Hoy necesita) de `loadPersonaDailyValueBundle` (lo que usa "En qué se me va"). La gráfica de `/app/movimientos` compara contra el día a día de la cifra, no contra el tope. Los mensajes de anotar gasto, del código de oferta y del aviso de ahorro dicen "tu cifra" en vez de "tu tope de hoy".
+  - **Selector Persona/Negocio** (`app-top-bar.tsx`, `layout.tsx`): ya no aparece para todos. "Mi negocio" sale solo si la persona tiene uno; desde el negocio, "Mi cifra" lleva de vuelta. Títulos sin jerga ("Mis ofertas", no "Mis ofertas y relámpago").
+  - `web/e2e/hoy.e2e.mjs` (nuevo, 10 pasos) y ajustes de selectores en `prueba-sin-cuenta.e2e.mjs` y `seguridad.e2e.mjs`.
+  - Lo que arreglé en esta sesión:
+    1. **El "Guardar" de anotar gasto quedaba tapado por la barra de abajo.** El modal se dibujaba dentro del botón flotante, y ese contenedor fijo lo dejaba debajo de la navegación. En un celular la persona no podía guardar el gasto. Ahora `quick-capture-modal.tsx` monta el modal en `<body>` (un portal), así que ningún contenedor lo tapa, aquí ni en `/app/movimientos`.
+    2. **El botón flotante "Anotar gasto" tapaba "Preguntar"** en la primera pantalla. Lo saqué: "Anotar un gasto" es un botón normal debajo de "¿Puedo gastar?". El Hoy pasó de 1,50 a 1,58 pantallas. La prueba ahora falla si aparece algo fijo dentro del contenido o si algo tapa esos dos botones.
+    3. Quedaban "tope" en la gráfica de `/app/movimientos` ("Dentro del tope", "Días dentro de tu tope"): ahora dicen "tu día a día".
+  - Evidencia nueva: `e3-hoy-1-arriba.jpg`, `e3-hoy-2-completo.jpg`, `e3-hoy-3-puedo.jpg`. Al correr la suite se rehicieron cinco capturas anteriores; `e1-demo-persona.jpg` y `e4-guardar-2-hoy.jpg` ahora muestran el Hoy nuevo.
+- Por qué: punto 3 del brief (el Hoy medía 4,1 pantallas con un usuario nuevo y daba dos respuestas a "cuánto por día") y el hallazgo de gravedad 2 del plan sobre el factor 0,65.
+- Verificación (comando y resultado, con números), todo sobre el mismo árbol:
+  - `npm run typecheck`: 0 errores.
+  - `npx vitest run`: 15 archivos, **161 de 161**, 1,26 s. Una menos que antes: salió la prueba de `computeDailyPulse` junto con la función. El guardián de montos sigue en verde.
+  - `npm run test:int`: 4 archivos, **257 de 257**, 467 s. Tardó más del doble que la vez anterior (207 s); la máquina tenía 2,9 GB libres de 15,7.
+  - `npx next build`: sin errores.
+  - `npm run e2e`: 4 archivos, **54 de 54 pasos**, 42,8 s: guardar cifra 6, Hoy 10, prueba sin cuenta 11, seguridad 27. Lo que comprueba el recorrido del Hoy con los datos del brief (saldo $1.200.000, $25.000 al día, quincenal):
+    - Mide **1,58 pantallas** (1.331 px a 390x844). El criterio de salida era 2 o menos; antes eran 4,1.
+    - La cifra dice "Puedes gastar hasta el 15 nov" y vale saldo − día a día × días: hoy, $1.200.000 − $25.000 × 3 = $1.125.000.
+    - Prueba de recibo: todo monto visible está en {$1.200.000, $25.000, $75.000, $1.125.000, $375.000, $0}. Ningún otro.
+    - Una sola frase de "por día", y no aparecen "tope" ni "mañana tu".
+    - No aparecen NBA, B2B, relámpago, intocables, jugada, misión, hormiga, Santa Marta ni "Negocio".
+    - Nada fijo dentro del contenido; "Preguntar" y "Anotar un gasto" no quedan tapados.
+    - "¿Puedo gastar?" con $120.000 dice "Sí" y deja $1.005.000; con $50.000 más que la cifra dice "No te alcanza" por $50.000.
+    - Anotar "almuerzo 18000" baja la cifra exactamente $18.000.
+    - El modo discreto oculta la cifra y la vuelve a mostrar.
+  - La primera corrida de `hoy.e2e.mjs` dio 7 de 9: las dos fallas eran el arreglo 1 (la segunda venía en cadena, con el modal todavía abierto).
+  - Vi las capturas: la primera pantalla muestra la cifra, la resta completa y "¿Puedo gastar?" con su botón, sin nada encima. En la demo de Mariana la resta cierra: $1.960.000 − $34.900 − $27.654 − $80.000 = $1.817.446, y $1.817.446 ÷ 3 = $605.815 por día.
+  - El Postgres local se volvió a caer por memoria a mitad de la sesión (quedó un proceso huérfano reteniendo el puerto). Lo apagué con `npm run stop` y lo levanté de nuevo sin borrar datos, como autorizó SOKA a las 14:00.
+- Qué revisar en la vista previa: no hay vista previa. En local, con `devdb` corriendo: `cd web && npm run build && npm run e2e`. Para mirarlo a mano, crea una cuenta, contesta las cuatro preguntas y abre `/app` con el navegador a 390 de ancho: en la primera pantalla deben verse la cifra, de dónde sale y "¿Puedo gastar?"; abajo, "Anotar un gasto". Toca "Anotar un gasto": el botón "Guardar" debe verse entero, encima de la barra de abajo.
+- Decisiones que necesito de SOKA: ninguna nueva. Sigue abierta la confirmación de la base de Preview para poder subir.
+- Pendientes y riesgos:
+  - Etapa 2, sin hacer: la "alternativa segura" de `/app/gasto` sigue usando 0,65 (`web/src/app/app/gasto/ask.tsx:91`); las etiquetas `$1.2M` y `$45k` de la gráfica se arman a mano (`spending-dashboard-chart.tsx:783`); "En qué se me va" estima lo recuperable de las comisiones con otro 0,65 (`daily-value.ts:131`); siguen los valores por defecto del negocio y la pasada de lenguaje fuera del Hoy.
+  - La prueba de recibo del Hoy cubre a una persona nueva del modo rápido. Con extracto (cobros detectados, traslados) solo la miré en la captura de la demo; no hay prueba automática.
+  - "Anotar un gasto" quedó debajo de la primera pantalla. Si en el stand se quiere a un toque sin desplazar, hay que decidir qué baja.
+  - La franja de demo y la barra superior siguen pegadas arriba (Etapa 5).
 
 ### 2026-11-12 14:40, Etapa 4 (avance): "Guardar mi cifra" ya guarda
 

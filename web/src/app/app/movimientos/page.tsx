@@ -79,7 +79,7 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
           deltaPct={deltaPct}
           rows={breakdown.rows}
           movements={movements}
-          dailyAllowanceMinor={dailyBundle.pulse.dailyAllowanceMinor}
+          dailyAllowanceMinor={cifra.dailyVariableMinor}
           activeCat={activeCat}
           todayIso={todayInBogota()}
         />

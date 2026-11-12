@@ -138,8 +138,8 @@ export async function captureQuickMovementsAction(
     count: insertedCount,
     message:
       insertedCount === 1
-        ? `Listo: anotamos ${parsed[0]!.merchantName} (${cop(Math.abs(parsed[0]!.amountMinor))}) y actualizamos tu tope de hoy.`
-        : `Listo: anotamos ${insertedCount} movimientos y actualizamos tu tope de hoy.`,
+        ? `Listo: anotamos ${parsed[0]!.merchantName} (${cop(Math.abs(parsed[0]!.amountMinor))}) y actualizamos tu cifra.`
+        : `Listo: anotamos ${insertedCount} movimientos y actualizamos tu cifra.`,
   };
 }
 

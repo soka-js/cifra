@@ -170,7 +170,7 @@ await step('C1. una persona nueva crea su cuenta y llega a su cifra con sus prop
   await p.waitForLoadState('networkidle');
   const text = await p.locator('main').innerText();
   assert.ok(text.includes(pesos(1_200_000)), 'el Hoy debe mostrar el saldo escrito, con punto de miles');
-  assert.ok(text.includes(`${pesos(25_000)}/día`), 'el Hoy debe mostrar el gasto diario escrito');
+  assert.ok(text.includes(`${pesos(25_000)} por día`), 'el Hoy debe mostrar el gasto diario escrito');
   const commas = text.match(/\$\d{1,3}(,\d{3})+/g) ?? [];
   assert.deepEqual(commas, [], 'no debe quedar ningún monto con coma');
 });

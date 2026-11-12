@@ -3,11 +3,12 @@
 import { ArrowRight, Lock, Plus, RotateCcw, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { AskInline } from '@/components/app/ask-inline';
 import { IncomeFields } from '@/components/app/income-fields';
 import { MoneyInput } from '@/components/ui/money-input';
 import { track } from '@/lib/analytics/client';
 import { shortDate, todayInBogota } from '@/lib/engine/dates';
-import { canISpend, compareGuess, computeQuickCifra, type CifraResult, type SpendAnswer } from '@/lib/engine/quick';
+import { compareGuess, computeQuickCifra, type CifraResult } from '@/lib/engine/quick';
 import { cop, parsePesosInput, toDailyMinor, type SpendPeriod } from '@/lib/format';
 import { parseQuickForm, type QuickFormValues } from '@/lib/quick-form';
 
@@ -448,7 +449,9 @@ function TrialResult({
         </dl>
       </div>
 
-      <AskInline cifra={c} />
+      <div className="mt-6">
+        <AskInline cifra={c} where="prueba" />
+      </div>
 
       <div className="mt-6 space-y-3">
         <Link
@@ -478,80 +481,6 @@ function ReceiptRow({ label, hint, value }: { label: string; hint?: string; valu
         {hint && <span className="block text-[12.5px] text-ink-faint">{hint}</span>}
       </dt>
       <dd className="shrink-0 font-semibold text-ink">{value}</dd>
-    </div>
-  );
-}
-
-/** "¿Puedo gastar?" contestado ahí mismo, contra la cifra que la persona acaba de ver. */
-function AskInline({ cifra }: { cifra: CifraResult }) {
-  const [raw, setRaw] = useState('');
-  const [answer, setAnswer] = useState<SpendAnswer | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  function ask() {
-    const amount = parsePesosInput(raw);
-    if (amount === null) {
-      setAnswer(null);
-      setError('Escribe un monto en pesos, por ejemplo 85.000.');
-      return;
-    }
-    setError(null);
-    const a = canISpend(cifra, amount);
-    setAnswer(a);
-    // Solo el veredicto. El monto no se envía.
-    track('ask_spend', { verdict: a.verdict, where: 'prueba' });
-  }
-
-  const tone =
-    answer?.verdict === 'si'
-      ? 'bg-primary-light text-primary-dark'
-      : answer?.verdict === 'justo'
-        ? 'bg-warn-light text-warn'
-        : 'bg-neg-light text-neg';
-
-  return (
-    <div className="mt-6 rounded-2xl border border-line bg-paper p-4">
-      <label htmlFor="pc-ask" className="font-display text-[18px] font-bold text-ink">
-        ¿Puedo gastar…?
-      </label>
-      <p className="mt-0.5 text-[13.5px] text-ink-muted">Escribe un gasto que tengas en mente y te decimos si te alcanza.</p>
-      <div className="mt-3 flex gap-2">
-        <div className="flex-1">
-          <MoneyInput
-            id="pc-ask"
-            name="ask"
-            placeholder="85.000"
-            value={raw}
-            onChangeValue={(minor) => {
-              setRaw(minor ? String(Math.round(minor / 100)) : '');
-              setAnswer(null);
-            }}
-          />
-        </div>
-        <button id="btn-probar-preguntar" type="button" onClick={ask} className="btn-ink shrink-0 self-start px-5">
-          Preguntar
-        </button>
-      </div>
-      {error && (
-        <p role="alert" className="mt-2.5 text-[13.5px] text-neg">
-          {error}
-        </p>
-      )}
-      {answer && (
-        <p data-testid="respuesta-puedo" role="status" className={`tnum mt-3 rounded-xl px-4 py-3 text-[14.5px] font-medium leading-snug ${tone}`}>
-          {answer.verdict === 'si' && (
-            <>
-              Sí. Te quedarían {cop(answer.remainingMinor)} hasta el {shortDate(answer.nextIncomeOn)}.
-            </>
-          )}
-          {answer.verdict === 'justo' && (
-            <>
-              Te alcanza, pero quedas justo: te quedarían {cop(answer.remainingMinor)} hasta el {shortDate(answer.nextIncomeOn)}.
-            </>
-          )}
-          {answer.verdict === 'no' && <>No te alcanza: te faltarían {cop(answer.shortfallMinor)}.</>}
-        </p>
-      )}
     </div>
   );
 }

@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         isAdmin={isAdmin(ctx.realUser)}
       />
 
-      <AppTopBar userName={user.name} unreadCount={unreadCount} role="persona" />
+      <AppTopBar userName={user.name} unreadCount={unreadCount} role="persona" hasMerchant={Boolean(merchantAccess)} />
 
       <main className="mx-auto max-w-2xl px-4 pt-4 sm:px-6 lg:px-8 lg:pt-8">{children}</main>
       <BottomNav />

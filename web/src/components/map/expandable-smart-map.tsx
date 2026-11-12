@@ -467,7 +467,7 @@ export function ExpandableSmartMap({
                             </button>
                           </div>
                           <p className="mt-1 text-[11.5px] text-ink-muted">
-                            Válido 30 min · Al pasar en caja actualiza tu tope de hoy solo.
+                            Válido 30 min · Al pagar en caja se resta de tu cifra.
                           </p>
                         </div>
                       </div>

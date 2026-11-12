@@ -24,14 +24,8 @@ import {
   type SmartMapOfferInput,
   type UserConsumptionProfile,
 } from './engine/crossref';
-import {
-  computeDailyPulse,
-  detectMoneyLeaks,
-  type DailyPulse,
-  type MoneyLeakInsight,
-} from './engine/daily-value';
+import { detectMoneyLeaks, type MoneyLeakInsight } from './engine/daily-value';
 import { addDays, todayInBogota } from './engine/dates';
-import { flowOf } from './engine/merchant';
 import { loadCategoryOverrides } from './ingest';
 import { getZoneBySlug } from './zones';
 
@@ -49,21 +43,46 @@ export function currentBogotaDayOfWeek(today = todayInBogota()): number {
   return new Date(`${today}T12:00:00Z`).getUTCDay();
 }
 
-export interface PersonaDailyValueBundle {
-  pulse: DailyPulse;
+export interface CycleExtras {
+  /** Cobros fijos que la persona ya marcó como pagados en este ciclo. */
   paidCharges: PaidCycleCharge[];
-  leaks: MoneyLeakInsight[];
+  /** Cuentas donde se puede anotar un gasto. */
   captureAccounts: Array<{ id: string; name: string; balanceMinor: number | null }>;
 }
 
-export async function loadPersonaDailyValueBundle(
-  user: User,
-  cifra: CifraResult,
-): Promise<PersonaDailyValueBundle> {
+/** Lo que el Hoy necesita además de la cifra: cobros ya pagados del ciclo y cuentas para anotar. */
+export async function loadCycleExtras(user: User, cifra: CifraResult): Promise<CycleExtras> {
+  const [paidRows, accts] = await Promise.all([
+    cifra.nextIncomeOn
+      ? db
+          .select()
+          .from(paidCycleCharges)
+          .where(and(eq(paidCycleCharges.userId, user.id), eq(paidCycleCharges.cycleEnd, cifra.nextIncomeOn)))
+      : Promise.resolve([]),
+    db
+      .select({ account: accounts, status: dataSources.status, sourceKind: dataSources.kind })
+      .from(accounts)
+      .innerJoin(dataSources, eq(dataSources.id, accounts.sourceId))
+      .where(eq(accounts.userId, user.id)),
+  ]);
+  return {
+    paidCharges: paidRows,
+    captureAccounts: accts
+      .filter((a) => a.status === 'activa' && a.sourceKind !== 'entidad_aliada' && a.account.kind !== 'tarjeta_credito')
+      .map((a) => ({ id: a.account.id, name: a.account.name, balanceMinor: a.account.balanceMinor })),
+  };
+}
+
+export interface PersonaDailyValueBundle extends CycleExtras {
+  leaks: MoneyLeakInsight[];
+}
+
+/** Para "En qué se me va": lo del ciclo más los gastos que se repiten y se podrían evitar. */
+export async function loadPersonaDailyValueBundle(user: User, cifra: CifraResult): Promise<PersonaDailyValueBundle> {
   const today = todayInBogota();
   const since60 = addDays(today, -60);
-
-  const [txs, paidRows, accts, overrides] = await Promise.all([
+  const [extras, txs, overrides] = await Promise.all([
+    loadCycleExtras(user, cifra),
     db
       .select({
         accountId: transactions.accountId,
@@ -82,58 +101,9 @@ export async function loadPersonaDailyValueBundle(
           eq(transactions.excluded, false),
         ),
       ),
-    cifra.nextIncomeOn
-      ? db
-          .select()
-          .from(paidCycleCharges)
-          .where(and(eq(paidCycleCharges.userId, user.id), eq(paidCycleCharges.cycleEnd, cifra.nextIncomeOn)))
-      : Promise.resolve([]),
-    db
-      .select({ account: accounts, status: dataSources.status, sourceKind: dataSources.kind })
-      .from(accounts)
-      .innerJoin(dataSources, eq(dataSources.id, accounts.sourceId))
-      .where(eq(accounts.userId, user.id)),
     loadCategoryOverrides(user.id),
   ]);
-
-  const fixedKeys = new Set(cifra.recurring.filter((r) => r.active).map((r) => r.merchantKey));
-  let todaySpentMinor = 0;
-  let todayTxCount = 0;
-  for (const t of txs) {
-    if (t.postedOn !== today || t.amountMinor >= 0) continue;
-    const f = flowOf(t.description, t.amountMinor);
-    if (f !== 'gasto') continue;
-    // Excluir cobros fijos mensuales ya reservados para no distorsionar el tope variable diario
-    const isFixed = [...fixedKeys].some((k) => t.description.toLowerCase().includes(k.replace(/_/g, ' ')));
-    if (isFixed) continue;
-    todaySpentMinor += Math.abs(t.amountMinor);
-    todayTxCount += 1;
-  }
-
-  const pulse = computeDailyPulse({
-    safeAvailableMinor: cifra.availableMinor,
-    dailyVariableBaselineMinor: cifra.dailyVariableMinor,
-    daysUntilNextIncome: cifra.daysLeft,
-    todaySpentMinor,
-    todayTxCount,
-  });
-
-  const leaks = detectMoneyLeaks({ txs, today, overrides });
-
-  const captureAccounts = accts
-    .filter((a) => a.status === 'activa' && a.sourceKind !== 'entidad_aliada' && a.account.kind !== 'tarjeta_credito')
-    .map((a) => ({
-      id: a.account.id,
-      name: a.account.name,
-      balanceMinor: a.account.balanceMinor,
-    }));
-
-  return {
-    pulse,
-    paidCharges: paidRows,
-    leaks,
-    captureAccounts,
-  };
+  return { ...extras, leaks: detectMoneyLeaks({ txs, today, overrides }) };
 }
 
 export interface SmartMapPendingCode {

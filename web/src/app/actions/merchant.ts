@@ -946,7 +946,7 @@ export async function completeRedemption(_prev: PosRedeemState, formData: FormDa
     userId: row.offerCode.userId,
     kind: 'redencion_confirmada',
     title: `Ahorraste ${cop(split.discountMinor)} en ${access.merchant.name}`,
-    body: `Pagaste ${cop(split.netPaidByUserMinor)} en vez de ${cop(split.grossAmountMinor)}. Ya actualizamos tu tope de hoy automáticamente.`,
+    body: `Pagaste ${cop(split.netPaidByUserMinor)} en vez de ${cop(split.grossAmountMinor)}. Ya lo restamos de tu cifra.`,
     actionUrl: '/app/ofertas#recientes',
     dedupeKey: `redeem:${redemption!.id}`,
   });

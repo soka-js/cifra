@@ -11,12 +11,15 @@ export function AppTopBar({
   merchantSlug,
   unreadCount = 0,
   role = 'persona',
+  hasMerchant = false,
 }: {
   userName?: string | null;
   merchantName?: string | null;
   merchantSlug?: string | null;
   unreadCount?: number;
   role?: 'persona' | 'negocio';
+  /** La persona tiene un negocio registrado: se le muestra el acceso a él. */
+  hasMerchant?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -34,11 +37,11 @@ export function AppTopBar({
 
   // Título según la ruta actual para que el usuario siempre sepa dónde está
   function getSectionTitle(): string {
-    if (pathname === '/app') return 'Tu Cifra de Hoy';
+    if (pathname === '/app') return 'Tu cifra';
     if (pathname.startsWith('/app/bienvenida')) return 'Configuración inicial';
     if (pathname.startsWith('/app/gasto')) return '¿Puedo hacer este gasto?';
-    if (pathname.startsWith('/app/movimientos')) return 'En qué se me va y fugas';
-    if (pathname.startsWith('/app/ofertas')) return 'Beneficios de tu barrio';
+    if (pathname.startsWith('/app/movimientos')) return 'En qué se me va';
+    if (pathname.startsWith('/app/ofertas')) return 'Ofertas cerca de ti';
     if (pathname.startsWith('/app/cobros')) return 'Cobros fijos y suscripciones';
     if (pathname.startsWith('/app/cierre')) return 'Cierre de ciclo';
     if (pathname.startsWith('/app/datos/importar')) return 'Subir extracto';
@@ -49,7 +52,7 @@ export function AppTopBar({
     if (pathname === '/negocio') return 'Resumen del local';
     if (pathname.startsWith('/negocio/caja')) return 'Caja · Cobrar código';
     if (pathname.startsWith('/negocio/cuadre')) return 'Cuadre diario e insumos';
-    if (pathname.startsWith('/negocio/ofertas')) return 'Mis ofertas y relámpago';
+    if (pathname.startsWith('/negocio/ofertas')) return 'Mis ofertas';
     if (pathname.startsWith('/negocio/vitrina')) return 'Mi vitrina y afiche QR';
     if (pathname.startsWith('/negocio/informe')) return 'Informe de 1 página';
     if (pathname.startsWith('/negocio/cuenta')) return 'Comisiones y facturación';
@@ -83,32 +86,26 @@ export function AppTopBar({
           </div>
         </div>
 
-        {/* Centro / Derecha: Switcher rápido Persona ⇄ Negocio */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-full border border-line bg-paper p-0.5 text-[12px] font-semibold">
-            <Link
-              href="/app"
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
-                role === 'persona'
-                  ? 'bg-ink font-bold text-white shadow-sm'
-                  : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              <UserRound size={13} aria-hidden="true" />
-              <span>Persona</span>
-            </Link>
+          {/* Paso entre la cifra personal y el negocio, solo para quien tiene las dos cosas. */}
+          {role === 'persona' && hasMerchant && (
             <Link
               href="/negocio"
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition ${
-                role === 'negocio'
-                  ? 'bg-terra font-bold text-white shadow-sm'
-                  : 'text-ink-muted hover:text-ink'
-              }`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-terra/30 bg-terra-pale px-3 py-1.5 text-[12.5px] font-semibold text-terra-dark hover:bg-terra-light"
             >
-              <Store size={13} aria-hidden="true" />
-              <span>Negocio</span>
+              <Store size={14} aria-hidden="true" />
+              <span>Mi negocio</span>
             </Link>
-          </div>
+          )}
+          {role === 'negocio' && (
+            <Link
+              href="/app"
+              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-3 py-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-ink"
+            >
+              <UserRound size={14} aria-hidden="true" />
+              <span>Mi cifra</span>
+            </Link>
+          )}
 
           {/* Avisos */}
           {role === 'persona' && (
