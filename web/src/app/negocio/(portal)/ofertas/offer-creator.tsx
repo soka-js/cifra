@@ -62,7 +62,7 @@ const TEMPLATES = [
   {
     id: 'bono-fijo',
     badge: 'Monto fijo en pesos',
-    title: '$3,000 de descuento por compras desde $20,000',
+    title: '$3.000 de descuento por compras desde $20.000',
     description: 'Descuento fijo fácil de entender en mostrador.',
     kind: 'fixed' as const,
     percent: 10,
@@ -348,7 +348,7 @@ export function OfferCreator({
                 value={discountFixed}
                 onChangeValue={(minor) => setDiscountFixed(String(Math.round(minor / 100)))}
                 presets={[2000, 3000, 5000, 10000]}
-                placeholder="3,000"
+                placeholder="3.000"
               />
             </div>
           )}
@@ -363,7 +363,7 @@ export function OfferCreator({
               value={minPurchase}
               onChangeValue={(minor) => setMinPurchase(String(Math.round(minor / 100)))}
               presets={[10000, 15000, 20000, 30000]}
-              placeholder="12,000"
+              placeholder="12.000"
             />
           </div>
 
@@ -377,7 +377,7 @@ export function OfferCreator({
               value={unitCost}
               onChangeValue={(minor) => setUnitCost(String(Math.round(minor / 100)))}
               presets={[3000, 5000, 8000, 12000]}
-              placeholder="4,000"
+              placeholder="4.000"
             />
           </div>
         </div>

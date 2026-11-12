@@ -188,7 +188,7 @@ export default async function PresentacionComercialPage() {
               },
               {
                 t: 'Cumple tus metas con tu Mejor Siguiente Acción',
-                d: 'Pregunta «¿puedo gastar $150,000 el viernes?», visualiza el tablero gráfico de tu ciclo, recibe misiones semanales en pesos para tu meta y redime descuentos reales en comercios vecinos.',
+                d: 'Pregunta «¿puedo gastar $150.000 el viernes?», visualiza el tablero gráfico de tu ciclo, recibe misiones semanales en pesos para tu meta y redime descuentos reales en comercios vecinos.',
               },
             ].map((s, i) => (
               <li key={s.t} className="relative border-t-2 border-ink pt-5">

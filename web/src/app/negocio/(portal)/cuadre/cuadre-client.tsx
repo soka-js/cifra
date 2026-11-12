@@ -113,7 +113,7 @@ export function CuadreClient({
                 id="dailyBreakEven"
                 name="dailyBreakEven"
                 defaultValue={Math.round(summary.dailyBreakEvenMinor / 100)}
-                placeholder="450,000"
+                placeholder="450.000"
                 presets={[50000, 100000, 200000]}
               />
             </div>
@@ -125,7 +125,7 @@ export function CuadreClient({
                 id="monthlyFixedCost"
                 name="monthlyFixedCost"
                 defaultValue={Math.round(monthlyFixedCostMinor / 100)}
-                placeholder="4,200,000"
+                placeholder="4.200.000"
                 presets={[200000, 500000, 1000000]}
               />
             </div>
@@ -306,7 +306,7 @@ export function CuadreClient({
                   id="flash-cost"
                   name="unitCost"
                   defaultValue={Math.round((typicalTicketMinor * 0.36) / 100)}
-                  placeholder="7,200"
+                  placeholder="7.200"
                 />
               </div>
             </div>
@@ -427,7 +427,7 @@ export function CuadreClient({
                 id="ledger-amount"
                 name="amount"
                 required
-                placeholder={entryKind === 'venta_mostrador' ? '185,000' : '92,000'}
+                placeholder={entryKind === 'venta_mostrador' ? '185.000' : '92.000'}
                 presets={[20000, 50000, 100000, 200000]}
               />
             </div>
@@ -488,7 +488,7 @@ export function CuadreClient({
                 placeholder={
                   entryKind === 'venta_mostrador'
                     ? 'Ej. Corte de mediodía'
-                    : 'Ej. Bulto harina 50kg subió $8,000'
+                    : 'Ej. Bulto harina 50kg subió $8.000'
                 }
                 className="field"
               />

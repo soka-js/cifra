@@ -172,7 +172,7 @@ Siguen abiertas las decisiones 5, 6 y 7. Ninguna bloquea la Etapa 1.
 | --- | --- | --- | --- |
 | 0 | Base de trabajo y plan | Hecha, commit local en `producto-v1` | Sin subir (ver decisión 3) |
 | 1 | Cerrar la puerta (seguridad) | Código y pruebas de permisos listos (256 de 257 en verde, 1 por repetir). Falta el recorrido en navegador: la base local quedó detenida por memoria | Sin subir (ver decisión 3) |
-| 2 | Cada número con recibo | Pendiente | |
+| 2 | Cada número con recibo | En curso: pesos con punto y guardián de montos listos (104 de 104 unitarias). Falta quitar los números inventados que quedan y la pasada de lenguaje | Sin subir |
 | 3 | Hoy en dos pantallas | Pendiente | |
 | 4 | Del QR a la cifra sin cuenta | Pendiente | |
 | 5 | Demo para el Pitch Day | Pendiente | |
@@ -180,6 +180,35 @@ Siguen abiertas las decisiones 5, 6 y 7. Ninguna bloquea la Etapa 1.
 | 7 | Feria | Pendiente | |
 
 ## Entradas
+
+### 2026-11-12 09:00, Etapa 2 (avance): pesos con punto y guardián de montos escritos a mano
+
+Adelanté de la Etapa 2 solo lo que se puede verificar sin base de datos, mientras el Postgres local sigue detenido. La etapa sigue abierta.
+
+- Rama y commits: `producto-v1`, un commit local sobre `a99eb42`. Sin subir.
+- Qué cambió (26 archivos: 25 modificados, 1 nuevo; +89 y −58 líneas más la prueba nueva):
+  - `web/src/lib/format.ts`: `cop()` y `formatThousands()` escriben los miles con punto (`$1.808.228`).
+  - `web/src/components/ui/money-input.tsx`: el valor que viaja al servidor se limpia quitando todo lo que no sea dígito (antes solo quitaba comas).
+  - `web/src/lib/engine/daily-value.ts`: un monto que se formateaba a mano con una expresión regular ahora usa `cop()`.
+  - 57 cifras con coma en textos, ejemplos y campos de 21 archivos pasaron a punto (por ejemplo `placeholder="1.250.000"`). No toqué los lectores de extractos ni sus pruebas, donde `45,000.00` es un formato bancario de entrada.
+  - `web/src/lib/__tests__/recibos.test.ts` (nuevo): guardián de la regla "cada número tiene recibo". Falla si en `src/app` o `src/components` aparece un monto en centavos escrito a mano, un `$` armado a mano en una plantilla, o miles con coma. Las excepciones están en una lista con su porqué, y la prueba también falla si la lista queda vieja.
+  - `web/src/lib/__tests__/format.test.ts`: 5 pruebas nuevas del formato.
+- Por qué: hallazgos 2 y 6 del brief. El guardián convierte la regla en algo que se rompe solo, en vez de depender de una revisión.
+- Verificación (comando y resultado, con números):
+  - `npx vitest run`: 13 archivos, 104 de 104 (96 anteriores, 5 de formato, 3 del guardián), 2,31 s.
+  - `npx tsc --noEmit`: 0 errores.
+  - Montos escritos a mano en `src/app` y `src/components`: 15 (eran 74 antes de la Etapa 1). Los 15 están en la lista del guardián: 3 son el ejemplo rotulado de la página de presentación, 1 es un umbral de validación y 11 quedan marcados como pendientes.
+  - **No corrí** `next build` ni las pruebas de integración después de este cambio, ni lo vi en pantalla.
+- Qué revisar en la vista previa: no hay vista previa. En local, cualquier pantalla con plata debe mostrar puntos; al escribir en un campo de monto, el número se agrupa con puntos.
+- Decisiones que necesito de SOKA: ninguna nueva.
+- Pendientes y riesgos (lo que falta de la Etapa 2):
+  - Quitar el "tope de hoy" (factor 0,65) del Hoy y dejar una sola equivalencia por día.
+  - `web/src/app/app/gasto/ask.tsx:91`: la "alternativa segura" de ¿Puedo? también usa un 0,65 sin explicar.
+  - `web/src/components/app/spending-dashboard-chart.tsx`: etiquetas `$1.2M` y `$45k` armadas a mano y umbrales fijos de escala.
+  - Valores por defecto inventados del negocio (meta diaria de $400.000, costos de $4.500.000), supuestos de la calculadora de ofertas (28 % de las apps, costo de insumos) y textos con montos de ejemplo sin rotular en cierre de ciclo.
+  - Pasada de lenguaje para quitar la jerga.
+  - Prueba de recibo en navegador con los 4 datos del brief.
+  - Los avisos ya guardados en una base existente conservan las comas con que se escribieron.
 
 ### 2026-11-12 08:55, Etapa 1: cerrar la puerta (código y pruebas de permisos listos; falta el recorrido en navegador)
 

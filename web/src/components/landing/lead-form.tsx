@@ -71,10 +71,10 @@ export function LeadForm() {
           <option value="" disabled>
             Elige un rango
           </option>
-          <option>Menos de 5,000</option>
-          <option>5,000 a 20,000</option>
-          <option>20,000 a 100,000</option>
-          <option>Más de 100,000</option>
+          <option>Menos de 5.000</option>
+          <option>5.000 a 20.000</option>
+          <option>20.000 a 100.000</option>
+          <option>Más de 100.000</option>
         </select>
       </div>
       <div className="sm:col-span-2">

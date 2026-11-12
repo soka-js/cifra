@@ -2,9 +2,9 @@ import { TrackedLink } from '@/components/landing/tracked-link';
 
 const CITAS = [
   {
-    cita: 'Yo pensaba que esos $350,000 de mi saldo eran los que podía gastar, hasta que vi la resta de los cobros que venían antes del 30.',
+    cita: 'Yo pensaba que esos $350.000 de mi saldo eran los que podía gastar, hasta que vi la resta de los cobros que venían antes del 30.',
     quien: 'Mariana V. · Chapinero, Bogotá',
-    pie: 'Su saldo bancario marcaba $350,000; su disponible libre real era $210,000.',
+    pie: 'Su saldo bancario marcaba $350.000; su disponible libre real era $210.000.',
   },
   {
     cita: 'Antes de pasar la tarjeta un viernes en la noche, ahora pregunto en ¿Puedo? y sé de inmediato cuánto me queda por día.',
@@ -12,7 +12,7 @@ const CITAS = [
     pie: 'Usa el simulador de gasto y cuotas antes de compras fuera de rutina.',
   },
   {
-    cita: 'Ver las suscripciones con su acumulado anual y reemplazar dos domicilios por locales de mi cuadra me liberó más de $65,000 al mes.',
+    cita: 'Ver las suscripciones con su acumulado anual y reemplazar dos domicilios por locales de mi cuadra me liberó más de $65.000 al mes.',
     quien: 'Andrés R. · Asociado Cooperativa Aliada',
     pie: 'Detectó 3 cobros recurrentes y redime beneficios en comercios del barrio.',
   },

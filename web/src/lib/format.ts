@@ -1,11 +1,14 @@
-/** Formatea un entero con separador de miles por comas: 1234567 -> "1,234,567". */
+/**
+ * Formatea un entero con punto de miles, como se escribe en Colombia: 1234567 -> "1.234.567".
+ * Toda cifra que se muestre en pantalla pasa por aquí o por cop(); nunca se formatea a mano.
+ */
 export function formatThousands(value: number | string): string {
   const num = typeof value === 'number' ? Math.round(value) : parseInt(String(value).replace(/[^0-9-]/g, ''), 10);
   if (isNaN(num)) return '0';
-  return Math.abs(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return Math.abs(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/** Formato de pesos colombianos con comas para miles: 1234500 centavos -> "$12,345". */
+/** Pesos colombianos con punto de miles y sin centavos: 180822800 centavos -> "$1.808.228". */
 export function cop(minor: number, opts: { sign?: boolean; space?: boolean } = {}): string {
   const pesos = Math.round(minor / 100);
   const formatted = formatThousands(Math.abs(pesos));

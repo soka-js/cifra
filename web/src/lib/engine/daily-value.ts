@@ -1,3 +1,4 @@
+import { cop } from '../format';
 import { addDays } from './dates';
 import { categoryOf, identifyMerchant, type UserCategoryOverride } from './merchant';
 import { splitInternalTransfers } from './transfers';
@@ -188,9 +189,7 @@ export function detectMoneyLeaks(input: {
       (s, t) => s + Math.max(6_500_00, Math.round(Math.abs(t.amountMinor) * 0.26)),
       0,
     );
-    const grossFormatted = `$${Math.round(grossMinor / 100)
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    const grossFormatted = cop(grossMinor);
     leaks.push({
       id: 'sobrecosto_domicilios',
       title: 'Recargos ocultos en apps de domicilio',

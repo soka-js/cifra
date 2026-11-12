@@ -18,12 +18,12 @@ const AVAILABLE = EXAMPLE.balance - EXAMPLE.fixed - PROJECTED;
 const LINES: Array<{ label: string; hint: string; value: number }> = [
   { label: 'Tienes hoy en tu cuenta', hint: 'saldo', value: EXAMPLE.balance },
   { label: 'Cobros fijos antes del 30', hint: 'arriendo, gimnasio, Netflix, luz, celular', value: -EXAMPLE.fixed },
-  { label: 'Tu día a día por 29 días', hint: '$29,500 diarios, según tus movimientos', value: -PROJECTED },
+  { label: 'Tu día a día por 29 días', hint: '$29.500 diarios, según tus movimientos', value: -PROJECTED },
 ];
 
 /** La resta de CIFRA en una tirilla, con un ejemplo que se puede probar. */
 export function Receipt() {
-  const [raw, setRaw] = useState('120,000');
+  const [raw, setRaw] = useState('120.000');
   const [asked, setAsked] = useState(true);
   const amount = useMemo(() => parsePesosInput(raw), [raw]);
 
@@ -109,7 +109,7 @@ export function Receipt() {
                 <strong className="font-semibold">{answer.title}.</strong> {answer.body}
               </p>
             )}
-            {asked && amount === null && <p className="mt-2.5 text-[13.5px] text-neg">Escribe un monto en pesos, por ejemplo 120,000.</p>}
+            {asked && amount === null && <p className="mt-2.5 text-[13.5px] text-neg">Escribe un monto en pesos, por ejemplo 120.000.</p>}
           </div>
         </form>
       </div>

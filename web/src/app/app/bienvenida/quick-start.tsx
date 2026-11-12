@@ -268,7 +268,7 @@ export function QuickStart({
         <MoneyInput
           id="qs-balance"
           name="balance"
-          placeholder="1,250,000"
+          placeholder="1.250.000"
           presets={[500000, 1000000, 2000000]}
           className="text-[20px] font-semibold"
         />
@@ -383,7 +383,7 @@ export function QuickStart({
           name="daily"
           value={daily}
           onChangeValue={(minor) => setDaily(String(Math.round(minor / 100)))}
-          placeholder="35,000"
+          placeholder="35.000"
           presets={[20000, 35000, 50000, 80000]}
           className="text-[20px] font-semibold"
         />

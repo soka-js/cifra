@@ -179,7 +179,7 @@ export function VitrinaClient({
                     <MoneyInput
                       name={`itemPrice_${idx}`}
                       defaultValue={slot.pricePesos}
-                      placeholder="14,500"
+                      placeholder="14.500"
                       className="bg-white py-1.5 text-[14px]"
                     />
                     <input

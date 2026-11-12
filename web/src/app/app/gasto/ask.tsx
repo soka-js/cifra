@@ -155,7 +155,7 @@ export function Ask({
           e.preventDefault();
           const amount = parsePesosInput(raw);
           if (amount === null) {
-            setError('Escribe un monto en pesos, por ejemplo 85,000.');
+            setError('Escribe un monto en pesos, por ejemplo 85.000.');
             setAnswer(null);
             return;
           }
@@ -174,7 +174,7 @@ export function Ask({
               setRaw(String(Math.round(minor / 100)));
               if (error) setError(null);
             }}
-            placeholder="85,000"
+            placeholder="85.000"
             presets={[20000, 50000, 100000, 200000]}
             className="py-3 pl-9 font-display text-[26px] font-bold"
           />

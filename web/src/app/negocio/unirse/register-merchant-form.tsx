@@ -174,7 +174,7 @@ export function RegisterMerchantForm({
             id="typicalTicket"
             name="typicalTicket"
             defaultValue={20000}
-            placeholder="20,000"
+            placeholder="20.000"
             presets={[10000, 20000, 35000, 50000]}
           />
         </div>
