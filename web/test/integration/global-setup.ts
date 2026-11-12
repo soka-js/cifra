@@ -15,9 +15,12 @@ export default async function setup(): Promise<void> {
     await migrate(drizzle(sql), { migrationsFolder: path.resolve(process.cwd(), 'drizzle') });
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    throw new Error(
-      `No se pudo preparar la base de pruebas (${reason}). ¿Está corriendo devdb? (cd devdb && npm start)`,
-    );
+    const message = `No se pudo preparar la base de pruebas (${reason}). ¿Está corriendo devdb? (cd devdb && npm start)`;
+    // Vitest a veces no logra imprimir un error lanzado aquí; se escribe antes para que se vea siempre.
+    console.error(`
+${message}
+`);
+    throw new Error(message);
   } finally {
     await sql.end();
   }

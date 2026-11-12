@@ -76,7 +76,7 @@ await step('la primera pregunta y su botón se ven sin desplazar', async () => {
 
 await step('no deja avanzar sin responder', async () => {
   await page.click('#btn-probar-seguir');
-  assert.match(await page.textContent('[role="alert"]'), /cada cuánto te pagan/i);
+  assert.match(await page.locator('form [role="alert"]').innerText(), /cada cuánto te pagan/i);
 });
 
 const startedAt = Date.now();

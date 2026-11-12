@@ -164,14 +164,22 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
 | 3. ¿Preview de Vercel tiene base propia? | **"No sé, no subas."** Trabajo con commits locales y base local. No hay `git push` ni solicitudes de cambio hasta que SOKA lo confirme en Vercel. |
 | 4. Lo que se corta | **Borrar** el código (queda en el historial de Git). |
 
-Siguen abiertas las decisiones 5, 6 y 7. Ninguna bloquea la Etapa 1.
+12 de noviembre de 2026, 14:00, por el cuadro de preguntas de la sesión:
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| Volver a levantar el Postgres local que el sistema detuvo por memoria | **Sí, levántalo.** |
+| Rótulo de la cifra | **"Puedes gastar hasta el…"**, el mismo en la prueba sin cuenta y en el Hoy. |
+| 5. Campo opcional "¿cuánto crees que puedes gastar?" | **Se queda.** |
+
+Siguen abiertas la 6 (canales reales de pago), la 7 (fecha de la feria y negocios de Las Aguas) y la pregunta de cómo se verifica el correo del admin en producción (Google o servicio de correo).
 
 ## Estado
 
 | Etapa | Qué | Estado | Solicitud de cambio |
 | --- | --- | --- | --- |
 | 0 | Base de trabajo y plan | Hecha, commit local en `producto-v1` | Sin subir (ver decisión 3) |
-| 1 | Cerrar la puerta (seguridad) | Código y pruebas de permisos listos (256 de 257 en verde, 1 por repetir). Falta el recorrido en navegador: la base local quedó detenida por memoria | Sin subir (ver decisión 3) |
+| 1 | Cerrar la puerta (seguridad) | **Cerrada en local.** 162 unitarias, 257 de integración y 38 pasos en navegador, todo en verde | Sin subir (falta confirmar la base de Preview) |
 | 2 | Cada número con recibo | En curso: pesos con punto y guardián de montos listos (104 de 104 unitarias). Falta quitar los números inventados que quedan y la pasada de lenguaje | Sin subir |
 | 3 | Hoy en dos pantallas | Pendiente | |
 | 4 | Del QR a la cifra sin cuenta | En curso: `/` pública con la prueba sin cuenta, comprobada en navegador (11 de 11). Falta que "Guardar mi cifra" guarde de verdad | Sin subir |
@@ -180,6 +188,39 @@ Siguen abiertas las decisiones 5, 6 y 7. Ninguna bloquea la Etapa 1.
 | 7 | Feria | Pendiente | |
 
 ## Entradas
+
+### 2026-11-12 14:25, Etapa 1: cerrada
+
+Con la base local de vuelta (SOKA autorizó levantarla) corrí todo lo que faltaba. La Etapa 1 queda cerrada en local; sigue sin subir porque falta confirmar la base de Preview.
+
+- Rama y commits: `producto-v1`, commits locales `a99eb42` (el cambio de seguridad), `41fbceb`, `ec98abb` y el de esta entrada. Sin subir.
+- Qué cambió desde la entrada anterior de esta etapa:
+  - `web/e2e/run.mjs` y `npm run e2e` (nuevo): vacía y migra `cifra_test`, levanta la app compilada en el puerto 3100 contra esa base, corre cada `*.e2e.mjs` y apaga el servidor. Se niega a tocar una base que no sea local y terminada en `_test`.
+  - `web/e2e/seguridad.e2e.mjs` (nuevo): 27 pasos en un celular de 390x844. `web/e2e/lib.mjs`: piezas comunes.
+  - `web/test/integration/global-setup.ts`: si la base no está arriba, el mensaje ahora se ve (Vitest se tragaba el error con uno propio).
+  - 5 capturas nuevas en `docs/producto/evidencia/`: `e1-entrar-sin-accesos.jpg`, `e1-admin-lanzador-demo.jpg`, `e1-demo-persona.jpg`, `e1-demo-tendero.jpg`, `e1-caja-cobrado.jpg`.
+- Por qué: el brief pide cerrar cada etapa con typecheck, pruebas, build y recorridos de punta a punta.
+- Verificación (comando y resultado, con números), todo sobre el mismo árbol:
+  - `npm run typecheck`: 0 errores.
+  - `npx vitest run`: 15 archivos, 162 de 162, 3,12 s.
+  - `npm run test:int`: 4 archivos, **257 de 257**, 206,7 s. Incluye la que había quedado por repetir.
+  - `npx next build`: sin errores.
+  - `npm run e2e`: 2 archivos, **38 de 38 pasos**, 34,2 s en total. Los 27 de seguridad, en navegador:
+    - A (7 pasos), visitante sin sesión: 12 rutas privadas llevan a `/entrar`; `/negocio` lleva al registro de negocio; `/api/export`, `/api/import`, `/api/push/subscribe` y `/api/cron/daily` responden 401; `/api/demo/session` y `/demo` responden 404; `/entrar` no muestra accesos de un clic; una cookie inventada no abre nada.
+    - B (2 pasos), datos viejos: con un `admin@cifra.co` sembrado a mano con `role = admin` y la clave que estaba publicada, entrar da "no coinciden". Una persona real con `role = admin` en la base recibe 404 en `/admin`.
+    - C (3 pasos), persona nueva: registro, cuatro datos, Hoy con sus números y con punto de miles; `/admin` le da 404; su descarga trae solo lo suyo.
+    - D (8 pasos), admin y demo: registrarse con el correo de `ADMIN_EMAILS` da 404 en `/admin`; después de abrir el enlace de cambio de clave, `/admin` abre; "Ver como persona" muestra la franja y los datos de Mariana; pasa a "Tendero" (Panadería La Espiga) y "Salir" lo devuelve a ser admin; la vitrina del negocio de ejemplo da 404 a un visitante y a una persona con cuenta; los usuarios de ejemplo quedan sin clave y con `role = user`.
+    - E (7 pasos), tendero nuevo: sin cuenta abre `/negocio`, se registra, publica una oferta, una persona genera el código y la caja cobra $18.000 de un pedido de $20.000, con comisión de $900 y $17.100 para el negocio; el mismo código no sirve dos veces; a la persona le llega "Ahorraste $2.000". La cuenta del negocio ya no muestra mandatos ni canales de pago de relleno.
+  - Las dos primeras corridas de `seguridad.e2e.mjs` tuvieron fallas (5 y luego 1). Todas eran del guion, no de la app: un selector que atrapaba el anunciador de rutas de Next en vez del mensaje de error, una espera que leía el código antes de que el servidor lo creara y una expresión regular mal escapada. La tercera corrida es la de arriba.
+  - Vi las capturas de la franja de demo y del lanzador de `/admin`: se ven como se describió.
+- Qué revisar en la vista previa: no hay vista previa. En local: `cd devdb && npm start`, y en otra terminal `cd web && npm run build && npm run e2e`. Para mirarlo a mano, los cuatro pasos de la entrada anterior siguen valiendo.
+- Decisiones que necesito de SOKA:
+  1. Confirmar si Preview de Vercel tiene base propia, para poder subir la rama y abrir la solicitud de cambio de esta etapa.
+  2. Antes de desplegar: cómo vas a verificar tu correo de admin en producción (Google o servicio de correo configurado). Sin eso quedas fuera de `/admin`.
+- Pendientes y riesgos:
+  - En el celular, la franja de demo y la barra superior de la app se pegan las dos arriba: al desplazar, la franja tapa la barra. La navegación de abajo sigue visible. Lo arreglo en la Etapa 5.
+  - En la prueba E2 apago a mano el grupo de control del 10 % de la oferta (personas a las que no se les muestra, para medir). Con el valor de fábrica, 1 de cada 10 personas no vería la oferta de un negocio dado; hay que decidir si eso se quiere en la feria.
+  - Lo demás de la entrada anterior sigue igual: columnas sin uso en bases existentes, webhook de Wompi sin endurecer, rol "cajero" sin diferencias y `realAdmin = true` en `/admin`.
 
 ### 2026-11-12 09:15, Etapa 4 (avance): la prueba sin cuenta en `/`
 

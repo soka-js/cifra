@@ -51,7 +51,9 @@ npm run dev                   # http://localhost:3000
 npm run typecheck             # next typegen + tsc
 npm test                      # pruebas unitarias (Vitest, sin base de datos)
 npm run test:int              # pruebas de permisos y sesión contra cifra_test (necesita devdb corriendo)
-npm run e2e:prueba            # punta a punta de la página pública en celular (necesita la app corriendo; no usa base)
+npm run e2e                   # punta a punta en celular: prepara cifra_test, levanta la app compilada y corre e2e/*.e2e.mjs
+                              # (necesita devdb corriendo y `npm run build` antes)
+npm run e2e:prueba            # solo la página pública, contra una app que ya esté corriendo; no usa base
 npm run build
 ```
 
