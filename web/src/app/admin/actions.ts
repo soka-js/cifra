@@ -92,11 +92,15 @@ export async function createStreetMerchant(
   const zone = getZoneBySlug(String(formData.get('zoneSlug') ?? 'chapinero'));
   const neighborhood = String(formData.get('neighborhood') ?? '').trim().slice(0, 60) || zone.name;
   const address = String(formData.get('address') ?? '').trim().slice(0, 120);
-  const typicalTicketMinor = parsePesosInput(String(formData.get('typicalTicket') ?? '20000')) ?? 2_000_000;
+  // Sin valor por defecto: la compra promedio la dice el tendero (antes caía en $20.000).
+  const typicalTicketMinor = parsePesosInput(String(formData.get('typicalTicket') ?? ''));
   const acquiredBy = String(formData.get('acquiredBy') ?? 'Promotor de calle').trim().slice(0, 60);
 
   if (name.length < 2 || ownerName.length < 2 || whatsapp.length < 7 || address.length < 4) {
     return { status: 'error', message: 'Completa negocio, propietario, WhatsApp y dirección.' };
+  }
+  if (!typicalTicketMinor || typicalTicketMinor <= 0) {
+    return { status: 'error', message: 'Escribe la compra promedio de un cliente, como la diga el tendero.' };
   }
 
   const slug = `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`;
