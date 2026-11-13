@@ -216,6 +216,8 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 | Despliegue a producción | Producción desplegó `bd01f17`. SOKA revisó el log: `ep-square-brook` y "Migraciones aplicadas". Sin sesión, `/app` y `/admin` llevan a `/entrar`, `/api/export` responde 401 y `/api/demo/session` responde 404. |
 | Lo que sigue del despliegue | SOKA agrega las variables y cambia la clave de la base; después sigo con `DESPLIEGUE.md` desde el paso 4. |
 | Vista previa de `producto-v1` | **No tocarla hasta las 4:00 p. m. del 13 nov**: SOKA tiene otra demo a las 3:00. Subir a `producto-v1` la reconstruye, así que hasta esa hora no se sube nada. |
+| Solicitud de cambio #5 (`etapa-5-admin` → `producto-v1`), de Claude en la nube | Limpia `/admin`. **No tocar `src/app/admin` hoy.** Claude en la nube la mezcla a las 4:10 p. m. y la pasa a `main`. |
+| Etapa 4 | Seguir en una rama nueva desde `producto-v1`: un solo formulario para la prueba sin cuenta y el modo rápido con cuenta (`try-cifra.tsx` y `bienvenida/quick-start.tsx`), con las mismas pruebas en verde. **Nada se mezcla a `producto-v1` antes de las 4:30 p. m. del 13 nov.** |
 
 ## Estado
 
@@ -225,13 +227,43 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 | 1 | Cerrar la puerta (seguridad) | **En producción** (`bd01f17`, 13 nov). SOKA comprobó sin sesión `/app`, `/admin`, `/api/export` y `/api/demo/session` | #3 |
 | 2 | Cada número con recibo | **En producción** (`bd01f17`) | #3 |
 | 3 | Hoy en dos pantallas | **En producción** (`bd01f17`). Mide 1,58 pantallas con usuario nuevo (antes 4,1) | #3 |
-| 4 | Del QR a la cifra sin cuenta | **En producción** lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy. Falta unificar los dos formularios y medir a una persona. Meta: 15 nov | #3 |
+| 4 | Del QR a la cifra sin cuenta | **En producción** lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy. **Un solo formulario** para la prueba y el modo rápido con cuenta, en la rama `etapa-4-un-formulario` (sin mezclar). Falta medir a una persona. Meta: 15 nov | #3; la rama nueva, después de las 4:30 p. m. del 13 nov |
 | 5 | Demo desde `/admin` | Avance en producción: la franja de demo ya no tapa la barra y `/admin/presentacion` quedó rehecha sin testimonios inventados. Falta el resto del tablero de `/admin`, que sigue con textos viejos ("Aliados B2B2C", "Hipótesis K", el embudo de la landing vieja). Meta: 16 nov | #4 y #3 |
 | 7a | Feria sin negocios reales | En producción: ofertas sin grupo de control (`0009`), embudo "Feria: del QR a la cifra guardada" en `/admin` y la lista `docs/producto/FERIA.md`. Falta lo que esa lista marca para antes del 18, como probar el QR en dos celulares. Meta: 17 nov | #4 y #3 |
 | 6 | El tendero se registra solo | Pendiente. Meta: 26 nov | |
 | 7b | Feria con negocios reales | Esperando negocios confirmados | |
 
 ## Entradas
+
+### 2026-11-13 11:15, Etapa 4: un solo formulario para la prueba y el modo rápido
+
+- Rama y commits: `etapa-4-un-formulario`, creada desde `producto-v1` en `69a3ef3`. Lleva también el commit de la bitácora del turno de noche (entrada de abajo). Sin mezclar: SOKA pidió no mezclar nada a `producto-v1` antes de las 4:30 p. m. del 13 nov, porque a las 3:00 hace una demo sobre esa vista previa y a las 4:10 Claude en la nube mezcla #5. No toqué `src/app/admin`.
+- Qué cambió:
+  - **`web/src/components/app/cifra-questions.tsx` (nuevo): las cuatro preguntas, una sola vez.** Cada cuánto te pagan, cuánto tienes hoy, qué pagas fijo y cuánto se te va en el día a día. Lo usan los dos lugares que antes tenían cada uno su copia:
+    - `mode="prueba"` en la página pública (`web/src/components/probar/try-cifra.tsx`): lee y valida los datos en el navegador con `parseQuickForm` y no envía nada. Trae el campo opcional "¿cuánto crees que puedes gastar?".
+    - `mode="cuenta"` en la bienvenida de una cuenta nueva (`web/src/app/app/bienvenida/quick-start.tsx`): envía el formulario a `saveQuickStart`. Trae el campo opcional "¿Dónde está esa plata?" y el enlace para subir el extracto.
+  - `try-cifra.tsx` se queda con el resultado, el guardado en el dispositivo y la analítica. `quick-start.tsx` se queda con la pantalla de confianza y la zona. Pasaron de 926 a 793 líneas entre los tres archivos.
+  - **Lo que cambia en pantalla, solo en el modo rápido con cuenta:** ahora usa los textos de la prueba pública, que es la que se ve en la feria:
+    - "Tienes hoy" en vez de "Saldo de hoy", y "¿Cuánto tienes hoy?" sin "disponible";
+    - las mismas explicaciones cortas en cada paso;
+    - los mismos atajos de monto (sin los de cada cobro fijo, ni el de $80.000 al día);
+    - "Ver mi cifra" en vez de "Ver mi cifra ahora".
+  - **Lo que cambia en pantalla, en los dos:** el contador dice "Paso N de 4". En la prueba, al tocar un cobro sugerido, el cursor salta a su monto, como ya pasaba con cuenta.
+  - Sin cambios: los nombres de los campos, lo que lee el servidor, los identificadores que usan las pruebas (`#pc-*` y `#btn-probar-*` en la prueba, `#qs-*` y `#btn-qs-*` con cuenta) y el foco del lector de pantalla al cambiar de paso.
+- Por qué: es lo que faltaba para cerrar la Etapa 4. Dos copias del mismo formulario ya se habían separado en textos y atajos, y cualquier arreglo había que hacerlo dos veces.
+- Verificación (este equipo, `devdb` local), sin cambiar ninguna prueba:
+  - `npm run typecheck`: 0 errores. `npm test`: 16 archivos, **171 de 171**.
+  - `npm run build`: compilado sin errores.
+  - `npm run e2e`: 4 archivos, **58 de 58 pasos**: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta 11 de 11 (ningún monto sale del navegador; las cuatro respuestas en 328 ms) y seguridad 31 de 31.
+  - `npm run test:int`: 5 archivos, **263 de 263**, 203 s. Corrió antes del último ajuste: un estado en vez de un `ref` en `quick-start.tsx`, que es de pantalla y no lo usan estas pruebas. Typecheck, unitarias, build y e2e se repitieron después, con los números de arriba.
+- Qué revisar en la vista previa de esta rama, cuando se suba:
+  1. En `/`, la prueba completa y "Cambiar mis datos".
+  2. Con una cuenta nueva, la bienvenida: "Calcular mi cifra en 1 minuto", las cuatro preguntas con los textos de la prueba, "Atrás" desde la primera pregunta vuelve a la pantalla de confianza, y "Ver mi cifra" lleva al Hoy.
+- Decisiones que necesito de SOKA: ninguna nueva.
+- Pendientes y riesgos:
+  - Falta medir a una persona que no sea del equipo (de abrir `/` a ver su cifra). Está en `FERIA.md`.
+  - `saveQuickStart` (servidor) sigue leyendo el formulario con su propio código, igual que antes. `parseQuickForm` hace lo mismo en el navegador. Unir esas dos lecturas queda pendiente, con prueba.
+  - Al mezclar después de #5: borrar `NOCHE_13NOV.md` y pasar a esta bitácora la sección que #5 le agrega.
 
 ### 2026-11-13 10:15, turno de noche (#4) y despliegue a producción
 
