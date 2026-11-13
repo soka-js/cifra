@@ -213,6 +213,64 @@ Siguen abiertas la 6 (canales reales de pago) y la forma de entrar a `/admin` en
 
 ## Entradas
 
+### 2026-11-12 22:00, rama subida (sin migrar la vista previa), demo del 13 nov y respuestas de SOKA
+
+SOKA confirmó que la vista previa tiene base propia y autorizó subir `producto-v1`, con una condición: antes que nada, confirmar en el log de compilación que las migraciones corren contra una rama de Neon y no contra la principal. **No pude confirmarlo del todo, así que paré antes de migrar y no abrí la solicitud de cambio.**
+
+- Rama y commits: `producto-v1` **subida a GitHub** con `09118c5` y `7281f03` (más los 12 anteriores). Esta entrada va en un commit local que aún no subo. Sin solicitud de cambio.
+- Qué cambió:
+  - **Subida sin riesgo para producción** (`web/scripts/migrate.mjs`): en cada compilación de Vercel, el log muestra el entorno, la rama de git y la "huella" de la base, sin usuario ni clave. La huella es el servidor (en Neon, el `ep-…` identifica la rama) y el nombre de la base. Además, en vista previa las migraciones quedan **en pausa**: la primera compilación de `producto-v1` dejó la huella sin aplicar nada. La pausa se quita cuando se confirme la rama.
+  - **Ofertas sin grupo de control** (pedido de SOKA para la feria):
+    - `merchant.ts` crea las ofertas con 0 %; el esquema queda en 0 y `merchant-data.ts` también.
+    - La migración nueva `web/drizzle/0009_ofertas_sin_grupo_de_control.sql` pone el valor por defecto en 0 y deja en 0 las ofertas que ya existen, también en producción cuando se despliegue.
+    - El informe del negocio ya no dice "Control de incrementalidad activo" si no hay grupo.
+    - La prueba E2 ahora comprueba que la oferta nace en 0 (antes lo apagaba a mano).
+  - **Correo, hallazgo de seguridad** (`web/src/lib/notify/email.ts`): sin servicio de correo configurado, que es el caso de producción hoy, el texto completo de cada correo se escribía en los registros de Vercel, incluido el enlace para cambiar la clave. Quien pudiera leer esos registros podía entrar a cualquier cuenta que pidiera "Olvidé mi contraseña". En producción ahora solo se anota que el correo no salió. Prueba nueva: `web/src/lib/__tests__/email.test.ts`.
+  - `web/.env.example`: el SMTP se configura con `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` y `SMTP_PASS`, que es lo que lee el código. Decía `SMTP_URL`, que no se usa; también lo dicen entradas anteriores de esta bitácora.
+  - **Demo del 13 nov**:
+    - `docs/producto/DEMO.md`: guion de 5 minutos. La persona va de `/` a la cifra sin cuenta, guarda, ve el Hoy y pregunta "¿Puedo gastar?". El tendero se registra, publica una oferta y valida el código en caja. No usa `/admin`, trae los números que deben salir el 13 nov y dice qué hacer si algo falla.
+    - Plan B en un solo comando: `cd web && npm run demo` (`web/scripts/demo-local.mjs`, nuevo). Levanta `devdb` si hace falta, migra `cifra_dev`, compila y abre `http://localhost:3000`. Se niega a correr si `.env.local` no apunta a la base local. No es una función nueva del producto.
+  - Plan y estado: las fechas nuevas (feria el 19, pitch el 26) y las respuestas de SOKA quedaron arriba, en "Etapas" y "Qué aprobó SOKA".
+- Por qué: es el mensaje de SOKA del 12 nov en la noche, con sus siete puntos.
+- Verificación (comando y resultado, con números):
+  - `npm run typecheck`: 0 errores. `npx vitest run`: 16 archivos, **168 de 168**.
+  - `npx next build`: compilado sin errores.
+  - `npm run e2e`: 4 archivos, **55 de 55 pasos**.
+  - `npm run test:int`: 4 archivos, **257 de 257**, 327 s.
+  - `npm run demo`: con `devdb` ya corriendo, migró, compiló y quedó lista. `/` responde 200 con "¿Cada cuánto te pagan?"; `/app` y `/admin` llevan a `/entrar` y `/negocio` al registro de negocio.
+  - **Vista previa de `7281f03`** (`cifra-git-producto-v1-proyects-soka.vercel.app`), leída en el panel de Vercel:
+    - "Provisioning Integrations" muestra "neon-lime-sail: Create database branch for deployment" completado, con enlace a la rama de Neon `br-soft-sound-b89yyija`.
+    - El log de compilación dice: `entorno: preview · rama git: producto-v1`, `DATABASE_URL: ep-proud-tooth-b8u1gk85-pooler / neondb`, `DATABASE_URL_UNPOOLED: ep-proud-tooth-b8u1gk85 / neondb` y "en pausa … No se aplicó nada".
+    - **Lo que no pude comprobar:** que `ep-proud-tooth-b8u1gk85` sea el servidor de `br-soft-sound-b89yyija` y no el de la rama principal. La consola de Neon pide verificar el correo de la cuenta de Neon de SOKA. En Vercel, el servidor de la base principal solo se ve revelando el secreto de producción, y no lo hice. Tampoco corrí consultas en el editor de Vercel, que apunta a la base principal.
+    - Mientras tanto, esa vista previa tiene el código nuevo sobre una base sin migrar: no sirve para la demo hasta migrarla.
+  - Ramas de Neon por vista previa: los despliegues del 6 y del 9 de noviembre de `feat/v3-valor-real` enlazan la misma rama (`br-orange-brook-b8b8mc0o`). La integración crea una rama por cada rama de git y la reutiliza. Lo que se cree en la vista previa de `producto-v1` sobrevive a las siguientes subidas.
+  - **Vistas previas viejas:**
+    - La protección de despliegues está en "Vercel Authentication: Require Log In, Standard Protection". No hay enlaces para compartir, ni secreto de omisión para automatización, ni dominios exentos.
+    - Pedí sin sesión `/admin` en 11 direcciones viejas: los 7 despliegues de `feat/v3-valor-real` y `feat/fase-5-landing-demo-qa`, más las direcciones por rama de esas dos, de `producto-real` y de `main`. Las 11 responden 302 hacia el inicio de sesión de Vercel. No quedan públicas.
+    - Siguen existiendo con el código anterior al arreglo de seguridad y con ramas de Neon copiadas de producción. Hay 8 despliegues de vista previa: 5 de `feat/v3-valor-real`, 2 de `feat/fase-5-landing-demo-qa` y 1 de `producto-real`, del 1 nov.
+    - La cuenta de Vercel no tiene verificación en dos pasos, y Vercel lo avisa en cada página.
+- Qué revisar en la vista previa: todavía nada. Está protegida y sin migrar. Ver "Decisiones" abajo.
+- Decisiones que necesito de SOKA:
+  1. **Confirmar la rama, una de dos formas:**
+     - (a) En Vercel, `cifra` > Settings > Environment Variables, revela `DATABASE_URL` (la de Production). Después de la `@` viene el servidor: si empieza con `ep-proud-tooth-b8u1gk85`, **es la misma base y no sigo**; si es otro `ep-…`, la vista previa usa otra base.
+     - (b) Verifica el correo de tu cuenta de Neon, abre la rama `br-soft-sound-b89yyija` en la consola y mira su servidor: debe ser `ep-proud-tooth-b8u1gk85`.
+     - Con eso quito la pausa, subo, reviso en el log que diga "Migraciones aplicadas" con la misma huella y abro la solicitud de cambio.
+  2. **Entrar a `/admin`** (propuesta, sin código nuevo):
+     - Crea tu cuenta con el correo de `ADMIN_EMAILS`.
+     - Marca ese correo como verificado desde el editor SQL de Neon, en la rama que corresponda (la de la vista previa o, después de desplegar, la principal).
+     - Solo puede hacerlo quien ya tiene acceso a la base. No agrega claves nuevas ni puertas en la app.
+     - Antes de la feria conviene además un servicio de correo, porque hoy ninguna persona puede recuperar su clave en producción. Los pasos exactos van en el mensaje de esta sesión.
+  3. Canales reales de pago (decisión 6): el mensaje traía el espacio sin llenar.
+- Pendientes y riesgos:
+  - **En la vista previa, `NEXT_PUBLIC_SITE_URL` es la de producción** (la variable figura para Production y Preview). Los enlaces que arma la app, como el QR del negocio o el enlace de cambio de clave si hubiera correo, apuntan a producción. No afecta el guion de mañana.
+  - Las migraciones `0007`, `0008` y `0009` cambian datos de producción cuando SOKA despliegue (las tres autorizadas).
+  - Para cerrar del todo las vistas previas viejas:
+    - borrar sus despliegues en Vercel;
+    - borrar sus ramas de Neon (`br-orange-brook-b8b8mc0o` y las de `feat/fase-5-landing-demo-qa` y `producto-real`);
+    - opcional: borrar las ramas de git viejas en GitHub.
+    - No lo hice: es borrado y lo decide SOKA.
+  - Siguen igual los pendientes de la entrada de la Etapa 2.
+
 ### 2026-11-12 21:30, Etapa 2: cerrada
 
 SOKA pidió cerrar todos los pendientes de la etapa. Quedan hechos y verificados en local; sigue sin subir porque falta confirmar la base de Preview.

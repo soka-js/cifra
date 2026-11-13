@@ -8,8 +8,8 @@ Los montos de este guion son **de ejemplo**: los escribes tú en pantalla, y CIF
 
 | | Dirección | Notas |
 | --- | --- | --- |
-| Plan A: vista previa | `https://cifra-git-producto-v1-proyects-soka.vercel.app` | Vercel pide iniciar sesión con tu cuenta (la vista previa está protegida). Su base es una copia de producción: lo que crees ahí no toca producción, pero en Ofertas pueden aparecer negocios que existen en producción. |
-| Plan B: tu computador | `http://localhost:3000` | Pasos al final. |
+| Plan A: vista previa | `https://cifra-git-producto-v1-proyects-soka.vercel.app` | Solo sirve cuando su base ya tenga las migraciones (ver la bitácora del 12 nov, noche). Vercel pide iniciar sesión con tu cuenta (la vista previa está protegida). Su base es una rama de Neon copiada de producción: lo que crees ahí no toca producción y se conserva entre subidas, pero en Ofertas pueden aparecer negocios que existen en producción. |
+| Plan B: tu computador | `http://localhost:3000` | `cd web && npm run demo`. Pasos al final. |
 
 ## Antes de la llamada (15 minutos antes)
 
@@ -91,21 +91,18 @@ Qué decir: "El negocio paga el 5 % solo de la venta que CIFRA le trae. Si nadie
 
 Solo si la vista previa no está lista. Usa la base local, no producción.
 
-Una vez, la noche anterior:
+Un solo comando, en una terminal que se queda abierta durante la llamada:
 
 ```bash
-cd devdb && npm install                 # la primera vez
-cd ../web && npm install && npm run build
+cd web && npm run demo
 ```
 
-El día de la demo, en dos terminales:
+Levanta la base local si no está corriendo, aplica las migraciones, compila (tarda un minuto) y, cuando dice **"✓ Lista: abre http://localhost:3000"**, ya puedes usarla. Se niega a correr si `web/.env.local` no apunta a la base local. Para apagar todo: Ctrl+C en esa terminal.
 
-```bash
-# Terminal 1: la base local. Se queda corriendo.
-cd devdb && npm start
+Hazlo una vez antes de la llamada (a las 10:00) para ver que arranca, y déjalo corriendo.
 
-# Terminal 2: la aplicación compilada.
-cd web && npm run db:migrate && npm run start
-```
+Abre `http://localhost:3000` en las dos ventanas, como arriba. En local no hay inicio de sesión de Vercel.
 
-Abre `http://localhost:3000` en las dos ventanas, como arriba. En local no hay inicio de sesión de Vercel. Si el puerto de la base quedó ocupado de una vez anterior, corre `npm run stop` dentro de `devdb` y vuelve a `npm start`.
+Si algo se traba:
+- "La base local no arrancó": `cd devdb && npm run stop` y vuelve a `npm run demo`.
+- "El puerto 3000 está ocupado": cierra la otra app (por ejemplo, una terminal con `npm run dev`) o reinicia la terminal, y vuelve a intentar.
