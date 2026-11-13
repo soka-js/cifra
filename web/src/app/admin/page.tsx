@@ -18,6 +18,7 @@ import {
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { requireAdmin } from '@/lib/auth/session';
+import { loadFairFunnel } from '@/lib/analytics/fair-funnel';
 import { bogotaDate } from '@/lib/data';
 import { db } from '@/lib/db';
 import {
@@ -45,6 +46,7 @@ import {
   triggerDailyCronFromAdmin,
 } from './actions';
 import { CreatePartnerForm, ReissueInviteButton, StreetMerchantCrmForm } from './admin-forms';
+import { FairFunnelSection } from './fair-funnel-section';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Data Room y Operación · CIFRA', robots: { index: false } };
@@ -167,6 +169,9 @@ export default async function AdminPage({
   `)) as unknown as Row[];
 
   const kpi = kpiRow ?? {};
+
+  // Embudo de la feria: de la página pública a la cifra guardada, por día de Bogotá.
+  const fairDays = await loadFairFunnel(7);
 
   // Embudo propio y A/B test
   const funnel = realAdmin
@@ -438,6 +443,8 @@ export default async function AdminPage({
         {/* TAB 1: DATA ROOM DE INVERSIÓN Y FALSACIÓN */}
         {tab === 'dataroom' && (
           <div className="mt-6 space-y-7">
+            <FairFunnelSection days={fairDays} />
+
             <section className="space-y-3">
               <div>
                 <h1 className="font-display text-[28px] font-bold tracking-[-0.025em] text-ink">
