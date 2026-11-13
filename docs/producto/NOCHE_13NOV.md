@@ -33,7 +33,17 @@ Para Claude Code: revisa esto como revisarías un cambio de otra persona. Si lo 
 - `web/src/lib/__tests__/recibos.test.ts`: la entrada de `receipt.tsx` (3 montos) se reemplaza por una de `presentacion/page.tsx` (1 monto: la compra del ejemplo, rotulada en pantalla).
 - Queda sin usar la acción `submitLead` de `web/src/app/actions/leads.ts` (sigue registrada en la matriz de permisos). Decide tú si se borra.
 
-### 4. `docs/producto/FERIA.md` (nuevo)
+### 4. `/desarrolladores` (la página pública de la API para cooperativas)
+
+Revisé esta página antes de la llamada con Financiera Comultrasan del 13 nov, porque `DEMO.md` dice que existe si preguntan por integrar. Encontré y arreglé:
+
+- Los ejemplos de la API apuntaban a `https://cifra.co/api/v1/...` cuando `NEXT_PUBLIC_SITE_URL` no existe (la vista previa de `producto-v1` los muestra así). La app no usa ese dominio. Ahora usa `siteUrl()` (`web/src/lib/site.ts`): producción, la rama de la vista previa o local.
+- Decía "wallet de retail (como Starbucks)": quitado.
+- La calculadora de reparto abre con valores puestos (5.000 asociados, 1,5 ofertas al mes, ticket de $22.000) y mostraba resultados sin decir que eran un ejemplo. Ahora dice "Los valores con los que abre son un ejemplo, no datos de una entidad. Cámbialos por los tuyos."
+- El límite de 600 peticiones por minuto que dice la página sí existe en el código (`web/src/lib/partner/auth.ts`).
+- Paso nuevo **A8** en el e2e: la página no muestra `https://cifra.co/`, ni "Starbucks", y rotula el ejemplo.
+
+### 5. `docs/producto/FERIA.md` (nuevo)
 
 Lista de revisión de la feria sin negocios reales: antes del 18, en el stand y después del stand.
 
@@ -45,7 +55,7 @@ Todo sobre el mismo árbol, después de los cambios:
 - `npm test`: 16 archivos, **171 de 171**.
 - `npm run test:int`: 5 archivos, **263 de 263** (259 de antes más los 4 de `feria.itest.ts`).
 - `npm run build`: compilado sin errores.
-- `npm run e2e`: 4 archivos, todo en verde: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta 11 de 11, seguridad **30 de 30** (28 de antes más D2b y D3b).
+- `npm run e2e`: 4 archivos, todo en verde: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta 11 de 11, seguridad **31 de 31** (28 de antes más A8, D2b y D3b).
 - Línea base antes de tocar nada: typecheck sin errores, 171 de 171 unitarias y 259 de 259 de integración.
 - Revisión visual en local (`next start` en el puerto 3200 contra `cifra_dev`, Chrome a 390x844 y a 1280 de ancho):
   - la captura `n1-demo-franja-y-barra` del e2e muestra la franja y la barra una debajo de la otra después de desplazar;
@@ -57,6 +67,15 @@ Todo sobre el mismo árbol, después de los cambios:
 1. Entra a `/admin` con tu cuenta de admin: arriba de la pestaña de datos debe estar "Feria: del QR a la cifra guardada", con la fila de hoy.
 2. Abre la demo como persona y desplaza el Hoy hacia abajo en el celular: la franja negra queda arriba y la barra "Hoy > Tu cifra" debajo, sin taparse.
 3. Abre `/admin/presentacion` y léela de punta a punta como si fueras el profesor.
+
+## Vista previa de esta rama
+
+- Vercel la construyó sin errores. El log dice `entorno: preview · rama git: noche-13nov`, `DATABASE_URL: ep-steep-credit-b8opyfaw-pooler / neondb` y "Migraciones aplicadas.": una rama de Neon propia, distinta de la de `producto-v1` (`ep-proud-tooth`) y de producción. No trae migraciones nuevas.
+- Esa rama de Neon es otra copia de los datos de producción: súmala a la limpieza que SOKA decida después de la feria.
+
+## Vista previa de `producto-v1` (la de las demos), revisada a las 2:00 a. m. del 13 nov
+
+Con los datos de `DEMO.md` (cada quincena, $1.200.000, arriendo de $450.000 el día 14, $25.000 al día), la prueba sin cuenta dio **$700.000** ("Son unos $350.000 por día durante 2 días") y "¿Puedo gastar?" con $120.000 respondió "Sí. Te quedarían $580.000 hasta el 15 nov.". Coincide con el guion. No creé cuentas ahí.
 
 ## Pendientes que vi y no toqué
 
