@@ -114,8 +114,14 @@ export function StreetMerchantCrmForm() {
           <input name="address" required placeholder="Cra 9 # 58-14" className="field py-2.5 text-[14px]" />
         </div>
         <div>
-          <label className="label">Ticket promedio ($)</label>
-          <input name="typicalTicket" defaultValue="20000" className="field py-2.5 text-[14px] tnum" />
+          <label className="label">Compra promedio de un cliente ($)</label>
+          <input
+            name="typicalTicket"
+            inputMode="numeric"
+            required
+            placeholder="La que diga el tendero"
+            className="field py-2.5 text-[14px] tnum"
+          />
         </div>
       </div>
 
@@ -167,10 +173,10 @@ export function CreatePartnerForm() {
     <form action={action} className="surface-card space-y-4 p-5">
       <div>
         <h3 className="font-display text-[19px] font-bold text-ink">
-          Crear entidad aliada B2B2C y emitir llave API (J.3)
+          Crear aliado (cooperativa, caja o billetera) y emitir llave API (J.3)
         </h3>
         <p className="text-[13.5px] text-ink-muted">
-          El aliado conserva la relación con sus asociados y recibe el 30 % de la comisión de ofertas originada en su base (techo sostenible documentado: 41,1 %).
+          El aliado conserva la relación con sus asociados y recibe el 30 % de la comisión de las ofertas que redimen sus asociados.
         </p>
       </div>
 

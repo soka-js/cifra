@@ -370,3 +370,25 @@ describe('aislamiento entre lo real y la demo', () => {
     expect(fresh.role).toBe('user');
   });
 });
+
+describe('admin/actions.ts#createStreetMerchant: la compra promedio la dice el tendero', () => {
+  const base = { name: 'Tienda de la esquina', ownerName: 'Doña Luz', whatsapp: '3001112233', address: 'Calle 1 # 2-3' };
+
+  it('sin compra promedio no crea el negocio (antes ponía $20.000)', async () => {
+    await loginAs(w.admin);
+    const before = (await db.select().from(merchants)).length;
+    const out = await run(() => adminActions.createStreetMerchant({ status: 'idle' }, fd(base)));
+    expect(out.result).toMatchObject({ status: 'error' });
+    expect((await db.select().from(merchants)).length).toBe(before);
+  });
+
+  it('con la compra promedio que dijo el tendero, guarda ese valor', async () => {
+    await loginAs(w.admin);
+    const out = await run(() =>
+      adminActions.createStreetMerchant({ status: 'idle' }, fd({ ...base, typicalTicket: '15.000' })),
+    );
+    expect(out.result).not.toMatchObject({ status: 'error' });
+    const [m] = await db.select().from(merchants).where(eq(merchants.name, 'Tienda de la esquina'));
+    expect(m?.typicalTicketMinor).toBe(1_500_000);
+  });
+});
