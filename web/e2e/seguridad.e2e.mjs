@@ -114,6 +114,16 @@ await step('A7. lo público sigue abierto', async () => {
   }
 });
 
+await step('A8. la página de la API para cooperativas muestra la dirección de la app, no un dominio ajeno', async () => {
+  const res = await a.goto(`${BASE}/desarrolladores`, { waitUntil: 'domcontentloaded' });
+  assert.equal(res.status(), 200);
+  const text = await a.locator('body').innerText();
+  assert.ok(text.includes('/api/v1/members/'), 'faltan los ejemplos de la API');
+  assert.ok(!/https:\/\/cifra\.co\//.test(text), 'los ejemplos todavía apuntan a https://cifra.co');
+  assert.ok(!text.includes('Starbucks'), 'todavía nombra a Starbucks');
+  assert.match(text, /Los valores con los que abre son un ejemplo/);
+});
+
 // ============================================================================================
 // B. Datos viejos que ya no deben abrir nada
 // ============================================================================================
@@ -221,6 +231,15 @@ await step('D2. al verificar el correo con el enlace de cambio de clave, /admin 
   await shot(ad, 'e1-admin-lanzador-demo');
 });
 
+await step('D2b. /admin muestra el embudo de la feria, empezando por hoy', async () => {
+  const feria = ad.locator('#feria');
+  assert.ok(await feria.isVisible(), 'falta la sección de la feria');
+  assert.match(await feria.locator('h2').innerText(), /Feria: del QR a la cifra guardada/);
+  const firstRow = feria.locator('tbody tr').first();
+  assert.match(await firstRow.innerText(), /^Hoy, \d{1,2} [a-z]{3}/);
+  assert.equal(await feria.locator('tbody tr').count(), 7, 'una fila por cada uno de los últimos 7 días');
+});
+
 await step('D3. el admin abre la demo como persona: franja de demo y datos de ejemplo', async () => {
   await Promise.all([ad.waitForURL((u) => u.pathname === '/app', { timeout: 60_000 }), ad.click('#btn-demo-persona')]);
   await ad.waitForLoadState('networkidle');
@@ -230,6 +249,22 @@ await step('D3. el admin abre la demo como persona: franja de demo y datos de ej
   const data = await (await adminCtx.request.get(`${BASE}/api/export?format=json`)).json();
   assert.equal(data.profile.email, 'mariana.demo@cifra.co', 'lo que se ve y se descarga es de la persona de ejemplo');
   await shot(ad, 'e1-demo-persona');
+});
+
+await step('D3b. al desplazar, la franja de demo queda arriba y no tapa la barra superior', async () => {
+  await ad.evaluate(() => window.scrollTo(0, 900));
+  await ad.waitForTimeout(400);
+  assert.ok((await ad.evaluate(() => window.scrollY)) > 0, 'la página debía desplazarse');
+  const bar = await ad.locator('[data-testid="demo-bar"]').boundingBox();
+  const top = await ad.locator('[data-testid="app-top-bar"]').boundingBox();
+  assert.ok(bar && top, 'la franja y la barra superior deben verse');
+  assert.ok(Math.abs(bar.y) < 1, `la franja debe quedar pegada arriba (está en y=${bar.y})`);
+  assert.ok(
+    top.y >= bar.y + bar.height - 1,
+    `la barra superior empieza en y=${top.y} y la franja termina en y=${bar.y + bar.height}: se tapan`,
+  );
+  await shot(ad, 'n1-demo-franja-y-barra');
+  await ad.evaluate(() => window.scrollTo(0, 0));
 });
 
 await step('D4. dentro de la demo se ve la vitrina de un negocio de ejemplo', async () => {

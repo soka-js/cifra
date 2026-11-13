@@ -62,7 +62,7 @@ export function AppTopBar({
   }
 
   return (
-    <header className="no-print sticky top-0 z-30 border-b border-line/80 bg-white/90 px-3.5 py-2.5 backdrop-blur-md">
+    <header data-testid="app-top-bar" className="no-print border-b border-line/80 bg-white/90 px-3.5 py-2.5 backdrop-blur-md">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
         {/* Izquierda: Miga de pan contextual limpia (sin duplicar el BackButton de página) */}
         <div className="flex min-w-0 items-center gap-2">

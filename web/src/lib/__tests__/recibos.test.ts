@@ -57,9 +57,9 @@ describe('cada número tiene recibo', () => {
   it('no hay montos en centavos escritos a mano en pantallas ni componentes', () => {
     // Literales como 1_800_000_00 o 24_000_00.
     const problems = check(/\b\d[\d_]*_\d{3}_00\b/g, {
-      'src/components/landing/receipt.tsx': {
-        max: 3,
-        why: 'Ejemplo fijo de la página de presentación, rotulado como ejemplo en pantalla.',
+      'src/app/admin/presentacion/page.tsx': {
+        max: 1,
+        why: 'Compra del ejemplo de la caja en la presentación de /admin, rotulado como ejemplo en pantalla. El resto lo calcula el motor.',
       },
       'src/app/actions/v3.ts': {
         max: 1,

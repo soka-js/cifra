@@ -2,16 +2,18 @@ import { LogOut, Store, UserRound } from 'lucide-react';
 import { exitDemo, openDemoAs } from '@/app/admin/actions';
 
 /**
- * Franja fija que se ve SIEMPRE que un admin está mirando la demo. Deja claro que todo lo que hay
+ * Franja que se ve SIEMPRE que un admin está mirando la demo. Deja claro que todo lo que hay
  * en pantalla son datos de ejemplo, permite pasar de la persona a la tendera y salir.
  * Solo se renderiza cuando la sesión está en modo demo (ver getSessionContext).
+ * Va dentro de <StickyHeader>, junto con la barra superior: así las dos quedan pegadas arriba,
+ * una debajo de la otra, y la franja no tapa la barra al desplazar.
  */
 export function DemoBar({ viewing }: { viewing: 'persona' | 'tendero' }) {
   return (
     <div
       role="status"
       data-testid="demo-bar"
-      className="no-print sticky top-0 z-50 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 bg-ink px-3.5 py-2 text-[12.5px] text-white"
+      className="no-print flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 bg-ink px-3.5 py-2 text-[12.5px] text-white"
     >
       <span className="font-semibold">
         Demo <span className="font-normal text-white/75">· datos de ejemplo, no son de una persona real</span>
