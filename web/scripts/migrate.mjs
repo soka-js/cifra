@@ -9,6 +9,32 @@ if (!url) {
   console.error('Falta DATABASE_URL: no se pueden aplicar migraciones.');
   process.exit(1);
 }
+
+// Huella de la base, sin usuario ni clave: el servidor (en Neon, el "ep-..." identifica la rama)
+// y el nombre de la base. Queda en el log de compilación para comprobar contra qué base corrió.
+function huella(raw) {
+  if (!raw) return 'sin definir';
+  try {
+    const u = new URL(raw);
+    return `${u.hostname.split('.')[0]} / ${u.pathname.replace(/^\//, '') || '(sin nombre)'}`;
+  } catch {
+    return 'no se pudo leer';
+  }
+}
+const enVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+if (enVercel) {
+  console.log(`[migraciones] entorno: ${process.env.VERCEL_ENV ?? 'desconocido'} · rama git: ${process.env.VERCEL_GIT_COMMIT_REF ?? 'desconocida'}`);
+  console.log(`[migraciones] DATABASE_URL: ${huella(process.env.DATABASE_URL)}`);
+  console.log(`[migraciones] DATABASE_URL_UNPOOLED: ${huella(process.env.DATABASE_URL_UNPOOLED)}`);
+}
+
+// Pausa temporal: la primera vista previa de producto-v1 solo deja la huella, sin migrar, hasta
+// confirmar que su base es una rama de Neon y no la de producción. Se quita en el commit siguiente.
+if ((enVercel || process.env.CI) && process.env.VERCEL_ENV !== 'production') {
+  console.log('[migraciones] en pausa: falta confirmar que esta base es una rama de vista previa. No se aplicó nada.');
+  process.exit(0);
+}
+
 const sql = postgres(url, { max: 1, prepare: false, onnotice: () => {} });
 try {
   // fileURLToPath y no .pathname: en Windows .pathname devuelve "/C:/..." y drizzle no encuentra la carpeta.
