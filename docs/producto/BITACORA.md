@@ -230,10 +230,68 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 | 4 | Del QR a la cifra sin cuenta | **En producción** lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy. **Un solo formulario** para la prueba y el modo rápido con cuenta, en la rama `etapa-4-un-formulario` (sin mezclar). Falta medir a una persona. Meta: 15 nov | #3; la rama nueva, después de las 4:30 p. m. del 13 nov |
 | 5 | Demo desde `/admin` | Avance en producción: la franja de demo ya no tapa la barra y `/admin/presentacion` quedó rehecha sin testimonios inventados. Falta el resto del tablero de `/admin`, que sigue con textos viejos ("Aliados B2B2C", "Hipótesis K", el embudo de la landing vieja). Meta: 16 nov | #4 y #3 |
 | 7a | Feria sin negocios reales | En producción: ofertas sin grupo de control (`0009`), embudo "Feria: del QR a la cifra guardada" en `/admin` y la lista `docs/producto/FERIA.md`. Falta lo que esa lista marca para antes del 18, como probar el QR en dos celulares. Meta: 17 nov | #4 y #3 |
-| 6 | El tendero se registra solo | Pendiente. Meta: 26 nov | |
+| 6 | El tendero se registra solo | **En curso** en la rama `etapa-6-tendero` (encima de `etapa-4-un-formulario`, sin subir): registro en dos pasos con autorización de datos, cámara de la caja y ubicación habilitadas, pago en línea con el monto firmado y cuenta sin porcentajes escritos a mano. El recorrido E de `seguridad.e2e.mjs` va de `/negocio` sin sesión a validar un código en caja. Falta: plantillas de oferta según el tipo de negocio y revisar el afiche y la vitrina. Meta: 26 nov | Después de la de la Etapa 4 |
 | 7b | Feria con negocios reales | Esperando negocios confirmados | |
 
 ## Entradas
+
+### 2026-11-13 11:57, Etapa 6: el tendero se registra solo, la caja abre la cámara y el pago en línea no se puede rebajar
+
+- Rama: `etapa-6-tendero`, creada encima de `etapa-4-un-formulario` (`4b3ef85`). Va en una solicitud de cambio aparte, después de la de la Etapa 4. Sin subir ni mezclar: mismas razones que la Etapa 4. No toqué `src/app/admin`.
+- Nota de git: `git switch` no pudo reescribir `.git/HEAD` porque otro programa del equipo lo tenía abierto (parece ser VS Code). No cerré nada. Hice los commits de esta rama con `git commit-tree` y `git update-ref`, que no tocan `HEAD`. La carpeta de trabajo sigue apuntando a `etapa-4-un-formulario`. Para que queden iguales: `git switch etapa-6-tendero` cuando el archivo se libere (no cambia ningún archivo).
+- Qué cambió:
+  - **Registro del negocio en dos pasos** (`web/src/app/negocio/unirse/register-merchant-form.tsx`):
+    - Paso "Tu negocio": nombre, tipo, zona, dirección y compra promedio.
+    - Paso "Tus datos": nombre, WhatsApp y, sin sesión, correo, clave y la autorización.
+    - Salieron del registro el mapa, el barrio, el horario y la llave de pago; se agregan después en Perfil. El punto del mapa arranca en el centro de la zona.
+    - **El horario ya no se inventa:** antes se guardaba "Lun a Sáb 7:00 a. m. – 8:00 p. m." si el tendero no escribía ninguno. Ahora queda vacío y no se muestra.
+  - **Autorización de datos del tendero** (Ley 1581), en `web/src/components/negocio/merchant-consent.tsx`.
+    - La piden el registro y la activación por enlace (`/negocio/activar/[token]`) cuando crean una cuenta nueva.
+    - El servidor (`selfRegisterMerchant` y `redeemMerchantInvite` en `web/src/app/actions/merchant.ts`) no crea la cuenta sin ella.
+    - **Antes, las dos acciones guardaban la fecha y la versión de la autorización (`consentAt`, `consentVersion`) sin haberla pedido nunca.** Ahora esa fecha corresponde a una casilla que el tendero marcó.
+    - La activación por enlace pide ahora una clave de 10 caracteres, como el resto (antes 8).
+  - **Cámara de la caja y "usar mi ubicación"** (`web/next.config.ts`).
+    - La cabecera `Permissions-Policy` decía `camera=()` y `geolocation=()`. Con eso el navegador bloquea la cámara y la ubicación incluso para CIFRA: el botón "Escanear QR" de la caja y "usar mi ubicación" del mapa nunca podían funcionar. Era el hallazgo de gravedad 3 del plan.
+    - Ahora es `camera=(self), geolocation=(self)`: solo CIFRA puede pedirlas, nunca un sitio que la meta en un marco, y el navegador igual le pregunta a la persona. El micrófono sigue cerrado.
+    - Va en todo el sitio porque la app cambia de pantalla sin recargar: el permiso lo fija la primera página que se abrió.
+  - **Pago de la comisión por Wompi** (`web/src/lib/payments/wompi.ts`, nuevo, y `web/src/app/api/webhooks/wompi/route.ts`). Hoy está apagado en producción, porque no están las llaves de Wompi; lo dejé seguro para cuando se prenda. Antes:
+    - el enlace de pago se armaba en el navegador con el monto en la dirección y sin firma, así que un negocio podía cambiar `amount-in-cents` y pagar $1 con la referencia de su corte;
+    - el aviso de Wompi marcaba el corte como pagado sin mirar cuánto llegó;
+    - cada aviso repetido registraba otro pago;
+    - y la firma se comparaba sin tiempo constante.
+  - Ahora:
+    - El enlace se arma en el servidor con la firma de integridad de Wompi (`WOMPI_INTEGRITY_SECRET`, que ya estaba en `.env.example` sin usarse). Sin esa llave no se muestra el botón de pago en línea.
+    - El aviso exige que la firma cubra el id, el estado y el monto, y la compara en tiempo constante.
+    - El corte se marca pagado solo si el pago es en pesos y lo cubre completo. Si no, el pago queda "reportado" con una nota de cuánto falta, el corte pasa a "en verificación" y el equipo lo revisa.
+    - Un aviso repetido se registra una sola vez.
+  - **La cuenta del tendero** (`/negocio/cuenta`):
+    - El porcentaje de comisión sale del negocio (`commissionBps`) con `percentFromBps` (nuevo, en `web/src/lib/format.ts`). Antes decía "5 %" y "95 %" escrito a mano en cinco lugares.
+    - Se quitó "($900 cada vez)", un monto escrito a mano.
+    - Se quitó el botón "Autocompletar referencia de hoy", que inventaba un comprobante de pago ("BREB-…") en la cuenta de un negocio real.
+- Arreglo encontrado por la prueba de punta a punta:
+  - El paso 1 del registro nunca dejaba seguir: leía la compra promedio con `form.elements.namedItem('typicalTicket')`. Ese nombre lo tienen dos elementos, la caja visible (por su `id`) y el campo oculto con el valor limpio (por su `name`), y con dos resultados la lectura daba vacío.
+  - Ahora lee con `FormData`, que solo mira los `name`.
+- Pruebas nuevas:
+  - `web/src/lib/__tests__/encabezados.test.ts` (2): cámara y ubicación solo para CIFRA, micrófono para nadie, y ninguna ruta lo vuelve a cerrar.
+  - `web/src/lib/__tests__/wompi.test.ts` (11): la firma del enlace amarra el monto y el secreto no va en la dirección; un aviso con otro secreto, con el monto cambiado después de firmar o con una firma que no cubre el monto se rechaza; un pago corto, en otra moneda o sobre un corte ya pagado queda para revisar.
+  - `web/test/integration/wompi.itest.ts` (5, contra la base): sin secreto, 503; con otra firma, 401 y nada cambia; un pago de $1 no marca el corte pagado; el pago completo sí, y repetido registra un solo pago; otros avisos no cambian nada.
+  - `web/test/integration/acciones-publicas.itest.ts`: sin la autorización no se crea la cuenta ni el negocio (registro y activación); con una clave corta tampoco; sin horario, el negocio queda sin horario.
+  - `web/e2e/seguridad.e2e.mjs`, paso E1: recorre los dos pasos, comprueba que sin compra promedio no deja seguir y marca la autorización.
+- Verificación (este equipo, `devdb` local), con esta rama completa (Etapa 4 debajo):
+  - `npm run typecheck`: 0 errores. `npm test`: 18 archivos, **185 de 185**.
+  - `npm run test:int`: 7 archivos, **273 de 273**, 214 s.
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos**: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta 11 de 11 (379 ms) y seguridad 31 de 31. Ahí está el recorrido E completo: registro en dos pasos, primera oferta, la persona genera su código, la caja cobra $18.000 con comisión de $900 y le quedan $17.100, el código no sirve dos veces y llega el aviso del ahorro.
+  - La corrida anterior falló en E1 por el error de la compra promedio. Después del arreglo pasó todo.
+- Qué revisar en la vista previa de esta rama, cuando se suba:
+  1. Sin sesión, `/negocio` lleva al registro. Sin compra promedio no deja seguir. En el paso 2, sin marcar la autorización no deja registrar.
+  2. Con el negocio creado, la caja: "Escanear QR" pide permiso de cámara en Android con Chrome. En iPhone no hay lector de QR en el navegador y la caja pide escribir las 6 letras.
+  3. `/negocio/cuenta`: la comisión dice el porcentaje del negocio y no hay botón de autocompletar.
+- Decisiones que necesito de SOKA:
+  1. Cuando se prenda Wompi: agregar en Vercel `NEXT_PUBLIC_WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET` y `WOMPI_EVENTS_SECRET`, y apuntar los eventos de Wompi a `/api/webhooks/wompi`. Sin la llave de integridad no aparece el botón de pago en línea. Nada de esto es urgente.
+- Pendientes y riesgos:
+  - Las plantillas de oferta hablan de "horneados" aunque el negocio sea una peluquería. Hay que ajustarlas al tipo de negocio.
+  - Un aviso repetido se registra una sola vez porque el corte se bloquea mientras se revisa el pago. Un índice único sobre `wompi_transaction_id` lo haría más firme, pero pide una migración; queda para cuando se prenda Wompi.
 
 ### 2026-11-13 11:51, Etapa 4: el servidor lee el formulario con la misma función que la prueba
 

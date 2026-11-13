@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cop, formatThousands, milesDePesos, parseBalanceInput, parsePesosInput, toDailyMinor } from '../format';
+import { cop, formatThousands, milesDePesos, parseBalanceInput, parsePesosInput, percentFromBps, toDailyMinor } from '../format';
 
 describe('saldo escrito a mano', () => {
   it('entiende puntos, signo pesos y "mil"', () => {
@@ -62,5 +62,11 @@ describe('pesos en pantalla (formato colombiano)', () => {
       expect(parsePesosInput(cop(minor))).toBe(minor);
       expect(parsePesosInput(formatThousands(minor / 100))).toBe(minor);
     }
+  });
+  it('porcentajes guardados en puntos básicos, con coma decimal y espacio antes del %', () => {
+    expect(percentFromBps(500)).toBe('5 %');
+    expect(percentFromBps(450)).toBe('4,5 %');
+    expect(percentFromBps(9500)).toBe('95 %');
+    expect(percentFromBps(0)).toBe('0 %');
   });
 });

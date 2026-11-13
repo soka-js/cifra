@@ -14,12 +14,13 @@ import { BackButton } from '@/components/ui/back-button';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { bogotaDate } from '@/lib/data';
 import { COMMISSION_POLICY } from '@/lib/engine/commission-cycle';
-import { cop, shortDate } from '@/lib/format';
+import { cop, percentFromBps, shortDate } from '@/lib/format';
 import {
   formatPeriodMonth,
   generateBrebQrSvg,
   loadMerchantDashboard,
 } from '@/lib/merchant-data';
+import { checkoutUrl } from '@/lib/payments/wompi';
 import { PaymentReportForm } from './payment-form';
 import { siteUrl as publicSiteUrl } from '@/lib/site';
 
@@ -34,17 +35,32 @@ export default async function MerchantBillingPage() {
   const cifraBrebKey = process.env.CIFRA_BREB_KEY?.trim() || null;
   const cifraNequi = process.env.CIFRA_NEQUI_NUMBER?.trim() || null;
   const hasPaymentChannel = Boolean(cifraBrebKey || cifraNequi);
-  const wompiPublicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || undefined;
-  const siteUrl = publicSiteUrl();
   const brebQrSvg = cifraBrebKey ? await generateBrebQrSvg(cifraBrebKey) : null;
 
   const { billingHealth, cycleSummary } = data;
+  // La comisión de este negocio, tal como está guardada; no se supone un 5 %.
+  const commissionLabel = percentFromBps(access.merchant.commissionBps);
 
   const payableInvoice = data.invoices.find(
     (inv) =>
       inv.commissionTotalMinor > 0 &&
       (inv.status === 'abierta' || inv.status === 'pendiente_pago'),
   );
+
+  // Pago en línea solo con las dos llaves de Wompi: la pública abre el pago y la de integridad
+  // firma el monto, para que nadie pueda cambiarlo en la dirección y pagar menos.
+  const wompiPublicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY?.trim();
+  const wompiIntegritySecret = process.env.WOMPI_INTEGRITY_SECRET?.trim();
+  const wompiUrl =
+    payableInvoice && wompiPublicKey && wompiIntegritySecret
+      ? checkoutUrl({
+          publicKey: wompiPublicKey,
+          integritySecret: wompiIntegritySecret,
+          invoiceId: payableInvoice.id,
+          amountInCents: payableInvoice.commissionTotalMinor,
+          redirectUrl: `${publicSiteUrl()}/negocio/cuenta`,
+        })
+      : null;
 
   return (
     <div className="space-y-6">
@@ -54,13 +70,14 @@ export default async function MerchantBillingPage() {
       <div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="badge-terra">Corte consolidado quincenal</span>
-          <span className="badge-neutral">Comisión 5 % solo sobre venta cobrada</span>
+          <span className="badge-neutral">Comisión {commissionLabel} solo sobre venta cobrada</span>
         </div>
         <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
           Corte de comisiones y facturación
         </h1>
         <p className="mt-1 text-[15px] text-ink-muted">
-          Tranquilidad operativa total: Olvídate de hacer pagos micro cliente por cliente ($900 cada vez). CIFRA consolida tus ventas en cortes quincenales claros con 5 días de gracia para pagar.
+          No pagas la comisión venta por venta. CIFRA suma tus ventas de la quincena en un solo corte y te da 5 días
+          para pagarlo.
         </p>
       </div>
 
@@ -151,7 +168,8 @@ export default async function MerchantBillingPage() {
                 {billingHealth.activeCycle.label}
               </h2>
               <p className="text-[14px] text-emerald-800">
-                No tienes cobros pendientes de ciclos anteriores. Las comisiones del 5 % de este periodo se acumulan automáticamente y se liquidan consolidadas al final de la quincena.
+                No tienes cobros pendientes de cortes anteriores. La comisión de {commissionLabel} de este periodo se suma
+                sola y se paga en un solo corte al final de la quincena.
               </p>
             </div>
           </div>
@@ -212,7 +230,7 @@ export default async function MerchantBillingPage() {
           <div className="surface-card border-terra/30 bg-terra-pale/40 p-4">
             <p className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-terra-dark">
               <TrendingUp size={14} aria-hidden="true" />
-              Comisión CIFRA (5 %)
+              Comisión CIFRA ({commissionLabel})
             </p>
             <p className="tnum mt-1.5 font-display text-[26px] font-bold text-terra-dark">
               {cop(cycleSummary.accumulatedCommissionMinor)}
@@ -228,10 +246,10 @@ export default async function MerchantBillingPage() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-wider text-primary-dark">
-                Rentabilidad neta retenida por tu negocio
+                Lo que te queda
               </p>
               <p className="mt-0.5 text-[14px] text-ink-soft">
-                El 95 % del dinero cobrado permanece 100 % en tus manos:
+                Lo cobrado en tu caja menos la comisión de {commissionLabel}:
               </p>
             </div>
             <p className="tnum font-display text-[32px] font-bold text-primary-dark sm:text-right">
@@ -311,8 +329,7 @@ export default async function MerchantBillingPage() {
               invoiceId={payableInvoice.id}
               periodLabel={formatPeriodMonth(payableInvoice.periodMonth)}
               amountMinor={payableInvoice.commissionTotalMinor}
-              wompiPublicKey={wompiPublicKey}
-              siteUrl={siteUrl}
+              wompiUrl={wompiUrl}
             />
           </div>
         )}
@@ -368,7 +385,7 @@ export default async function MerchantBillingPage() {
 
                     <div className="text-right">
                       <p className="text-[11.5px] font-semibold uppercase tracking-wider text-ink-muted">
-                        Comisión CIFRA (5 %)
+                        Comisión CIFRA
                       </p>
                       <p className="tnum font-display text-[24px] font-bold text-ink">
                         {cop(inv.commissionTotalMinor)}
