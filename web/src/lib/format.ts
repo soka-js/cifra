@@ -28,10 +28,13 @@ export function milesDePesos(minor: number): string {
   return formatThousands(miles);
 }
 
-/** Un porcentaje guardado en puntos básicos, como se escribe en Colombia: 500 -> "5 %", 450 -> "4,5 %". */
+/**
+ * Un porcentaje guardado en puntos básicos, como se escribe en Colombia: 500 -> "5 %", 450 -> "4,5 %".
+ * El espacio antes del % es de no separación, para que el número y el signo no queden en renglones distintos.
+ */
 export function percentFromBps(bps: number): string {
   const pct = Math.round(bps) / 100;
-  return `${String(pct).replace('.', ',')} %`;
+  return `${String(pct).replace('.', ',')} %`;
 }
 
 /** Interpreta lo que escribe la persona ("45.000", "45000", "45 mil") como centavos. */

@@ -259,12 +259,14 @@ export function RegisterMerchantForm({
             Atrás
           </button>
         )}
+        {/* Botones con key distinta: si React reusara el mismo botón, le cambiaría el tipo a "submit"
+            en medio del toque de "Seguir" y el navegador intentaría enviar el paso 2 vacío. */}
         {step === 0 ? (
-          <button id="btn-negocio-seguir" type="button" onClick={next} className="btn-terra flex-1 text-[16px]">
+          <button key="seguir" id="btn-negocio-seguir" type="button" onClick={next} className="btn-terra flex-1 text-[16px]">
             Seguir <ArrowRight size={17} aria-hidden="true" />
           </button>
         ) : (
-          <button type="submit" disabled={pending} className="btn-terra flex-1 text-[16px]">
+          <button key="registrar" type="submit" disabled={pending} className="btn-terra flex-1 text-[16px]">
             <Store size={18} aria-hidden="true" />
             {pending ? 'Creando tu negocio en CIFRA…' : 'Registrar mi negocio'}
             <ArrowRight size={17} aria-hidden="true" />

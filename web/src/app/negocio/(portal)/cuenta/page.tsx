@@ -267,7 +267,7 @@ export default async function MerchantBillingPage() {
           </span>
           <div className="space-y-1.5 text-[14px]">
             <h3 className="font-display text-[17px] font-bold text-ink">
-              Garantía operativa: cero cobros micro por venta individual
+              Un solo cobro por quincena, no uno por venta
             </h3>
             <p className="text-ink-soft">
               {COMMISSION_POLICY.guaranteeText}

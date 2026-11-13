@@ -63,10 +63,10 @@ describe('pesos en pantalla (formato colombiano)', () => {
       expect(parsePesosInput(formatThousands(minor / 100))).toBe(minor);
     }
   });
-  it('porcentajes guardados en puntos básicos, con coma decimal y espacio antes del %', () => {
-    expect(percentFromBps(500)).toBe('5 %');
-    expect(percentFromBps(450)).toBe('4,5 %');
-    expect(percentFromBps(9500)).toBe('95 %');
-    expect(percentFromBps(0)).toBe('0 %');
+  it('porcentajes guardados en puntos básicos, con coma decimal y un espacio que no se parte antes del %', () => {
+    expect(percentFromBps(500)).toBe('5 %');
+    expect(percentFromBps(450)).toBe('4,5 %');
+    expect(percentFromBps(9500)).toBe('95 %');
+    expect(percentFromBps(0)).toBe('0 %');
   });
 });

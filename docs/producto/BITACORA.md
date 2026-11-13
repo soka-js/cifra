@@ -235,6 +235,25 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Entradas
 
+### 2026-11-13 12:22, Etapa 6: revisión a ojo del tendero en celular, y lo que encontró
+
+- Rama: `etapa-6-tendero`. Sin subir ni mezclar.
+- Cómo lo revisé: la app compilada, local, contra `cifra_dev`. Un guion de Playwright a 390x844 registró una peluquería de prueba y sacó capturas del registro, la primera oferta, la cuenta, la caja y la vitrina. Las capturas quedaron fuera del repositorio. Primero lo intenté con Chrome, pero esa ventana no baja de 1280 px de ancho.
+- Lo que encontré y arreglé:
+  - **Al tocar "Seguir" en el registro, el navegador intentaba enviar el paso 2 vacío** y mostraba "Completa este campo" sobre "Tu nombre" apenas aparecía.
+    - Causa: React reusaba el mismo botón y le cambiaba el tipo a "submit" en medio del toque.
+    - Arreglo: cada botón tiene su propia `key`. El de las cuatro preguntas de la Etapa 4 ya la tenía.
+    - Prueba: el paso E1 de `seguridad.e2e.mjs` cuenta los eventos `invalid` del formulario al tocar "Seguir" y exige cero. Quería correrla primero contra el build anterior, para ver que falla con el error, pero esa corrida se detuvo (ver Verificación).
+  - **El porcentaje se partía en dos renglones** ("5" al final de una línea y "%" en la siguiente). `percentFromBps` usa ahora un espacio de no separación.
+  - En la cuenta, el título "Garantía operativa: cero cobros micro por venta individual" pasó a "Un solo cobro por quincena, no uno por venta".
+- Lo que se ve bien: los dos pasos del registro y el aviso de la compra promedio; sin marcar la autorización el navegador no deja registrar; la peluquería ve tres plantillas (primera visita, tarde tranquila y monto fijo) y ninguna de "horneados"; la cuenta dice la comisión del negocio, "Lo que te queda" y no muestra ningún canal de pago inventado.
+- Pendiente: el creador de ofertas es largo en el celular (tres pasos en una sola página, de unas tres pantallas y media de alto). Lo dejo anotado para después del pitch.
+- Verificación, **incompleta**:
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, **192 de 192**.
+  - **Sin correr** `npm run build`, `npm run e2e` ni `npm run test:int`. A las 12:25 el sistema detuvo, por falta de memoria, la base local (`devdb`) y la corrida de punta a punta contra el build anterior. No los volví a levantar por mi cuenta.
+  - Tampoco está comprobado que el control nuevo de E1 falle con el error y pase con el arreglo. Es lo primero que hay que correr cuando vuelva la base.
+- Decisiones que necesito de SOKA: si puedo volver a levantar la base local (`cd devdb && npm start`) para terminar esta verificación.
+
 ### 2026-11-13 12:12, Etapa 6: el tendero puede borrar su horario y su presentación
 
 - Rama: `etapa-6-tendero`. Sin subir ni mezclar.

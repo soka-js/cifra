@@ -9,7 +9,7 @@ describe('comisión que se anuncia a un negocio nuevo', () => {
     expect(getTableColumns(redemptions).commissionBps.default).toBe(DEFAULT_COMMISSION_BPS);
   });
 
-  it('se muestra con espacio antes del %', () => {
-    expect(DEFAULT_COMMISSION_LABEL).toBe('5 %');
+  it('se muestra con un espacio que no se parte antes del %', () => {
+    expect(DEFAULT_COMMISSION_LABEL).toBe('5 %');
   });
 });
