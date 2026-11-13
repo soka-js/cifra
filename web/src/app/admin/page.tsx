@@ -55,20 +55,6 @@ type Row = Record<string, unknown>;
 const num = (v: unknown) => Number(v ?? 0);
 const pct = (a: number, b: number) => (b > 0 ? `${((a / b) * 100).toFixed(1).replace('.', ',')} %` : 'sin datos');
 
-function twoProportionP(x1: number, n1: number, x2: number, n2: number): number | null {
-  if (n1 < 1 || n2 < 1) return null;
-  const p = (x1 + x2) / (n1 + n2);
-  const se = Math.sqrt(p * (1 - p) * (1 / n1 + 1 / n2));
-  if (se === 0) return null;
-  const z = Math.abs(x1 / n1 - x2 / n2) / se;
-  const t = 1 / (1 + 0.3275911 * (z / Math.SQRT2));
-  const erf =
-    1 -
-    (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t) *
-      Math.exp(-(z * z) / 2);
-  return 1 - erf;
-}
-
 export default async function AdminPage({
   searchParams,
 }: {
@@ -88,7 +74,6 @@ export default async function AdminPage({
     sp.alcance === 'demo' ? 'demo' : sp.alcance === 'todo' ? 'todo' : 'reales';
 
   const days = sp.dias === '7' ? 7 : sp.dias === 'todo' ? 3650 : 30;
-  const since = sql`now() - make_interval(days => ${days})`;
 
   const userScopeSql =
     scope === 'reales'
@@ -172,49 +157,6 @@ export default async function AdminPage({
 
   // Embudo de la feria: de la página pública a la cifra guardada, por día de Bogotá.
   const fairDays = await loadFairFunnel(7);
-
-  // Embudo propio y A/B test
-  const funnel = realAdmin
-    ? ((await db.execute(sql`
-        with landing as (
-          select visitor_id, min(variant) as variant from events
-          where name = 'page_view' and path = '/' and at >= ${since} group by visitor_id
-        ),
-        acts as (
-          select visitor_id,
-            bool_or(name = 'click_cta') as cta,
-            bool_or(name = 'begin_signup') as begin_signup,
-            bool_or(name = 'sign_up') as sign_up,
-            bool_or(name = 'import_statement') as imported,
-            bool_or(name = 'quick_start') as quick,
-            bool_or(name = 'generate_lead') as lead,
-            bool_or(name in ('click_cta','scroll_depth','faq_open','ask_spend','begin_lead')) as interacted,
-            max(case when name = 'engaged_time' and path = '/' then (props->>'seconds')::int end) as seconds,
-            max(case when name = 'scroll_depth' then (props->>'percent')::int end) as depth
-          from events where at >= ${since} group by visitor_id
-        )
-        select coalesce(l.variant, '?') as variant,
-          count(*) as visitors,
-          count(*) filter (where a.cta) as cta,
-          count(*) filter (where a.begin_signup) as begin_signup,
-          count(*) filter (where a.sign_up) as sign_up,
-          count(*) filter (where a.imported or a.quick) as activated,
-          count(*) filter (where a.quick) as quick,
-          count(*) filter (where a.imported) as imported,
-          count(*) filter (where a.lead) as leads,
-          count(*) filter (where not coalesce(a.interacted, false) and coalesce(a.seconds, 0) < 10) as bounced,
-          percentile_cont(0.5) within group (order by a.seconds) as median_seconds,
-          count(*) filter (where a.depth >= 50) as depth50
-        from landing l left join acts a using (visitor_id)
-        group by 1 order by 1`)) as unknown as Row[])
-    : [];
-
-  const aVar = funnel.find((r) => r.variant === 'A');
-  const bVar = funnel.find((r) => r.variant === 'B');
-  const abPValue =
-    aVar && bVar
-      ? twoProportionP(num(aVar.sign_up), num(aVar.visitors), num(bVar.sign_up), num(bVar.visitors))
-      : null;
 
   // Datos por pestaña
   const merchantFilter =
@@ -416,14 +358,14 @@ export default async function AdminPage({
         {/* Pestañas principales */}
         <nav className="mt-6 flex flex-wrap gap-2 border-b border-line pb-3">
           {[
-            { id: 'dataroom', label: 'Data Room e Hipótesis (PMC)', icon: LineChart },
+            { id: 'dataroom', label: 'Datos e hipótesis', icon: LineChart },
             { id: 'negocios', label: `CRM Negocios (${allMerchants.length})`, icon: Store },
             {
               id: 'conciliacion',
               label: `Conciliación y Disputas (${pendingPayments.filter((p) => p.payment.status === 'reportado').length + disputedRedemptions.length})`,
               icon: Receipt,
             },
-            { id: 'aliados', label: `Aliados B2B2C (${partnerLedger.length})`, icon: Building2 },
+            { id: 'aliados', label: `Aliados (${partnerLedger.length})`, icon: Building2 },
           ].map(({ id, label, icon: Icon }) => (
             <Link
               key={id}
@@ -518,13 +460,13 @@ export default async function AdminPage({
                     <span className="text-[12px] font-bold uppercase tracking-wider text-ink-muted">
                       Impacto directo al bolsillo
                     </span>
-                    <span className="badge-primary">Verificable</span>
+                    <span className="badge-primary">Registrado en la app</span>
                   </div>
                   <p className="tnum mt-2 font-display text-[32px] font-bold text-primary-dark">
                     {cop(num(kpi.total_saved_minor))}
                   </p>
                   <p className="mt-1 text-[12.5px] text-ink-muted">
-                    Ahorro sumado entre cobros recurrentes cancelados y ofertas de barrio redimidas.
+                    Descuentos de ofertas validadas en caja, más los cobros fijos que la persona marcó como cancelados. Lo segundo lo dice la persona: no se comprueba con el banco.
                   </p>
                 </div>
               </div>
@@ -538,7 +480,7 @@ export default async function AdminPage({
                     Economía Unitaria y Flujo de Comisiones (G.10 · J.3 · J.4)
                   </h2>
                   <p className="text-[13.5px] text-ink-muted">
-                    Comisión del 5 % sobre ventas netas cobradas en caja · Reparto B2B2C del 30 % (techo sostenible documentado: 41,1 %).
+                    Comisión del 5 % sobre lo cobrado en caja. Cuando la persona llegó por un aliado, el aliado recibe el 30 % de esa comisión.
                   </p>
                 </div>
                 <span className="badge-terra tnum">
@@ -566,12 +508,12 @@ export default async function AdminPage({
                   </p>
                 </div>
                 <div className="rounded-2xl bg-paper p-4">
-                  <p className="text-[12px] text-ink-muted">Reparto a aliados B2B2C</p>
+                  <p className="text-[12px] text-ink-muted">Reparto a aliados</p>
                   <p className="tnum mt-1 font-display text-[22px] font-bold text-terra-dark">
                     {cop(num(kpi.partner_share_minor))}
                   </p>
                   <p className="tnum text-[11px] text-ink-faint">
-                    {partnerShareEffectivePct.toFixed(1).replace('.', ',')} % del total (techo 41,1 %)
+                    {partnerShareEffectivePct.toFixed(1).replace('.', ',')} % del total
                   </p>
                 </div>
                 <div className="rounded-2xl bg-primary-pale p-4">
@@ -586,99 +528,9 @@ export default async function AdminPage({
               </div>
             </section>
 
-            {/* Embudo de landing y A/B test (solo admin real) */}
+            {/* Solicitudes comerciales (formulario de contacto de la versión anterior) */}
             {realAdmin && (
               <section className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="font-display text-[20px] font-bold text-ink">
-                    Embudo propio de Landing y Prueba A/B ({days === 3650 ? 'histórico' : `${days} días`})
-                  </h2>
-                  <div className="flex gap-1.5 text-[12.5px]">
-                    {[
-                      ['7', '7 días'],
-                      ['30', '30 días'],
-                      ['todo', 'Todo'],
-                    ].map(([d, label]) => (
-                      <Link
-                        key={d}
-                        href={`/admin?tab=dataroom&alcance=${scope}&dias=${d}`}
-                        className={`rounded-lg border px-2.5 py-1 font-semibold ${
-                          (days === 7 && d === '7') || (days === 30 && d === '30') || (days === 3650 && d === 'todo')
-                            ? 'border-ink bg-ink text-white'
-                            : 'border-line bg-white text-ink-muted'
-                        }`}
-                      >
-                        {label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-card">
-                  <table className="tnum w-full text-left text-[13.5px]">
-                    <thead className="border-b border-line bg-paper text-ink-muted">
-                      <tr>
-                        {[
-                          'Variante',
-                          'Visitantes',
-                          'Clic CTA',
-                          'Inició registro',
-                          'Registrados',
-                          'Activados (cifra)',
-                          'Rebote',
-                          'Tiempo mediano',
-                          'Leads',
-                        ].map((h) => (
-                          <th key={h} className="px-4 py-3 font-semibold">
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {funnel.length === 0 ? (
-                        <tr>
-                          <td colSpan={9} className="px-4 py-5 text-center text-ink-muted">
-                            Sin visitas registradas aún en este periodo.
-                          </td>
-                        </tr>
-                      ) : (
-                        funnel.map((r) => {
-                          const v = num(r.visitors);
-                          return (
-                            <tr key={String(r.variant)} className="border-b border-line last:border-0">
-                              <td className="px-4 py-3 font-bold">{String(r.variant)}</td>
-                              <td className="px-4 py-3">{v}</td>
-                              <td className="px-4 py-3">
-                                {num(r.cta)} ({pct(num(r.cta), v)})
-                              </td>
-                              <td className="px-4 py-3">{num(r.begin_signup)}</td>
-                              <td className="px-4 py-3 font-semibold text-primary-dark">
-                                {num(r.sign_up)} ({pct(num(r.sign_up), v)})
-                              </td>
-                              <td className="px-4 py-3">
-                                {num(r.activated)} ({pct(num(r.activated), v)})
-                              </td>
-                              <td className="px-4 py-3">{pct(num(r.bounced), v)}</td>
-                              <td className="px-4 py-3">
-                                {r.median_seconds == null ? '—' : `${Math.round(num(r.median_seconds))} s`}
-                              </td>
-                              <td className="px-4 py-3">{num(r.leads)}</td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <p className="text-[13px] text-ink-muted">
-                  Prueba z de dos proporciones entre variantes A y B:{' '}
-                  {abPValue === null
-                    ? 'esperando tráfico en ambas variantes.'
-                    : `p = ${abPValue.toFixed(3)} ${abPValue < 0.05 ? '(diferencia estadísticamente significativa al 5 %)' : '(en recolección de muestra)'}.`}
-                </p>
-
                 {recentLeads.length > 0 && (
                   <div className="surface-card p-5">
                     <h3 className="font-display text-[18px] font-bold text-ink">
@@ -1018,7 +870,7 @@ export default async function AdminPage({
           </div>
         )}
 
-        {/* TAB 4: ALIADOS B2B2C */}
+        {/* TAB 4: ALIADOS (cooperativas, cajas y billeteras) */}
         {tab === 'aliados' && (
           <div className="mt-6 space-y-7">
             {realAdmin && <CreatePartnerForm />}
@@ -1027,7 +879,7 @@ export default async function AdminPage({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="font-display text-[22px] font-bold text-ink">
-                    Libro Mayor de Reparto B2B2C (Cooperativas, Cajas y Billeteras)
+                    Reparto a aliados (cooperativas, cajas y billeteras)
                   </h2>
                   <p className="text-[13.5px] text-ink-muted">
                     Participación sobre comisiones de ofertas generadas por asociados activos de cada entidad.
@@ -1040,7 +892,7 @@ export default async function AdminPage({
 
               {partnerLedger.length === 0 ? (
                 <p className="surface-card p-5 text-[14px] text-ink-muted">
-                  Aún no hay aliados B2B2C registrados en este filtro.
+                  Aún no hay aliados registrados en este filtro.
                 </p>
               ) : (
                 <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-card">

@@ -81,3 +81,13 @@ Con los datos de `DEMO.md` (cada quincena, $1.200.000, arriendo de $450.000 el d
 
 - El resto del tablero de `/admin` sigue con textos de la versión anterior: "Aliados B2B2C", "techo sostenible documentado: 41,1 %", "Hipótesis K", el embudo de la landing vieja con prueba A/B (la página pública ya no es esa landing). Es la Etapa 5.
 - `NEXT_PUBLIC_SITE_URL` se fija al compilar: la dirección pública que muestra la presentación sale de la variable del entorno donde se construyó (en la vista previa, la de su rama).
+
+## Mañana del 13 nov: limpieza de `/admin` (rama `etapa-5-admin`, desde `producto-v1` en `69a3ef3`)
+
+Con OK de SOKA ("seguir metiéndole a la app"), después del merge de #4 y #3. Va en una solicitud de cambio aparte hacia `producto-v1`; no se mezcla antes de las 4:00 p. m. del 13 nov porque la demo de las 3:00 usa la vista previa de `producto-v1`.
+
+- **Fuera el embudo de la landing vieja con prueba A/B** (`web/src/app/admin/page.tsx`): contaba clics de un CTA, registros iniciados y una prueba z entre variantes de una página que ya no existe (`/` es la prueba sin cuenta desde la Etapa 4). Lo reemplaza el embudo de la feria. Se quedó la lista de solicitudes comerciales, que sigue leyendo `leads`.
+- **Sin jerga ni techos sin fuente:** "Aliados B2B2C" pasa a "Aliados"; "techo sostenible documentado: 41,1 %" sale de la tarjeta de economía y del formulario de aliados; el texto dice qué es el 5 % y el 30 %.
+- **"Impacto directo al bolsillo · Verificable"** pasa a "Registrado en la app", y aclara que los cobros cancelados los marca la persona y no se comprueban con el banco.
+- **Formulario de comercio de calle** (`createStreetMerchant`, `admin-forms.tsx`): ya no pone $20.000 de compra promedio si nadie lo escribe (era el pendiente de la Etapa 2 en `actions.ts:94`). Sin ese dato no crea el negocio. Dos pruebas nuevas en `sesion-admin-demo.itest.ts`; la matriz de permisos ahora envía la compra promedio.
+- Verificación: typecheck 0 errores; unitarias 171 de 171; integración 265 de 265; build sin errores; e2e 6 de 6, 10 de 10, 11 de 11 y 31 de 31.

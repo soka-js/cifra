@@ -226,7 +226,7 @@ export const SPECS: Spec[] = [
     call: () =>
       adminActions.createStreetMerchant(
         idle,
-        fd({ name: 'Tienda nueva', ownerName: 'Doña Luz', whatsapp: '3001112233', address: 'Calle 1 # 2-3' }),
+        fd({ name: 'Tienda nueva', ownerName: 'Doña Luz', whatsapp: '3001112233', address: 'Calle 1 # 2-3', typicalTicket: '15000' }),
       ),
   },
   {
