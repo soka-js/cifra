@@ -235,6 +235,22 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Entradas
 
+### 2026-11-13 12:12, Etapa 6: el tendero puede borrar su horario y su presentación
+
+- Rama: `etapa-6-tendero`. Sin subir ni mezclar.
+- Qué cambió: `saveMerchantFeaturedItemsAction` (`web/src/app/actions/v3.ts`), que guarda la vitrina.
+  - Antes, un horario o una presentación vacíos conservaban el valor anterior: el tendero no podía quitarlos, y la vitrina pública seguía mostrando un horario que ya no era cierto. Era el pendiente "el perfil no permite borrar el horario".
+  - Ahora, si la pantalla manda el campo vacío, queda vacío y la vitrina no lo muestra. Si no lo manda, no se toca.
+  - El horario se corta en 80 caracteres, igual que en Perfil (antes 90).
+  - Importa más ahora que el registro ya no inventa un horario.
+- Prueba nueva: `web/test/integration/vitrina.itest.ts` (3). Campos vacíos dejan la vitrina sin horario ni presentación; con texto, guarda lo escrito; sin los campos, no los toca. La acción sigue en la matriz de permisos como antes.
+- Verificación (este equipo, `devdb` local), con toda la rama:
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, **192 de 192**.
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos** (6 + 10 + 11 + 31; la prueba sin cuenta en 588 ms).
+  - `npm run test:int`: 8 archivos, **276 de 276**, 272 s.
+- Decisiones que necesito de SOKA: ninguna.
+
 ### 2026-11-13 12:05, Etapa 6: la comisión que se ve es la del negocio, no un "5 %" escrito a mano
 
 - Rama: `etapa-6-tendero`. Sin subir ni mezclar.
