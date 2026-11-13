@@ -230,10 +230,37 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 | 4 | Del QR a la cifra sin cuenta | **En producción** lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy. **Un solo formulario** para la prueba y el modo rápido con cuenta, en la rama `etapa-4-un-formulario` (sin mezclar). Falta medir a una persona. Meta: 15 nov | #3; la rama nueva, después de las 4:30 p. m. del 13 nov |
 | 5 | Demo desde `/admin` | Avance en producción: la franja de demo ya no tapa la barra y `/admin/presentacion` quedó rehecha sin testimonios inventados. Falta el resto del tablero de `/admin`, que sigue con textos viejos ("Aliados B2B2C", "Hipótesis K", el embudo de la landing vieja). Meta: 16 nov | #4 y #3 |
 | 7a | Feria sin negocios reales | En producción: ofertas sin grupo de control (`0009`), embudo "Feria: del QR a la cifra guardada" en `/admin` y la lista `docs/producto/FERIA.md`. Falta lo que esa lista marca para antes del 18, como probar el QR en dos celulares. Meta: 17 nov | #4 y #3 |
-| 6 | El tendero se registra solo | **En curso** en la rama `etapa-6-tendero` (encima de `etapa-4-un-formulario`, sin subir): registro en dos pasos con autorización de datos, cámara de la caja y ubicación habilitadas, pago en línea con el monto firmado y cuenta sin porcentajes escritos a mano. El recorrido E de `seguridad.e2e.mjs` va de `/negocio` sin sesión a validar un código en caja. Falta: plantillas de oferta según el tipo de negocio y revisar el afiche y la vitrina. Meta: 26 nov | Después de la de la Etapa 4 |
+| 6 | El tendero se registra solo | **En curso** en la rama `etapa-6-tendero` (encima de `etapa-4-un-formulario`, sin subir): registro en dos pasos con autorización de datos, cámara de la caja y ubicación habilitadas, pago en línea con el monto firmado y cuenta sin porcentajes escritos a mano. El recorrido E de `seguridad.e2e.mjs` va de `/negocio` sin sesión a validar un código en caja. Plantillas de oferta según el tipo de negocio. Falta revisar el afiche y la vitrina en celular. Meta: 26 nov | Después de la de la Etapa 4 |
 | 7b | Feria con negocios reales | Esperando negocios confirmados | |
 
 ## Entradas
+
+### 2026-11-13 11:59, Etapa 6: plantillas de oferta según el tipo de negocio, y fuera el "OFF"
+
+- Rama: `etapa-6-tendero`, encima de la entrada de abajo. Sin subir ni mezclar.
+- Qué cambió:
+  - **Las plantillas de la primera oferta dependen del tipo de negocio** (`web/src/lib/offer-templates.ts`, nuevo; las usa `web/src/app/negocio/(portal)/ofertas/offer-creator.tsx`).
+    - Antes, toda tienda veía "25 % OFF en horneados y productos frescos de la tarde", aunque fuera una peluquería o una droguería.
+    - Ahora la plantilla "antes del cierre" solo sale donde hay producto del día que se pierde, y nombra lo de ese negocio: pan y horneados en una panadería, onces y postres en una cafetería, el menú del día en un restaurante, frutas y verduras en un fruver, productos frescos del día en una tienda.
+    - En papelería, droguería, peluquería, servicios y "otro" no sale esa plantilla.
+    - El título de la plantilla de monto fijo se arma con los mismos montos que llena en el formulario.
+  - **Sin "OFF" en pantalla**, en las insignias del mapa y de la lista de ofertas de la persona:
+    - un porcentaje se ve "-10 %", igual que un monto fijo ya se veía "-$3.000";
+    - los títulos que sugiere el cuadre del tendero y el de la oferta de ejemplo de la demo dicen "de descuento".
+  - Los textos de las plantillas quedaron sin emojis ("⚡").
+  - La comisión en el creador de ofertas también sale de `percentFromBps`.
+- Prueba nueva: `web/src/lib/__tests__/plantillas-oferta.test.ts` (5), que comprueba:
+  - todo tipo de negocio tiene plantillas;
+  - "antes del cierre" solo donde corresponde, y sin "horneados" en una peluquería;
+  - un tipo desconocido no hereda nada;
+  - nada de "OFF" ni emojis;
+  - los montos del título son los del formulario.
+- Verificación (este equipo, `devdb` local):
+  - `npm run typecheck`: 0 errores. `npm test`: 19 archivos, **190 de 190**.
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos** (6 + 10 + 11 + 31). E2 publica la primera oferta de una cafetería con la plantilla nueva.
+  - `npm run test:int`: 7 archivos, **273 de 273**, 193 s.
+- Decisiones que necesito de SOKA: ninguna.
 
 ### 2026-11-13 11:57, Etapa 6: el tendero se registra solo, la caja abre la cámara y el pago en línea no se puede rebajar
 
@@ -290,7 +317,7 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 - Decisiones que necesito de SOKA:
   1. Cuando se prenda Wompi: agregar en Vercel `NEXT_PUBLIC_WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET` y `WOMPI_EVENTS_SECRET`, y apuntar los eventos de Wompi a `/api/webhooks/wompi`. Sin la llave de integridad no aparece el botón de pago en línea. Nada de esto es urgente.
 - Pendientes y riesgos:
-  - Las plantillas de oferta hablan de "horneados" aunque el negocio sea una peluquería. Hay que ajustarlas al tipo de negocio.
+  - Las plantillas de oferta hablan de "horneados" aunque el negocio sea una peluquería. Hay que ajustarlas al tipo de negocio. (Resuelto en la entrada de las 11:59.)
   - Un aviso repetido se registra una sola vez porque el corte se bloquea mientras se revisa el pago. Un índice único sobre `wompi_transaction_id` lo haría más firme, pero pide una migración; queda para cuando se prenda Wompi.
 
 ### 2026-11-13 11:51, Etapa 4: el servidor lee el formulario con la misma función que la prueba
