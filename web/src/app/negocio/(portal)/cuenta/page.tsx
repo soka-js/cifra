@@ -21,6 +21,7 @@ import {
   loadMerchantDashboard,
 } from '@/lib/merchant-data';
 import { PaymentReportForm } from './payment-form';
+import { siteUrl as publicSiteUrl } from '@/lib/site';
 
 export const metadata = { title: 'Corte de comisiones y facturación · Negocio CIFRA' };
 
@@ -34,7 +35,7 @@ export default async function MerchantBillingPage() {
   const cifraNequi = process.env.CIFRA_NEQUI_NUMBER?.trim() || null;
   const hasPaymentChannel = Boolean(cifraBrebKey || cifraNequi);
   const wompiPublicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY || undefined;
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const siteUrl = publicSiteUrl();
   const brebQrSvg = cifraBrebKey ? await generateBrebQrSvg(cifraBrebKey) : null;
 
   const { billingHealth, cycleSummary } = data;

@@ -1,5 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as authActions from '@/app/actions/auth';
 import * as leadActions from '@/app/actions/leads';
 import * as merchantActions from '@/app/actions/merchant';
@@ -139,6 +139,33 @@ describe('actions/auth.ts#requestPasswordReset', () => {
     const demo = await createUser({ email: 'mariana.demo@cifra.co', isDemo: true });
     await run(() => authActions.requestPasswordReset(idle, fd({ email: demo.email! })));
     expect(await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.userId, demo.id))).toHaveLength(0);
+  });
+
+  describe('en producción, cuando el correo no sale', () => {
+    beforeEach(() => {
+      vi.stubEnv('NODE_ENV', 'production');
+      vi.stubEnv('RESEND_API_KEY', '');
+      vi.stubEnv('SMTP_HOST', '');
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.restoreAllMocks();
+    });
+
+    it('le dice claro a la persona que no se pudo enviar y no deja un enlace vivo', async () => {
+      const outcome = await run(() => authActions.requestPasswordReset(idle, fd({ email: 'victima@prueba.local' })));
+      const result = outcome.result as { status: string; message?: string; devResetUrl?: string };
+      expect(result.status).toBe('error');
+      expect(result.message).toMatch(/No pudimos enviarte el correo/);
+      expect(result.devResetUrl).toBeUndefined();
+      expect(await count('password_reset_tokens')).toBe(0);
+    });
+
+    it('para un correo sin cuenta responde lo de siempre (no intenta enviar nada)', async () => {
+      const outcome = await run(() => authActions.requestPasswordReset(idle, fd({ email: 'nadie@prueba.local' })));
+      expect((outcome.result as { status: string }).status).toBe('ok');
+    });
   });
 });
 

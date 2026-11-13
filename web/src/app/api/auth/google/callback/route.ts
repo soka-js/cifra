@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { oauthAccounts, users } from '@/lib/db/schema';
 import { createSession } from '@/lib/auth/session';
 import { CONSENT_VERSION } from '@/lib/format';
+import { siteUrl } from '@/lib/site';
 
 export async function GET(req: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/entrar?oauth=error', req.url));
   }
 
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin).replace(/\/$/, '');
+  const site = siteUrl(req.nextUrl.origin);
   const redirectUri = `${site}/api/auth/google/callback`;
 
   try {

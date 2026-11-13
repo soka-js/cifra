@@ -23,6 +23,7 @@ import { parsePesosInput } from '@/lib/format';
 import { syncMerchantInvoice } from '@/lib/merchant-data';
 import { runDailyRetentionAndOpsJob } from '@/lib/notify/daily-job';
 import { getZoneBySlug } from '@/lib/zones';
+import { siteUrl } from '@/lib/site';
 
 export type AdminActionResult =
   | { status: 'idle' }
@@ -128,7 +129,7 @@ export async function createStreetMerchant(
     expiresAt: new Date(Date.now() + 14 * 86_400_000),
   });
 
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const site = siteUrl();
   const inviteUrl = `${site}/negocio/activar/${rawToken}`;
   const cleanPhone = whatsapp.startsWith('+') ? whatsapp.slice(1) : whatsapp.length === 10 ? `57${whatsapp}` : whatsapp;
   const waText = `Hola ${ownerName.split(' ')[0]}, aquí tienes el enlace oficial de CIFRA para activar *${name}* en 1 toque (sin mensualidad fija, solo 5 % sobre ventas traídas): ${inviteUrl}`;
@@ -159,7 +160,7 @@ export async function generateNewInviteLink(
     expiresAt: new Date(Date.now() + 14 * 86_400_000),
   });
 
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const site = siteUrl();
   const inviteUrl = `${site}/negocio/activar/${rawToken}`;
   const cleanPhone = m.whatsapp.startsWith('+') ? m.whatsapp.slice(1) : m.whatsapp.length === 10 ? `57${m.whatsapp}` : m.whatsapp;
   const waText = `Hola ${m.ownerName.split(' ')[0]}, este es tu enlace directo para entrar y activar *${m.name}* en CIFRA: ${inviteUrl}`;

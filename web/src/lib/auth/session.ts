@@ -6,6 +6,7 @@ import { cache } from 'react';
 import { db } from '../db';
 import { merchantMembers, merchants, sessions, users, type Merchant, type User } from '../db/schema';
 import { randomToken, sha256 } from '../crypto';
+import { siteUrl } from '../site';
 
 /**
  * Identidad y permisos de CIFRA. Reglas que este archivo garantiza:
@@ -43,9 +44,8 @@ export async function createSession(userId: string): Promise<void> {
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure:
-      process.env.NODE_ENV === 'production' &&
-      process.env.NEXT_PUBLIC_SITE_URL?.startsWith('https://') === true,
+    // Con la dirección de la rama, la vista previa (https) también recibe la cookie solo por https.
+    secure: process.env.NODE_ENV === 'production' && siteUrl().startsWith('https://'),
     sameSite: 'lax',
     path: '/',
     expires: expiresAt,

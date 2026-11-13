@@ -37,6 +37,9 @@ export async function sendEmail(msg: OutboundEmail): Promise<EmailSendResult> {
         }),
       });
       if (res.ok) return { sent: true, transport: 'resend' };
+      // Solo el código y el tipo de error de Resend: su mensaje puede traer direcciones de correo.
+      const detail = (await res.json().catch(() => null)) as { name?: unknown } | null;
+      console.error(`[email:resend] No se envió "${msg.subject}": Resend respondió ${res.status}${typeof detail?.name === 'string' ? ` (${detail.name})` : ''}.`);
     } catch (err) {
       console.error('[email:resend] Falló envío:', err);
     }

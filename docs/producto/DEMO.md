@@ -84,7 +84,7 @@ Qué decir: "El negocio paga el 5 % solo de la venta que CIFRA le trae. Si nadie
 | Qué pasa | Qué hacer |
 | --- | --- |
 | La vista previa pide iniciar sesión en Vercel | Inicia sesión con tu cuenta. Prepáralo antes de compartir pantalla. |
-| "Ese correo ya tiene una cuenta" | Usa otro correo. |
+| "Ya hay una cuenta con este correo. Entra con tu contraseña." | Usa otro correo. |
 | La persona no ve "Café de ejemplo" en Ofertas | Recarga la página de Ofertas. Si sigue sin aparecer, revisa que el tendero haya tocado "Publicar oferta ahora" y haya caído en el resumen del negocio. |
 | El código no aparece en la caja | Revisa que no tenga espacios. El código sirve una sola vez. |
 | La vista previa no responde | Pasa al plan B. |

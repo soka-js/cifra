@@ -195,7 +195,18 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
 | 6. Canales reales de pago | El mensaje traía el espacio sin llenar ("[COMPLETA AQUÍ…]"). **Sigue abierta.** Mientras tanto, la cuenta del tendero no muestra ningún canal. |
 | Vistas previas viejas (`feat/fase-*`, `feat/v3-valor-real`) | Pide revisar si la protección de despliegues las deja públicas y cómo cerrarlas. |
 
-Siguen abiertas la 6 (canales reales de pago) y la forma de entrar a `/admin` en producción (propuesta en la entrada del 12 nov, noche).
+12 de noviembre de 2026, más tarde, por mensaje:
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| 1. Ensayo del guion en la vista previa | El mensaje trajo las dos opciones sin elegir. **No hay autorización para crear cuentas en la vista previa.** |
+| 2. Correo | Dice haber agregado en Vercel (Production y Preview) `RESEND_API_KEY`, `EMAIL_FROM=CIFRA <onboarding@resend.dev>` y las tres variables VAPID. Su correo para todo es el de su cuenta de Resend. Pide comprobar en la vista previa que le llegue el correo de cambio de clave; que a otra persona la app le diga claro que no se pudo enviar, sin fallar en silencio; y una propuesta con costo para el correo de la feria. |
+| 3. Google | Tiene el ID del cliente pero no el secreto, así que no lo agregó. Pregunta si el botón aparece solo con el ID y qué configurar en Google Cloud. |
+| 4. Asesor con IA (Gemini) | **No se usa. Nada de asesor con IA antes de la feria.** |
+| 5. Merge de la solicitud de cambio #3 | **Lo aprueba SOKA el 13 nov, después de las demos, si el ensayo sale bien.** Antes pide los pasos exactos del despliegue: cómo entrar a `/admin`, cómo cambiar la clave de la base sin dejar a Vercel sin acceso y qué revisar después. Quedaron en `docs/producto/DESPLIEGUE.md`. |
+| 6. Canales reales de pago | Otra vez sin llenar. **Sigue abierta.** |
+
+Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Estado
 
@@ -212,6 +223,49 @@ Siguen abiertas la 6 (canales reales de pago) y la forma de entrar a `/admin` en
 | 7b | Feria con negocios reales | Esperando negocios confirmados | |
 
 ## Entradas
+
+### 2026-11-13 03:30, aviso cuando el correo no sale, enlaces de la vista previa y pasos del despliegue
+
+- Rama y commits: `producto-v1`, un commit sobre `42406e9`, subido. Misma solicitud de cambio #3, sin merge.
+- Qué cambió:
+  - **Cambio de clave cuando el correo no sale** (`web/src/app/actions/auth.ts`):
+    - En producción, si el correo no sale, la persona ve "No pudimos enviarte el correo para cambiar la contraseña. Inténtalo de nuevo más tarde." y el enlace que no salió se borra. Pasa cuando no hay servicio de correo, o cuando Resend lo rechaza: con `onboarding@resend.dev`, Resend solo entrega al correo de la cuenta de Resend.
+    - Antes decía "te enviamos un enlace" aunque no hubiera salido nada.
+    - Un correo sin cuenta recibe la misma respuesta de siempre. El mensaje nuevo no revela nada: el registro ya avisa "Ya hay una cuenta con este correo".
+  - **Por qué no salió** (`web/src/lib/notify/email.ts`): si Resend responde con error, el registro anota el código y el tipo (por ejemplo `Resend respondió 403 (validation_error)`). No anota direcciones, aunque el mensaje de Resend las traiga.
+  - **Enlaces de la vista previa** (`web/src/lib/site.ts`, nuevo):
+    - Los enlaces completos que arma la app usan, en la vista previa, la dirección de su rama (`VERCEL_BRANCH_URL`). Son el correo de cambio de clave, el regreso de Google, el QR y el enlace de la cuenta del negocio, los correos del aviso diario y los enlaces de activación que manda el admin.
+    - Antes usaban `NEXT_PUBLIC_SITE_URL`, que en Preview no existe, y quedaban en `http://localhost:3000`.
+    - Producción y local siguen con `NEXT_PUBLIC_SITE_URL`.
+  - **Cookie de sesión** (`web/src/lib/auth/session.ts`): en la vista previa, que es https, también sale marcada solo para https, como en producción.
+  - `web/.env.example`: quité `GEMINI_API_KEY`, que el código no usa.
+  - `docs/producto/DESPLIEGUE.md` (nuevo): variables por revisar, cambio de la clave de la base, merge y log, entrada a `/admin`, revisión después del despliegue, Google y cómo volver atrás.
+  - `docs/producto/DEMO.md`: el texto exacto del aviso de correo repetido.
+- **Corrección a la entrada de las 22:00 del 12 nov:**
+  - `NEXT_PUBLIC_SITE_URL` está solo en Production, no en Production y Preview.
+  - En la vista previa, los enlaces completos caían en `http://localhost:3000`, no en producción.
+  - Queda resuelto con `site.ts`.
+- **Lo que hay en Vercel** (proyecto `cifra`, 13 nov hacia las 3:00 a. m.; busqué cada nombre en Environment Variables):
+  - Hay `ADMIN_EMAILS` y `NEXT_PUBLIC_CONTACT_EMAIL` (Production y Preview), `NEXT_PUBLIC_SITE_URL` y `NEXT_PUBLIC_GA_ID` (solo Production) y las variables de la base. No hay variables compartidas del equipo.
+  - **No aparecen `RESEND_API_KEY`, `EMAIL_FROM` ni las variables VAPID**, que SOKA dice haber agregado: "No Results Found". Tampoco hay `CRON_SECRET` ni `GOOGLE_*`.
+  - Sin `CRON_SECRET`, `/api/cron/daily` le responde 401 al cron de Vercel, así que el aviso diario no corre en producción.
+  - Dominios de producción: `micifra.vercel.app` y `cifra-neon.vercel.app`.
+  - No revelé el valor de `ADMIN_EMAILS`.
+- Por qué: el mensaje de SOKA del 12 nov, más tarde (tabla de arriba).
+- Verificación (comando y resultado):
+  - `npm run typecheck`: 0 errores.
+  - `npm test`: 16 archivos, **171 de 171**. Tres pruebas nuevas en `email.test.ts`: Resend rechaza el envío y el registro lo dice sin direcciones; la vista previa usa la dirección de su rama; producción y local usan `NEXT_PUBLIC_SITE_URL`.
+  - `npm run test:int`: 4 archivos, **259 de 259**, 228 s. Dos pruebas nuevas en `acciones-publicas.itest.ts`: en producción, con el correo caído, la persona ve el aviso y el enlace se borra; un correo sin cuenta recibe la respuesta de siempre.
+  - `npm run build`: compilado sin errores.
+  - `npm run e2e`: 4 archivos, **55 de 55 pasos**.
+- Decisiones que necesito de SOKA:
+  1. Agregar `RESEND_API_KEY` y `EMAIL_FROM` en el proyecto `cifra`, que es donde no aparecen, y `CRON_SECRET` en Production.
+  2. Quién hace el ensayo del guion.
+  3. Canales de pago (decisión 6).
+  4. Correo para la feria: dominio propio verificado en Resend (propuesta en el mensaje de esta sesión).
+- Pendientes y riesgos:
+  - Con `onboarding@resend.dev`, nadie distinto de SOKA puede recuperar su clave en producción; ahora al menos lo sabe.
+  - La clave de la base de producción quedó en el registro de la conversación del 12 nov. Cambiarla es el paso 2 de `DESPLIEGUE.md`. En Neon, las ramas de vista previa ya creadas pueden seguir aceptando la clave vieja; no lo pude comprobar.
 
 ### 2026-11-12 22:30, vista previa migrada y solicitud de cambio abierta
 

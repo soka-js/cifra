@@ -14,6 +14,7 @@ import { renderCifraEmail, sendEmail } from '@/lib/notify/email';
 import { allow } from '@/lib/rate-limit';
 import { CONSENT_VERSION } from '@/lib/format';
 import { getZoneBySlug } from '@/lib/zones';
+import { siteUrl } from '@/lib/site';
 
 export type AuthState =
   | { status: 'idle' }
@@ -143,8 +144,7 @@ export async function requestPasswordReset(_prev: AuthState, form: FormData): Pr
       expiresAt,
     });
 
-    const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-    const resetUrl = `${site.replace(/\/$/, '')}/restablecer/${token}`;
+    const resetUrl = `${siteUrl()}/restablecer/${token}`;
     const mail = renderCifraEmail({
       heading: 'Restablece tu contraseña en CIFRA',
       bodyParagraphs: [
@@ -160,8 +160,20 @@ export async function requestPasswordReset(_prev: AuthState, form: FormData): Pr
       html: mail.html,
       text: mail.text,
     });
-    if (!sent.sent && process.env.NODE_ENV !== 'production') {
-      devResetUrl = `/restablecer/${token}`;
+    if (!sent.sent) {
+      if (process.env.NODE_ENV !== 'production') {
+        devResetUrl = `/restablecer/${token}`;
+      } else {
+        // En producción no se finge que salió: la persona sabe que no le va a llegar nada. El enlace
+        // que no se pudo enviar se borra. (Que una cuenta existe ya se sabe por el registro, que
+        // avisa "Ya hay una cuenta con este correo"; este mensaje no revela nada nuevo.)
+        await db.delete(passwordResetTokens).where(eq(passwordResetTokens.tokenHash, sha256(token)));
+        return {
+          status: 'error',
+          message: 'No pudimos enviarte el correo para cambiar la contraseña. Inténtalo de nuevo más tarde.',
+          values: { email: emailRaw },
+        };
+      }
     }
   }
 
