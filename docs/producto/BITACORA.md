@@ -224,9 +224,9 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Entradas
 
-### 2026-11-13 03:30, aviso cuando el correo no sale, enlaces de la vista previa y pasos del despliegue
+### 2026-11-12 22:45, aviso cuando el correo no sale, enlaces de la vista previa y pasos del despliegue
 
-- Rama y commits: `producto-v1`, un commit sobre `42406e9`, subido. Misma solicitud de cambio #3, sin merge.
+- Rama y commits: `producto-v1`, `c914459` sobre `42406e9`, subido; esta entrada completa la verificación en el commit siguiente. Misma solicitud de cambio #3, sin merge.
 - Qué cambió:
   - **Cambio de clave cuando el correo no sale** (`web/src/app/actions/auth.ts`):
     - En producción, si el correo no sale, la persona ve "No pudimos enviarte el correo para cambiar la contraseña. Inténtalo de nuevo más tarde." y el enlace que no salió se borra. Pasa cuando no hay servicio de correo, o cuando Resend lo rechaza: con `onboarding@resend.dev`, Resend solo entrega al correo de la cuenta de Resend.
@@ -245,7 +245,7 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
   - `NEXT_PUBLIC_SITE_URL` está solo en Production, no en Production y Preview.
   - En la vista previa, los enlaces completos caían en `http://localhost:3000`, no en producción.
   - Queda resuelto con `site.ts`.
-- **Lo que hay en Vercel** (proyecto `cifra`, 13 nov hacia las 3:00 a. m.; busqué cada nombre en Environment Variables):
+- **Lo que hay en Vercel** (proyecto `cifra`, 12 nov hacia las 10:30 p. m.; busqué cada nombre en Environment Variables):
   - Hay `ADMIN_EMAILS` y `NEXT_PUBLIC_CONTACT_EMAIL` (Production y Preview), `NEXT_PUBLIC_SITE_URL` y `NEXT_PUBLIC_GA_ID` (solo Production) y las variables de la base. No hay variables compartidas del equipo.
   - **No aparecen `RESEND_API_KEY`, `EMAIL_FROM` ni las variables VAPID**, que SOKA dice haber agregado: "No Results Found". Tampoco hay `CRON_SECRET` ni `GOOGLE_*`.
   - Sin `CRON_SECRET`, `/api/cron/daily` le responde 401 al cron de Vercel, así que el aviso diario no corre en producción.
@@ -258,8 +258,11 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
   - `npm run test:int`: 4 archivos, **259 de 259**, 228 s. Dos pruebas nuevas en `acciones-publicas.itest.ts`: en producción, con el correo caído, la persona ve el aviso y el enlace se borra; un correo sin cuenta recibe la respuesta de siempre.
   - `npm run build`: compilado sin errores.
   - `npm run e2e`: 4 archivos, **55 de 55 pasos**.
+  - **Vista previa de `c914459`**, en Vercel: "Ready", log con `entorno: preview · rama git: producto-v1`, `DATABASE_URL: ep-proud-tooth-b8u1gk85-pooler / neondb` y "Migraciones aplicadas." (no había migraciones nuevas).
+  - En la vista previa pedí "¿Olvidaste tu contraseña?" con el correo de SOKA, como pidió. Respondió el mensaje de siempre ("Si existe una cuenta con ese correo…"), y en los registros de ejecución no hay ninguna línea `[email…]` (sí hay otras líneas de esos minutos). Con una cuenta y sin servicio de correo, habría salido el aviso de error y una línea "No se envió". Quedan dos opciones: **la cuenta de SOKA no existe en la base de la vista previa**, o el correo salió por Resend. Si a SOKA no le llegó nada, es la primera, y cuadra con que las variables de Resend no aparecen.
+  - No creé cuentas en la vista previa, así que no pude ver ahí el aviso de error con una cuenta. Lo cubren las pruebas de integración de arriba.
 - Decisiones que necesito de SOKA:
-  1. Agregar `RESEND_API_KEY` y `EMAIL_FROM` en el proyecto `cifra`, que es donde no aparecen, y `CRON_SECRET` en Production.
+  1. Agregar `RESEND_API_KEY` y `EMAIL_FROM` en el proyecto `cifra`, que es donde no aparecen, y `CRON_SECRET` en Production. Después, redesplegar la vista previa y probar el correo con una cuenta tuya en la vista previa. Si no está en esa base, hay que crearla primero; la creas tú o me autorizas a crearla.
   2. Quién hace el ensayo del guion.
   3. Canales de pago (decisión 6).
   4. Correo para la feria: dominio propio verificado en Resend (propuesta en el mensaje de esta sesión).
