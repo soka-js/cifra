@@ -299,7 +299,7 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 ### 2026-11-13 11:57, Etapa 6: el tendero se registra solo, la caja abre la cámara y el pago en línea no se puede rebajar
 
 - Rama: `etapa-6-tendero`, creada encima de `etapa-4-un-formulario` (`4b3ef85`). Va en una solicitud de cambio aparte, después de la de la Etapa 4. Sin subir ni mezclar: mismas razones que la Etapa 4. No toqué `src/app/admin`.
-- Nota de git: `git switch` no pudo reescribir `.git/HEAD` porque otro programa del equipo lo tenía abierto (parece ser VS Code). No cerré nada. Hice los commits de esta rama con `git commit-tree` y `git update-ref`, que no tocan `HEAD`. La carpeta de trabajo sigue apuntando a `etapa-4-un-formulario`. Para que queden iguales: `git switch etapa-6-tendero` cuando el archivo se libere (no cambia ningún archivo).
+- Nota de git: `git switch` no pudo reescribir `.git/HEAD` porque otro programa del equipo lo tenía abierto (parece ser VS Code). No cerré nada. Hice los commits de esta rama con `git commit-tree` y `git update-ref`, que no tocan `HEAD`, y comprobé que cada commit fuera idéntico a la carpeta de trabajo. A las 12:20 el archivo se liberó: la carpeta quedó en `etapa-6-tendero`, sin cambios pendientes.
 - Qué cambió:
   - **Registro del negocio en dos pasos** (`web/src/app/negocio/unirse/register-merchant-form.tsx`):
     - Paso "Tu negocio": nombre, tipo, zona, dirección y compra promedio.
