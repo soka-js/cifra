@@ -28,13 +28,6 @@ if (enVercel) {
   console.log(`[migraciones] DATABASE_URL_UNPOOLED: ${huella(process.env.DATABASE_URL_UNPOOLED)}`);
 }
 
-// Pausa temporal: la primera vista previa de producto-v1 solo deja la huella, sin migrar, hasta
-// confirmar que su base es una rama de Neon y no la de producción. Se quita en el commit siguiente.
-if ((enVercel || process.env.CI) && process.env.VERCEL_ENV !== 'production') {
-  console.log('[migraciones] en pausa: falta confirmar que esta base es una rama de vista previa. No se aplicó nada.');
-  process.exit(0);
-}
-
 const sql = postgres(url, { max: 1, prepare: false, onnotice: () => {} });
 try {
   // fileURLToPath y no .pathname: en Windows .pathname devuelve "/C:/..." y drizzle no encuentra la carpeta.
