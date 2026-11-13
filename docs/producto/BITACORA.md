@@ -208,21 +208,102 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
 
 Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
+13 de noviembre de 2026, por mensaje:
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| Merge del turno de noche y de `producto-v1` | **Hecho por SOKA a las 9:53 del 13 nov, con su OK**: la solicitud de cambio #4 (`noche-13nov` → `producto-v1`) y la #3 (`producto-v1` → `main`). |
+| Despliegue a producción | Producción desplegó `bd01f17`. SOKA revisó el log: `ep-square-brook` y "Migraciones aplicadas". Sin sesión, `/app` y `/admin` llevan a `/entrar`, `/api/export` responde 401 y `/api/demo/session` responde 404. |
+| Lo que sigue del despliegue | SOKA agrega las variables y cambia la clave de la base; después sigo con `DESPLIEGUE.md` desde el paso 4. |
+| Vista previa de `producto-v1` | **No tocarla hasta las 4:00 p. m. del 13 nov**: SOKA tiene otra demo a las 3:00. Subir a `producto-v1` la reconstruye, así que hasta esa hora no se sube nada. |
+
 ## Estado
 
 | Etapa | Qué | Estado | Solicitud de cambio |
 | --- | --- | --- | --- |
-| 0 | Base de trabajo y plan | Hecha, commit local en `producto-v1` | Sin subir (ver decisión 3) |
-| 1 | Cerrar la puerta (seguridad) | **Cerrada en local.** 162 unitarias, 257 de integración y 38 pasos en navegador, todo en verde | Sin subir (falta confirmar la base de Preview) |
-| 2 | Cada número con recibo | **Cerrada en local.** Sin factores ni montos inventados en ¿Puedo?, la gráfica, "Lo que se repite", el cierre y el negocio; jerga fuera de lo que ve una persona o un tendero. 167 unitarias, 257 de integración y 55 pasos en navegador, todo en verde | Sin subir |
-| 3 | Hoy en dos pantallas | **Cerrada en local.** Mide 1,58 pantallas con usuario nuevo (antes 4,1). 161 unitarias, 257 de integración y 54 pasos en navegador, todo en verde | Sin subir |
-| 4 | Del QR a la cifra sin cuenta | Hecho lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy, comprobado en navegador (17 pasos). Falta unificar los dos formularios y medir a una persona. Meta: 15 nov | Sin subir |
-| 5 | Demo desde `/admin` | Pendiente. Meta: 16 nov. Para las demos del 13 nov hay guion sin `/admin` en `docs/producto/DEMO.md` | |
-| 7a | Feria sin negocios reales | Ofertas sin grupo de control: hecho en local (migración `0009`). Falta el QR a `/`, el embudo de la feria en `/admin` y la lista de revisión. Meta: 17 nov | |
+| 0 | Base de trabajo y plan | Hecha | #3, en producción desde el 13 nov |
+| 1 | Cerrar la puerta (seguridad) | **En producción** (`bd01f17`, 13 nov). SOKA comprobó sin sesión `/app`, `/admin`, `/api/export` y `/api/demo/session` | #3 |
+| 2 | Cada número con recibo | **En producción** (`bd01f17`) | #3 |
+| 3 | Hoy en dos pantallas | **En producción** (`bd01f17`). Mide 1,58 pantallas con usuario nuevo (antes 4,1) | #3 |
+| 4 | Del QR a la cifra sin cuenta | **En producción** lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy. Falta unificar los dos formularios y medir a una persona. Meta: 15 nov | #3 |
+| 5 | Demo desde `/admin` | Avance en producción: la franja de demo ya no tapa la barra y `/admin/presentacion` quedó rehecha sin testimonios inventados. Falta el resto del tablero de `/admin`, que sigue con textos viejos ("Aliados B2B2C", "Hipótesis K", el embudo de la landing vieja). Meta: 16 nov | #4 y #3 |
+| 7a | Feria sin negocios reales | En producción: ofertas sin grupo de control (`0009`), embudo "Feria: del QR a la cifra guardada" en `/admin` y la lista `docs/producto/FERIA.md`. Falta lo que esa lista marca para antes del 18, como probar el QR en dos celulares. Meta: 17 nov | #4 y #3 |
 | 6 | El tendero se registra solo | Pendiente. Meta: 26 nov | |
 | 7b | Feria con negocios reales | Esperando negocios confirmados | |
 
 ## Entradas
+
+### 2026-11-13 10:15, turno de noche (#4) y despliegue a producción
+
+Esta entrada reemplaza `docs/producto/NOCHE_13NOV.md`, que escribió otra sesión de Claude, en la nube, entre la noche del 12 nov y la madrugada del 13, con autorización de SOKA del 12 nov a las 22:45.
+
+Por ahora el archivo se queda. La solicitud de cambio #5 (`etapa-5-admin`, de la misma sesión en la nube) todavía le agrega una sección, y borrarlo antes haría chocar los dos cambios. Se borra después de que #5 entre a `producto-v1` (a las 4:10 p. m. del 13 nov), y su sección nueva pasa a esta bitácora.
+
+- Rama y commits:
+  - `noche-13nov`, creada desde `producto-v1` en `7d240f9`. Commits `9838c16`, `6bdeafa`, `3eb2bff`, `208140b`, `5e87426` y `74a2672`.
+  - SOKA hizo los dos merges el 13 nov a las 9:53: #4 a `producto-v1` (`69a3ef3`) y #3 a `main` (`bd01f17`).
+  - Producción corre `bd01f17`. Esta entrada va en un commit local de `producto-v1`, sin subir hasta las 4:00 p. m. (ver "Qué aprobó SOKA").
+- Qué cambió en el turno de noche:
+  - **La franja de demo ya no tapa la barra superior** (Etapa 5):
+    - `DemoBar` y `AppTopBar` van ahora dentro de `StickyHeader` (`web/src/components/app/sticky-header.tsx`, nuevo), que es lo único pegado arriba. Quedan una debajo de la otra.
+    - Toca `web/src/app/app/layout.tsx`, `web/src/app/negocio/(portal)/layout.tsx`, `demo-bar.tsx` y `app-top-bar.tsx`.
+    - En el portal del negocio, la franja va dentro de la columna de contenido.
+    - Paso nuevo **D3b** en `web/e2e/seguridad.e2e.mjs`: después de desplazar 900 px, la franja queda en y = 0 y la barra empieza donde termina la franja.
+  - **Embudo de la feria en `/admin`** (Etapa 7a):
+    - `web/src/lib/analytics/fair-funnel.ts` (nuevo) cuenta visitantes distintos por día de Bogotá: abrieron `/`, empezaron la prueba, vieron su cifra, tocaron "Guardar mi cifra" y crearon cuenta.
+    - También cuenta cuántos creían poder gastar más, con solo la dirección y nunca el monto, y la mediana de segundos de la primera prueba del día.
+    - Lo muestra la sección "Feria: del QR a la cifra guardada" (`web/src/app/admin/fair-funnel-section.tsx`): cuatro cifras de hoy y una tabla de 7 días, con cada porcentaje sobre el paso anterior.
+    - Prueba nueva `web/test/integration/feria.itest.ts` (4 casos) y paso **D2b** en la e2e.
+  - **`/admin/presentacion` rehecha** (Etapa 5):
+    - Quitó testimonios inventados presentados como reales, métricas mal descritas, funciones que ya no existen, el grupo de control, una lista de bancos sin comprobar, "B2B2C" y el formulario comercial.
+    - Ahora muestra:
+      - la demo como persona o tendero;
+      - el problema y lo probado con gente, cada cifra con su fuente;
+      - la conversación con Karol Benavides y sus tres cambios;
+      - qué hace hoy el producto y el modelo de cobro;
+      - un ejemplo de caja rotulado, calculado con `computeRedemptionSplit`;
+      - "lo que todavía no sabemos".
+    - Se borró `web/src/components/landing/` completo, porque solo lo usaba esa página. En `recibos.test.ts`, la entrada de `receipt.tsx` cambió por la de la presentación.
+  - **`/desarrolladores`** (la página de la API para cooperativas), revisada antes de la llamada con Financiera Comultrasan:
+    - Los ejemplos usan `siteUrl()` en vez de `https://cifra.co`, un dominio que la app no usa.
+    - Quitó "wallet de retail (como Starbucks)".
+    - La calculadora dice que abre con valores de ejemplo.
+    - Paso nuevo **A8** en la e2e.
+  - **`docs/producto/FERIA.md`** (nuevo): lista de revisión de la feria sin negocios reales, para antes del 18, en el stand y después.
+- Por qué: pendientes de las Etapas 5 y 7a. La presentación la abre SOKA frente a profesores o inversores, y la página de la API podía salir en la llamada con Comultrasan.
+- Verificación:
+  - **Turno de noche**, en la nube (Linux, Node 22, Postgres 16 local):
+    - typecheck sin errores;
+    - **171 de 171** unitarias;
+    - **263 de 263** de integración (259 más 4 de `feria.itest.ts`);
+    - build limpio;
+    - e2e: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta 11 de 11 y seguridad **31 de 31** (28 más A8, D2b y D3b).
+  - **Turno de noche, revisión visual en local:**
+    - la franja y la barra quedan una debajo de la otra al desplazar;
+    - con eventos de ejemplo insertados solo en la base local y borrados después, el embudo mostró lo que se había insertado;
+    - la presentación ya no contiene "Mariana V.", "B2B2C", "Next Best", "vampiro", "grupo de control" ni "Testimonio".
+  - **Turno de noche, vistas previas:**
+    - La de `noche-13nov` compiló contra su propia rama de Neon (`ep-steep-credit-b8opyfaw`) y aplicó las migraciones; no había nuevas.
+    - En la de `producto-v1`, revisada a las 2:00 a. m., la prueba sin cuenta con los datos de `DEMO.md` dio **$700.000**, y "¿Puedo gastar?" con $120.000 respondió "Sí. Te quedarían $580.000 hasta el 15 nov.". No creó cuentas.
+  - **Esta sesión, en este equipo, sobre `69a3ef3`** (el mismo contenido que `main`):
+    - `npm run typecheck`: 0 errores. `npm test`: 16 archivos, **171 de 171**.
+    - `src/components/landing/` ya no existe.
+    - En `/admin/presentacion` y `/desarrolladores`, "B2B2C" solo queda en el nombre interno de un componente (`B2B2CSimulator`), no en pantalla.
+    - No corrí integración ni e2e: el sistema apagó `devdb` por falta de memoria y no lo volví a levantar.
+  - **Revisé el código de `fair-funnel.ts`:**
+    - No mezcla datos de demostración: lo que mide sale de la página pública `/`, y la demo vive en `/app`.
+    - Dos detalles menores. "Crearon cuenta" exige que la persona haya tocado Guardar y creado su cuenta el mismo día, pero no que lo haya hecho en ese orden.
+    - Y los pasos no exigen el anterior: quien empieza la prueba sin que se registre su visita a `/` cuenta en "empezaron". Un porcentaje podría pasar del 100 %.
+    - Ninguno de los dos cambia lo que se lee en la feria.
+  - **Producción**, según SOKA: `bd01f17`, log con `ep-square-brook` y "Migraciones aplicadas". Sin sesión, `/app` y `/admin` llevan a `/entrar`, `/api/export` responde 401 y `/api/demo/session` responde 404. Son los pasos 3 y parte del 5 de `DESPLIEGUE.md`.
+- Qué revisar en producción, después de que SOKA agregue las variables y cambie la clave: `DESPLIEGUE.md` desde el paso 4 (entrar a `/admin`).
+- Decisiones que necesito de SOKA:
+  1. `submitLead` (`web/src/app/actions/leads.ts`) quedó sin uso al borrar el formulario comercial, pero sigue siendo un endpoint público, registrado en la matriz de permisos. ¿Se borra?
+  2. Canales de pago (decisión 6), sigue abierta.
+- Pendientes y riesgos:
+  - **La clave de la base se cambia después del despliegue, no antes como decía el plan.** Al cambiarla, el despliegue de producción que corre (`bd01f17`) se queda con la vieja y pierde la base hasta que se vuelva a desplegar. Las variables nuevas (`RESEND_API_KEY`, `EMAIL_FROM`, `CRON_SECRET`) tampoco llegan sin un despliegue nuevo. Por eso, después de las dos cosas, hay que redesplegar producción una vez: Deployments > `bd01f17` > Redeploy.
+  - La rama de Neon de `noche-13nov` es otra copia de los datos de producción. Se suma a la limpieza que decida SOKA después de la feria.
+  - El resto del tablero de `/admin` sigue con textos de la versión anterior (Etapa 5).
 
 ### 2026-11-12 22:45, aviso cuando el correo no sale, enlaces de la vista previa y pasos del despliegue
 
