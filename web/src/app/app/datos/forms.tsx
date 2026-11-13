@@ -71,7 +71,7 @@ export function ManualAccountForm() {
         </div>
         <div>
           <label htmlFor="m-balance" className="mb-1 block text-[13px] font-semibold">Cuánto tienes hoy</label>
-          <MoneyInput id="m-balance" name="balance" placeholder="150,000" presets={[50000, 150000, 300000]} />
+          <MoneyInput id="m-balance" name="balance" placeholder="150.000" presets={[50000, 150000, 300000]} />
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">

@@ -1,17 +1,31 @@
-/** Formatea un entero con separador de miles por comas: 1234567 -> "1,234,567". */
+/**
+ * Formatea un entero con punto de miles, como se escribe en Colombia: 1234567 -> "1.234.567".
+ * Toda cifra que se muestre en pantalla pasa por aquí o por cop(); nunca se formatea a mano.
+ */
 export function formatThousands(value: number | string): string {
   const num = typeof value === 'number' ? Math.round(value) : parseInt(String(value).replace(/[^0-9-]/g, ''), 10);
   if (isNaN(num)) return '0';
-  return Math.abs(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return Math.abs(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/** Formato de pesos colombianos con comas para miles: 1234500 centavos -> "$12,345". */
+/** Pesos colombianos con punto de miles y sin centavos: 180822800 centavos -> "$1.808.228". */
 export function cop(minor: number, opts: { sign?: boolean; space?: boolean } = {}): string {
   const pesos = Math.round(minor / 100);
   const formatted = formatThousands(Math.abs(pesos));
   const sign = pesos < 0 ? '-' : opts.sign && pesos > 0 ? '+' : '';
   const space = opts.space ? ' ' : '';
   return `${sign}$${space}${formatted}`;
+}
+
+/**
+ * Un monto en miles de pesos, para etiquetas donde no cabe el número entero (barras de una gráfica
+ * rotulada "en miles de pesos"): 4523400 centavos ($45.234) -> "45"; 120000000 ($1.200.000) -> "1.200".
+ * Un monto positivo de menos de $500 se muestra "<1" para no confundirlo con cero.
+ */
+export function milesDePesos(minor: number): string {
+  const miles = Math.round(Math.abs(minor) / 100 / 1000);
+  if (miles === 0 && minor !== 0) return '<1';
+  return formatThousands(miles);
 }
 
 /** Interpreta lo que escribe la persona ("45.000", "45000", "45 mil") como centavos. */

@@ -118,7 +118,7 @@ export function DailySpendForm({ current, fromMovements }: { current: string; fr
           id="daily"
           name="daily"
           defaultValue={current}
-          placeholder="30,000"
+          placeholder="30.000"
           presets={[20000, 30000, 50000, 80000]}
         />
         <div role="radiogroup" aria-label="Cada cuánto" className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-paper-deep p-1">
@@ -181,7 +181,7 @@ export function CommitmentForm() {
         <MoneyInput
           id="c-amount"
           name="amount"
-          placeholder="650,000"
+          placeholder="650.000"
           presets={[100000, 300000, 650000, 1200000]}
         />
       </div>

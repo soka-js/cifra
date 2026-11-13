@@ -20,7 +20,7 @@ export type MapTimeFilter = 'ahora' | 'todas' | TimeBand;
 export const TIME_BAND_META: Record<TimeBand, { label: string; shortLabel: string; startHour: number; endHour: number }> = {
   manana: { label: 'Mañana (6 a. m. – 11 a. m.)', shortLabel: 'Mañana', startHour: 6, endHour: 11 },
   almuerzo: { label: 'Mediodía (11 a. m. – 3 p. m.)', shortLabel: 'Mediodía', startHour: 11, endHour: 15 },
-  tarde: { label: 'Tarde · Cero merma (3 p. m. – 7 p. m.)', shortLabel: 'Tarde', startHour: 15, endHour: 19 },
+  tarde: { label: 'Tarde (3 p. m. – 7 p. m.)', shortLabel: 'Tarde', startHour: 15, endHour: 19 },
   noche: { label: 'Noche (7 p. m. – 11 p. m.)', shortLabel: 'Noche', startHour: 19, endHour: 23 },
 };
 
@@ -270,8 +270,8 @@ export function crossReferenceOffers(params: {
     if (offer.isFlash && isActiveNow) {
       reasons.push(
         offer.stockRemaining !== null
-          ? `Relámpago activa (${offer.stockRemaining} cupos hoy)`
-          : 'Relámpago activa ahora',
+          ? `Oferta por horas activa (${offer.stockRemaining} cupos hoy)`
+          : 'Oferta por horas activa ahora',
       );
     }
     if (habitMatched && habit) {
@@ -297,7 +297,7 @@ export function crossReferenceOffers(params: {
       userAvgTicketMinor: habit?.avgTicketMinor ?? null,
       vsHabitualSavingsMinor,
       crossScore: score,
-      whyThisMatches: reasons.join(' · ') || 'Comercio independiente verificado en tu zona',
+      whyThisMatches: reasons.join(' · ') || 'Comercio independiente de tu zona',
     });
   }
 
@@ -318,7 +318,7 @@ export interface HonestMarginResult {
   regularPriceMinor: number;
   unitCostMinor: number;
   regularProfitMinor: number;
-  /** Venta por app de domicilios tradicional (ej. 28 % comisión sobre precio). */
+  /** Venta por la app de domicilios del tendero, con la comisión que él escribe (0 si no la escribe). */
   deliveryAppCommissionMinor: number;
   deliveryAppProfitMinor: number;
   /** Primera visita con oferta CIFRA (descuento al vecino + 5 % sobre lo cobrado). */
@@ -347,7 +347,8 @@ export function computeHonestMerchantMargin(input: {
 }): HonestMarginResult {
   const price = Math.max(0, Math.round(input.regularPriceMinor ?? input.salePriceMinor ?? 0));
   const cost = Math.max(0, Math.round(input.unitCostMinor));
-  const appPct = input.deliveryAppCommissionPct ?? 28;
+  // La comisión de la app la escribe el tendero; si no la escribe, no se supone ninguna.
+  const appPct = input.deliveryAppCommissionPct ?? 0;
 
   const split = computeRedemptionSplit({
     grossAmountMinor: price,
@@ -405,7 +406,8 @@ export interface SupplyCostAlert {
 }
 
 export interface MerchantBreakEvenSummary {
-  dailyBreakEvenMinor: number;
+  /** La meta diaria que escribió el tendero; null mientras no la escriba (y entonces no hay avance ni brecha). */
+  dailyBreakEvenMinor: number | null;
   todaySalesMinor: number;
   todayCifraSalesMinor: number;
   todayCounterSalesMinor: number;
@@ -428,7 +430,7 @@ export interface MerchantBreakEvenSummary {
 
 export function computeMerchantBreakEven(input: {
   today: string;
-  dailyBreakEvenMinor: number;
+  dailyBreakEvenMinor: number | null;
   entries: LedgerEntryInput[];
 }): MerchantBreakEvenSummary {
   const monthPrefix = input.today.slice(0, 7);
@@ -485,10 +487,11 @@ export function computeMerchantBreakEven(input: {
     }
   }
 
-  const target = Math.max(10_000_00, input.dailyBreakEvenMinor);
-  const gapTodayMinor = Math.max(0, target - todaySalesMinor);
-  const todayProgressPct = Math.min(150, Math.round((todaySalesMinor / target) * 100));
-  const reachedBreakEven = todaySalesMinor >= target;
+  // Sin meta escrita por el tendero no hay brecha ni porcentaje: no se inventa una meta.
+  const target = input.dailyBreakEvenMinor && input.dailyBreakEvenMinor > 0 ? input.dailyBreakEvenMinor : null;
+  const gapTodayMinor = target === null ? 0 : Math.max(0, target - todaySalesMinor);
+  const todayProgressPct = target === null ? 0 : Math.min(150, Math.round((todaySalesMinor / target) * 100));
+  const reachedBreakEven = target !== null && todaySalesMinor >= target;
   const todayCounterSalesMinor = Math.max(0, todaySalesMinor - todayCifraSalesMinor);
 
   const supplyAlerts: SupplyCostAlert[] = [];
@@ -524,7 +527,7 @@ export function computeMerchantBreakEven(input: {
     todayProgressPct,
     progressPct: todayProgressPct,
     reachedBreakEven,
-    needsFlashBoost: gapTodayMinor >= 25_000_00,
+    needsFlashBoost: gapTodayMinor > 0,
     monthSalesMinor,
     monthSuppliesMinor,
     monthFixedExpensesMinor,

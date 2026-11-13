@@ -18,7 +18,7 @@ import {
   userCategoryRules,
   users,
 } from '@/lib/db/schema';
-import { requireUser, destroySession } from '@/lib/auth/session';
+import { destroySession, getSessionContext, requireUser } from '@/lib/auth/session';
 import { loadCifra, loadMovimientosInsights, loadSavingsSummary, logAccess } from '@/lib/data';
 import { addDays, todayInBogota } from '@/lib/engine/dates';
 import { EDITABLE_CATEGORIES, type Category } from '@/lib/engine/merchant';
@@ -399,6 +399,9 @@ export async function deleteSource(form: FormData): Promise<void> {
 
 export async function deleteAccount(_prev: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  if ((await getSessionContext())?.demoView) {
+    return { status: 'error', message: 'En la demo no se borra la cuenta. Para dejarla como nueva, reiníciala desde /admin.' };
+  }
   if (String(form.get('confirm') ?? '').trim().toUpperCase() !== 'BORRAR') {
     return { status: 'error', message: 'Escribe BORRAR para confirmar.' };
   }

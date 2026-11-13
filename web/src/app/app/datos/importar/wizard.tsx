@@ -212,7 +212,7 @@ export function ImportWizard({ preset, first, manual = [] }: { preset?: PresetAc
     const neg = raw.startsWith('-');
     const minor = raw.replace(/^-/, '') === '0' ? 0 : parsePesosInput(raw.replace(/^-/, ''));
     if (minor === null) {
-      setError('Escribe cuánto tienes hoy en esta cuenta, por ejemplo 1,250,000.');
+      setError('Escribe cuánto tienes hoy en esta cuenta, por ejemplo 1.250.000.');
       return;
     }
     setBusy(true);
@@ -655,7 +655,7 @@ export function ImportWizard({ preset, first, manual = [] }: { preset?: PresetAc
                       const digits = e.target.value.replace(/[^0-9]/g, '');
                       setBalance(digits ? formatThousands(digits) : '');
                     }}
-                    placeholder="1,250,000"
+                    placeholder="1.250.000"
                   />
                 </div>
                 <p className="mt-1.5 text-[13px] text-ink-faint">

@@ -2,6 +2,7 @@
 
 import { CheckCircle2, MessageSquareText, Plus, ReceiptText, Smartphone, Sparkles, X } from 'lucide-react';
 import { useActionState, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { captureQuickMovementsAction, type V3ActionState } from '@/app/actions/v3';
 import { CATEGORY_LABEL } from '@/lib/engine/merchant';
 import { parseChatExpenses, parseColombianBankAlert } from '@/lib/engine/quick-capture';
@@ -29,7 +30,7 @@ export function QuickCaptureModal({
   accounts,
   todayIso,
   currentHour,
-  buttonLabel = 'Anotar gasto o pegar SMS (3 seg)',
+  buttonLabel = 'Anotar gasto o pegar SMS',
   buttonClassName = 'btn-ink w-full sm:w-auto',
   buttonId = 'btn-open-quick-capture',
   children,
@@ -75,7 +76,10 @@ export function QuickCaptureModal({
         )}
       </button>
 
-      {open && (
+      {/* El modal se monta en <body>: si el botón vive dentro de un contenedor fijo (el botón
+          flotante del Hoy), la barra de navegación de abajo no puede taparle el "Guardar". */}
+      {open &&
+        createPortal(
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
           role="dialog"
@@ -296,13 +300,14 @@ export function QuickCaptureModal({
                   Cancelar
                 </button>
                 <button id="btn-submit-quick-capture" type="submit" disabled={pending} className="btn-primary">
-                  {pending ? 'Guardando…' : 'Guardar y actualizar mi tope de hoy'}
+                  {pending ? 'Guardando…' : 'Guardar y actualizar mi cifra'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </>
   );
 }

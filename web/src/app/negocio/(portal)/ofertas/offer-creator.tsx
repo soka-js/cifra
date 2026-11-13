@@ -28,8 +28,8 @@ const TEMPLATES = [
     hours: '',
   },
   {
-    id: 'relampago-merma',
-    badge: '⚡ Relámpago · Cero merma',
+    id: 'por-horas-cierre',
+    badge: '⚡ Por horas · Antes del cierre',
     title: '25 % OFF en horneados y productos frescos de la tarde',
     description: 'Saca el inventario del día antes del cierre con cupos contados.',
     kind: 'percent' as const,
@@ -44,8 +44,8 @@ const TEMPLATES = [
     hours: '4:00 p. m. a 7:00 p. m.',
   },
   {
-    id: 'relampago-tarde',
-    badge: '⚡ Horas muertas (2–5 p. m.)',
+    id: 'por-horas-tarde',
+    badge: '⚡ Por horas · Tarde tranquila',
     title: '20 % de descuento en hora tranquila de la tarde',
     description: 'Llena mesas o mostrador en las horas de menor movimiento.',
     kind: 'percent' as const,
@@ -62,7 +62,7 @@ const TEMPLATES = [
   {
     id: 'bono-fijo',
     badge: 'Monto fijo en pesos',
-    title: '$3,000 de descuento por compras desde $20,000',
+    title: '$3.000 de descuento por compras desde $20.000',
     description: 'Descuento fijo fácil de entender en mostrador.',
     kind: 'fixed' as const,
     percent: 10,
@@ -97,9 +97,9 @@ export function OfferCreator({
   const [startHour, setStartHour] = useState('15');
   const [endHour, setEndHour] = useState('19');
   const [stockLimit, setStockLimit] = useState('10');
-  const [unitCost, setUnitCost] = useState(
-    String(Math.round(((typicalTicketMinor || 2_000_000) * 0.36) / 100)),
-  );
+  // El costo de insumos y la comisión de la app los escribe el tendero: no se suponen.
+  const [unitCost, setUnitCost] = useState('');
+  const [appPct, setAppPct] = useState('');
   const [newCustomersOnly, setNewCustomersOnly] = useState(true);
   const [monthlyCap, setMonthlyCap] = useState('40');
   const [durationDays, setDurationDays] = useState('30');
@@ -121,30 +121,34 @@ export function OfferCreator({
     setActiveHoursText(tpl.hours);
   }
 
-  const sampleGrossMinor = Math.max(
-    typicalTicketMinor || 2_000_000,
-    parsePesosInput(minPurchase) ?? 0,
-  );
-  const parsedCostMinor = parsePesosInput(unitCost) ?? Math.round(sampleGrossMinor * 0.36);
+  // La venta de ejemplo es el ticket típico que escribió el tendero (o la compra mínima, si es mayor).
+  const sampleGrossMinor = Math.max(typicalTicketMinor, parsePesosInput(minPurchase) ?? 0);
+  const parsedCostMinor = parsePesosInput(unitCost);
+  const appPctNum = appPct.trim() === '' ? null : Math.min(60, Math.max(0, Number(appPct.replace(',', '.')) || 0));
+  const commissionLabel = `${String(commissionBps / 100).replace('.', ',')} %`;
 
   const previewSplit = computeRedemptionSplit({
     grossAmountMinor: sampleGrossMinor,
     discountKind,
     discountPercent,
-    discountFixedMinor: parsePesosInput(discountFixed) ?? 300_000,
+    discountFixedMinor: parsePesosInput(discountFixed) ?? 0,
     maxDiscountMinor: parsePesosInput(maxDiscount) ?? null,
     minPurchaseMinor: parsePesosInput(minPurchase) ?? 0,
     commissionBps,
   });
 
-  const honestMargin = computeHonestMerchantMargin({
-    salePriceMinor: sampleGrossMinor,
-    unitCostMinor: parsedCostMinor,
-    discountKind,
-    discountPercent,
-    discountFixedMinor: parsePesosInput(discountFixed) ?? 300_000,
-    commissionBps,
-  });
+  const honestMargin =
+    parsedCostMinor === null
+      ? null
+      : computeHonestMerchantMargin({
+          salePriceMinor: sampleGrossMinor,
+          unitCostMinor: parsedCostMinor,
+          discountKind,
+          discountPercent,
+          discountFixedMinor: parsePesosInput(discountFixed) ?? 0,
+          commissionBps,
+          deliveryAppCommissionPct: appPctNum ?? 0,
+        });
 
   return (
     <form action={action} className="surface-card space-y-6 p-5 sm:p-7">
@@ -154,7 +158,7 @@ export function OfferCreator({
           Creador guiado con protección de margen
         </span>
         <h2 className="mt-2 font-display text-[22px] font-bold text-ink">
-          Publica una campaña permanente o una Oferta Relámpago de cero merma
+          Publica una oferta para clientes nuevos o una oferta por horas
         </h2>
       </div>
 
@@ -167,7 +171,7 @@ export function OfferCreator({
       {/* Paso 1 */}
       <div className="space-y-3">
         <p className="text-[14px] font-bold text-ink">
-          Paso 1 · Elige una plantilla probada o escríbela a tu gusto
+          Paso 1 · Elige una plantilla o escríbela a tu gusto
         </p>
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           {TEMPLATES.map((tpl) => {
@@ -192,7 +196,7 @@ export function OfferCreator({
           })}
         </div>
 
-        {/* Selector de Oferta Relámpago con ventana horaria y cupos */}
+        {/* Oferta por horas: ventana horaria y cupos */}
         <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50/70 p-4">
           <input
             type="checkbox"
@@ -207,9 +211,9 @@ export function OfferCreator({
           <span className="text-[13.5px] leading-relaxed text-ink-soft">
             <strong className="flex items-center gap-1 font-semibold text-ink">
               <Zap size={15} className="text-amber-600" aria-hidden="true" />
-              Activar como Oferta Relámpago por horas y con cupos vivos
+              Que sea una oferta por horas, con cupos contados
             </strong>
-            Sale destacada con rayo ⚡ en el mapa del barrio durante tu ventana horaria elegida y descuenta cupos automáticamente en Caja.
+            Sale destacada en el mapa del barrio solo en el horario que elijas, y la caja descuenta los cupos sola.
           </span>
         </label>
 
@@ -298,10 +302,10 @@ export function OfferCreator({
       {/* Paso 2 + Calculadora Honesta de Margen Real */}
       <div className="space-y-4 border-t border-line pt-5">
         <p className="text-[14px] font-bold text-ink">
-          Paso 2 · Define el beneficio y compara tu ganancia limpia frente a apps del 28 %
+          Paso 2 · Define el beneficio y mira cuánto te queda limpio
         </p>
 
-        <div className="grid gap-4 sm:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-5">
           <div>
             <label htmlFor="discountKind" className="label">
               Tipo de descuento
@@ -348,7 +352,7 @@ export function OfferCreator({
                 value={discountFixed}
                 onChangeValue={(minor) => setDiscountFixed(String(Math.round(minor / 100)))}
                 presets={[2000, 3000, 5000, 10000]}
-                placeholder="3,000"
+                placeholder="3.000"
               />
             </div>
           )}
@@ -363,7 +367,7 @@ export function OfferCreator({
               value={minPurchase}
               onChangeValue={(minor) => setMinPurchase(String(Math.round(minor / 100)))}
               presets={[10000, 15000, 20000, 30000]}
-              placeholder="12,000"
+              placeholder="12.000"
             />
           </div>
 
@@ -375,73 +379,102 @@ export function OfferCreator({
               id="unitCost"
               name="unitCost"
               value={unitCost}
-              onChangeValue={(minor) => setUnitCost(String(Math.round(minor / 100)))}
-              presets={[3000, 5000, 8000, 12000]}
-              placeholder="4,000"
+              onChangeValue={(minor) => setUnitCost(minor ? String(Math.round(minor / 100)) : '')}
+              placeholder="Por venta"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="appPct" className="label">
+              Comisión de tu app de domicilios (%) <span className="font-normal text-ink-faint">opc.</span>
+            </label>
+            <input
+              id="appPct"
+              type="text"
+              inputMode="decimal"
+              value={appPct}
+              onChange={(e) => setAppPct(e.target.value)}
+              placeholder="Si vendes por app"
+              className="field tnum"
             />
           </div>
         </div>
 
-        {/* Calculadora Honesta: Mostrador CIFRA vs Apps del 28 % vs 2da Visita */}
+        {/* Cuánto le queda al tendero, con sus propios números: ticket, costo de insumos y, si la escribe, la comisión de su app. */}
         <div
           className={`rounded-2xl border p-4 ${
-            honestMargin.isLosingMoney
-              ? 'border-neg/35 bg-neg-light/70'
-              : 'border-primary/25 bg-primary-pale/70'
+            honestMargin?.isLosingMoney ? 'border-neg/35 bg-neg-light/70' : 'border-primary/25 bg-primary-pale/70'
           }`}
         >
           <p className="text-[12.5px] font-bold uppercase tracking-wider text-primary-dark">
-            Calculadora honesta en pedido de {cop(sampleGrossMinor)} (descontando {cop(parsedCostMinor)} de insumos)
+            En una venta de {cop(sampleGrossMinor)}
+            {parsedCostMinor !== null ? `, con ${cop(parsedCostMinor)} de insumos` : ''}
           </p>
 
           <div className="tnum mt-3 grid gap-2.5 text-[13px] sm:grid-cols-3">
-            <div className="rounded-xl border border-line bg-white p-3">
-              <p className="font-semibold text-ink-muted">App de domicilio (~28 %)</p>
-              <p className="mt-1 font-display text-[20px] font-extrabold text-ink">
-                {cop(honestMargin.deliveryAppProfitMinor)}
-              </p>
-              <p className="text-[11.5px] text-ink-faint">Ganancia limpia tras comisión de app</p>
-            </div>
+            {honestMargin && appPctNum !== null && (
+              <div className="rounded-xl border border-line bg-white p-3">
+                <p className="font-semibold text-ink-muted">Por tu app de domicilios ({String(appPctNum).replace('.', ',')} %)</p>
+                <p className="mt-1 font-display text-[20px] font-extrabold text-ink">{cop(honestMargin.deliveryAppProfitMinor)}</p>
+                <p className="text-[11.5px] text-ink-faint">Te queda limpio después de la comisión de la app</p>
+              </div>
+            )}
 
             <div className="rounded-xl border border-primary/40 bg-white p-3 ring-1 ring-primary/20">
-              <p className="font-semibold text-primary-dark">Mostrador CIFRA (1ra visita)</p>
-              <p
-                className={`mt-1 font-display text-[20px] font-extrabold ${
-                  honestMargin.cifraFirstVisitProfitMinor < 0 ? 'text-neg' : 'text-primary-dark'
-                }`}
-              >
-                {cop(honestMargin.cifraFirstVisitProfitMinor)}
-              </p>
+              <p className="font-semibold text-primary-dark">Con la oferta, primera visita</p>
+              {honestMargin ? (
+                <p
+                  className={`mt-1 font-display text-[20px] font-extrabold ${
+                    honestMargin.cifraFirstVisitProfitMinor < 0 ? 'text-neg' : 'text-primary-dark'
+                  }`}
+                >
+                  {cop(honestMargin.cifraFirstVisitProfitMinor)}
+                </p>
+              ) : (
+                <p className="mt-1 font-display text-[20px] font-extrabold text-primary-dark">
+                  {cop(previewSplit.netPaidByUserMinor - previewSplit.cifraCommissionMinor)}
+                </p>
+              )}
               <p className="text-[11.5px] text-ink-muted">
-                Cobras {cop(previewSplit.netPaidByUserMinor)} · Comisión 5 % ({cop(previewSplit.cifraCommissionMinor)})
+                Cobras {cop(previewSplit.netPaidByUserMinor)} · Comisión {commissionLabel} ({cop(previewSplit.cifraCommissionMinor)})
+                {honestMargin ? '' : ' · Te queda en caja'}
               </p>
             </div>
 
-            <div className="rounded-xl border border-line bg-white p-3">
-              <p className="font-semibold text-ink">Cuando el vecino vuelve (2da+)</p>
-              <p className="mt-1 font-display text-[20px] font-extrabold text-primary-dark">
-                {cop(honestMargin.repeatOrganicProfitMinor)}
-              </p>
-              <p className="text-[11.5px] text-primary-dark">$0 descuento · $0 comisión CIFRA</p>
-            </div>
+            {honestMargin && (
+              <div className="rounded-xl border border-line bg-white p-3">
+                <p className="font-semibold text-ink">Cuando el vecino vuelve</p>
+                <p className="mt-1 font-display text-[20px] font-extrabold text-primary-dark">
+                  {cop(honestMargin.repeatOrganicProfitMinor)}
+                </p>
+                <p className="text-[11.5px] text-primary-dark">Sin descuento y sin comisión</p>
+              </div>
+            )}
           </div>
 
-          {honestMargin.isLosingMoney ? (
+          {!honestMargin ? (
+            <p className="mt-2.5 text-[12.5px] text-ink-soft">
+              Escribe cuánto te cuestan los insumos de una venta y te decimos cuánto te queda limpio y si el descuento te deja perdiendo.
+            </p>
+          ) : honestMargin.isLosingMoney ? (
             <p className="mt-2.5 flex items-center gap-1.5 text-[13px] font-semibold text-neg-dark">
               <AlertTriangle size={15} aria-hidden="true" />
               Cuidado: con este descuento no cubres el costo de tus insumos. Baja el porcentaje antes de publicar.
             </p>
+          ) : appPctNum !== null && honestMargin.advantageVsDeliveryMinor >= 0 ? (
+            <p className="mt-2.5 text-[12.5px] text-ink-soft">
+              Aun dando el descuento, te quedan {cop(honestMargin.advantageVsDeliveryMinor)} más limpios que por tu app, y el cliente conoce tu local en persona.
+            </p>
           ) : (
             <p className="mt-2.5 text-[12.5px] text-ink-soft">
-              {honestMargin.advantageVsDeliveryMinor >= 0
-                ? `Incluso dando el descuento de bienvenida, te quedan +${cop(honestMargin.advantageVsDeliveryMinor)} más limpios que en una app de domicilios, y el cliente conoce tu local en persona.`
-                : `Inviertes ${cop(previewSplit.totalMerchantCacMinor)} una sola vez para traer al vecino; desde su segunda compra te queda el 100 % (${cop(honestMargin.repeatOrganicProfitMinor)} limpios).`}
+              Pones {cop(previewSplit.totalMerchantCacMinor)} una sola vez para traer al vecino; desde su segunda compra te queda todo (
+              {cop(honestMargin.repeatOrganicProfitMinor)} limpios).
             </p>
           )}
         </div>
       </div>
 
-      {/* Paso 3: Controles anti-canibalización */}
+      {/* Paso 3: que la oferta no se coma la clientela que ya tiene */}
       <div className="space-y-4 border-t border-line pt-5">
         <p className="text-[14px] font-bold text-ink">
           Paso 3 · Protege tu clientela actual y pon límites claros
@@ -535,9 +568,9 @@ export function OfferCreator({
         </div>
       </div>
 
-      <button type="submit" disabled={pending || honestMargin.isLosingMoney} className="btn-terra w-full sm:w-auto">
+      <button type="submit" disabled={pending || Boolean(honestMargin?.isLosingMoney)} className="btn-terra w-full sm:w-auto">
         <Tag size={17} aria-hidden="true" />
-        {pending ? 'Publicando oferta...' : isFlash ? 'Encender Oferta Relámpago ahora' : 'Publicar oferta ahora'}
+        {pending ? 'Publicando oferta...' : isFlash ? 'Encender oferta por horas' : 'Publicar oferta ahora'}
         <CheckCircle2 size={17} aria-hidden="true" />
       </button>
     </form>

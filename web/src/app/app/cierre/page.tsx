@@ -37,7 +37,7 @@ export default async function CierrePage() {
           <p>
             Calcula primero tu cifra para poder armar el resumen de cierre.{' '}
             <Link href="/app/bienvenida" className="font-semibold text-primary-dark underline">
-              Empezar en 1 minuto →
+              Calcular mi cifra →
             </Link>
           </p>
         </div>
@@ -106,7 +106,7 @@ export default async function CierrePage() {
               Un cambio pequeño y medible funciona mejor que diez metas difíciles de sostener.
             </p>
             <div className="mt-4">
-              <CycleClosureForm initialCommitment={snapshots[0]?.committedAction} />
+              <CycleClosureForm initialCommitment={snapshots[0]?.committedAction} dailyVariableMinor={cifra.dailyVariableMinor} />
             </div>
           </section>
 

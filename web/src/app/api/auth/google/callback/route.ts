@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { oauthAccounts, users } from '@/lib/db/schema';
 import { createSession } from '@/lib/auth/session';
 import { CONSENT_VERSION } from '@/lib/format';
+import { siteUrl } from '@/lib/site';
 
 export async function GET(req: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/entrar?oauth=error', req.url));
   }
 
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin).replace(/\/$/, '');
+  const site = siteUrl(req.nextUrl.origin);
   const redirectUri = `${site}/api/auth/google/callback`;
 
   try {
@@ -39,8 +40,15 @@ export async function GET(req: NextRequest) {
       headers: { authorization: `Bearer ${tokens.access_token}` },
     });
     if (!profileRes.ok) throw new Error('Profile fetch failed');
-    const profile = (await profileRes.json()) as { sub: string; email?: string; name?: string };
-    const email = profile.email?.toLowerCase().trim() ?? null;
+    const profile = (await profileRes.json()) as {
+      sub: string;
+      email?: string;
+      email_verified?: boolean;
+      name?: string;
+    };
+    // El correo solo cuenta si Google confirma que es de esa persona. Sin eso no se usa para
+    // encontrar ni crear cuentas: evita que alguien tome una cuenta ajena con un correo sin verificar.
+    const email = profile.email_verified === true ? (profile.email?.toLowerCase().trim() ?? null) : null;
 
     const [linked] = await db
       .select()
@@ -51,8 +59,15 @@ export async function GET(req: NextRequest) {
     let userId = linked?.userId ?? null;
     let onboarded = false;
 
-    if (!userId && email) {
+    if (userId) {
+      const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      // Un usuario de demostración no tiene entrada propia: a la demo se llega solo desde /admin.
+      if (!u || u.isDemo) throw new Error('Cuenta no disponible');
+      onboarded = Boolean(u.onboardedAt);
+    } else {
+      if (!email) throw new Error('Correo de Google sin verificar');
       const [byEmail] = await db.select().from(users).where(sql`lower(${users.email}) = ${email}`).limit(1);
+      if (byEmail?.isDemo) throw new Error('Cuenta no disponible');
       if (byEmail) {
         userId = byEmail.id;
         onboarded = Boolean(byEmail.onboardedAt);
@@ -62,30 +77,35 @@ export async function GET(req: NextRequest) {
           providerAccountId: profile.sub,
           email,
         });
+      } else {
+        const [created] = await db
+          .insert(users)
+          .values({
+            name: profile.name?.slice(0, 80) || 'Persona CIFRA',
+            email,
+            emailVerifiedAt: new Date(),
+            consentVersion: CONSENT_VERSION,
+            consentAt: new Date(),
+            signupVariant: req.cookies.get('cf_ab')?.value ?? null,
+          })
+          .returning({ id: users.id });
+        userId = created!.id;
+        await db.insert(oauthAccounts).values({
+          userId,
+          provider: 'google',
+          providerAccountId: profile.sub,
+          email,
+        });
       }
-    } else if (userId) {
-      const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-      onboarded = Boolean(u?.onboardedAt);
     }
 
-    if (!userId) {
-      const [created] = await db
-        .insert(users)
-        .values({
-          name: profile.name?.slice(0, 80) || 'Persona CIFRA',
-          email,
-          consentVersion: CONSENT_VERSION,
-          consentAt: new Date(),
-          signupVariant: req.cookies.get('cf_ab')?.value ?? null,
-        })
-        .returning({ id: users.id });
-      userId = created!.id;
-      await db.insert(oauthAccounts).values({
-        userId,
-        provider: 'google',
-        providerAccountId: profile.sub,
-        email,
-      });
+    // Google confirmó ese correo: si es el de la cuenta, queda verificado
+    // (requisito para /admin cuando está en ADMIN_EMAILS).
+    if (email) {
+      await db
+        .update(users)
+        .set({ emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())` })
+        .where(and(eq(users.id, userId), sql`lower(${users.email}) = ${email}`));
     }
 
     await createSession(userId);

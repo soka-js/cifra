@@ -7,6 +7,7 @@ import { addDays, todayInBogota } from '../engine/dates';
 import { cop } from '../format';
 import { renderCifraEmail, sendEmail } from './email';
 import { sendUserPush } from './push';
+import { siteUrl } from '../site';
 
 export interface DailyJobSummary {
   today: string;
@@ -122,7 +123,7 @@ export async function runDailyRetentionAndOpsJob(): Promise<DailyJobSummary> {
         pushesSent += pushed;
 
         if (item.emailAlso && user.email) {
-          const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+          const site = siteUrl();
           const mail = renderCifraEmail({
             heading: item.title,
             bodyParagraphs: [item.body],

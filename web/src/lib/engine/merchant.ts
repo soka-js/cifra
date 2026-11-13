@@ -380,7 +380,7 @@ export function getCancellationGuide(merchantKey: string, name: string, category
       legalNote: 'Según la CRC en Colombia puedes cancelar sin penalidad en cualquier momento si no tienes equipo financiado.',
       steps: [
         `Entra a la app o portal web de ${name} con tu cédula.`,
-        'Si pagas más de $45,000/mes en plan móvil, pide en retención igualar oferta de portabilidad (suele bajar 30–40 %).',
+        'Si pagas más de $45.000/mes en plan móvil, pide en retención igualar oferta de portabilidad (suele bajar 30–40 %).',
         'Para cancelar definitivo, radica la solicitud al menos 3 días hábiles antes de tu fecha de corte y guarda el CUN.',
       ],
     };

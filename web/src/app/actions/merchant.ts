@@ -100,6 +100,8 @@ export async function claimOfferCode(formData: FormData): Promise<void> {
     .limit(1);
 
   if (!row) return;
+  // Lo real y la demo no se cruzan: una persona real no reclama ofertas de ejemplo, ni al revés.
+  if (row.merchant.isDemo !== user.isDemo) return;
   if (row.offer.stockRemaining !== null && row.offer.stockRemaining <= 0) return;
 
   const today = todayInBogota();
@@ -248,6 +250,10 @@ export async function redeemMerchantInvite(_prev: MerchantActionState, formData:
   }
 
   let currentUser = await getCurrentUser();
+  // Lo real y la demo no se cruzan: quien mira la demo no puede quedar de dueño de un negocio real.
+  if (currentUser && currentUser.isDemo !== inv.merchant.isDemo) {
+    return { status: 'error', message: 'Este enlace no se puede usar desde la demo. Sal de la demo y ábrelo de nuevo.' };
+  }
   if (!currentUser) {
     const email = String(formData.get('email') ?? '').trim().toLowerCase();
     const password = String(formData.get('password') ?? '');
@@ -351,13 +357,17 @@ export async function selfRegisterMerchant(_prev: MerchantActionState, formData:
   const neighborhood = String(formData.get('neighborhood') ?? '').trim().slice(0, 60) || zone.name;
   const address = String(formData.get('address') ?? '').trim().slice(0, 120);
   const hoursText = String(formData.get('hoursText') ?? '').trim().slice(0, 80) || 'Lun a Sáb 7:00 a. m. – 8:00 p. m.';
-  const typicalTicketMinor = parsePesosInput(String(formData.get('typicalTicket') ?? '20000')) ?? 2_000_000;
+  // La compra promedio la escribe el tendero; sin ella no se calcula ninguna ganancia por venta.
+  const typicalTicketMinor = parsePesosInput(String(formData.get('typicalTicket') ?? ''));
   const brebKey = String(formData.get('brebKey') ?? '').trim().slice(0, 80) || null;
   const lat = Number(formData.get('lat') ?? zone.lat) || zone.lat;
   const lng = Number(formData.get('lng') ?? zone.lng) || zone.lng;
 
   if (businessName.length < 2 || ownerName.length < 2 || whatsapp.length < 7 || address.length < 4) {
     return { status: 'error', message: 'Completa el nombre del negocio, tu nombre, WhatsApp y dirección.' };
+  }
+  if (typicalTicketMinor === null) {
+    return { status: 'error', message: 'Escribe cuánto compra en promedio un cliente en tu negocio.' };
   }
 
   if (!user) {
@@ -433,11 +443,19 @@ export async function selfRegisterMerchant(_prev: MerchantActionState, formData:
 }
 
 export async function switchActiveMerchant(formData: FormData): Promise<void> {
-  await requireUser();
+  const user = await requireUser();
   const id = String(formData.get('merchantId') ?? '').trim();
   if (id) {
-    const jar = await cookies();
-    jar.set(ACTIVE_MERCHANT_COOKIE, id, { path: '/', sameSite: 'lax', maxAge: 30 * 86_400 });
+    // Solo entre los negocios de los que la persona es miembro.
+    const [membership] = await db
+      .select({ id: merchantMembers.id })
+      .from(merchantMembers)
+      .where(and(eq(merchantMembers.userId, user.id), eq(merchantMembers.merchantId, id)))
+      .limit(1);
+    if (membership) {
+      const jar = await cookies();
+      jar.set(ACTIVE_MERCHANT_COOKIE, id, { path: '/', sameSite: 'lax', maxAge: 30 * 86_400 });
+    }
   }
   revalidatePath('/negocio', 'layout');
   redirect('/negocio');
@@ -580,7 +598,8 @@ export async function createMerchantOffer(_prev: MerchantActionState, formData: 
     minPurchaseMinor,
     newCustomersOnly,
     exclusivityDays: isFlash ? 30 : 60,
-    holdoutPercent: isFlash ? 0 : 10,
+    // Sin grupo de control: para la feria, toda persona ve las ofertas (SOKA, 2026-11-12).
+    holdoutPercent: 0,
     monthlyCapRedemptions,
     isFlash,
     startHour,
@@ -932,7 +951,7 @@ export async function completeRedemption(_prev: PosRedeemState, formData: FormDa
     userId: row.offerCode.userId,
     kind: 'redencion_confirmada',
     title: `Ahorraste ${cop(split.discountMinor)} en ${access.merchant.name}`,
-    body: `Pagaste ${cop(split.netPaidByUserMinor)} en vez de ${cop(split.grossAmountMinor)}. Ya actualizamos tu tope de hoy automáticamente.`,
+    body: `Pagaste ${cop(split.netPaidByUserMinor)} en vez de ${cop(split.grossAmountMinor)}. Ya lo restamos de tu cifra.`,
     actionUrl: '/app/ofertas#recientes',
     dedupeKey: `redeem:${redemption!.id}`,
   });

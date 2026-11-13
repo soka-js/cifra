@@ -352,13 +352,27 @@ export interface SpendAnswer {
 }
 
 /**
+ * Lo que conviene que quede libre después de un gasto para no quedar justo: hasta tres días del
+ * gasto del día a día (menos si el pago llega antes).
+ */
+export function spendReserveMinor(cifra: Pick<CifraResult, 'dailyVariableMinor' | 'daysLeft'>): number {
+  return cifra.dailyVariableMinor * Math.min(3, cifra.daysLeft);
+}
+
+/** El gasto más grande que todavía recibe un "sí" de canISpend: la cifra menos esa reserva. Nunca negativo. */
+export function comfortableSpendMinor(
+  cifra: Pick<CifraResult, 'availableMinor' | 'dailyVariableMinor' | 'daysLeft'>,
+): number {
+  return Math.max(0, cifra.availableMinor - spendReserveMinor(cifra));
+}
+
+/**
  * "¿Puedo hacer este gasto?" Se compara contra la misma cifra del inicio:
  * lo libre después de lo comprometido y del gasto normal hasta el próximo ingreso.
  */
 export function canISpend(cifra: CifraResult, amountMinor: number): SpendAnswer {
   const remaining = cifra.availableMinor - amountMinor;
-  const verdict: SpendAnswer['verdict'] =
-    remaining < 0 ? 'no' : remaining < cifra.dailyVariableMinor * Math.min(3, cifra.daysLeft) ? 'justo' : 'si';
+  const verdict: SpendAnswer['verdict'] = remaining < 0 ? 'no' : remaining < spendReserveMinor(cifra) ? 'justo' : 'si';
   return {
     verdict,
     amountMinor,

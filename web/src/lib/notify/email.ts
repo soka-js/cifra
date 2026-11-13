@@ -37,6 +37,9 @@ export async function sendEmail(msg: OutboundEmail): Promise<EmailSendResult> {
         }),
       });
       if (res.ok) return { sent: true, transport: 'resend' };
+      // Solo el código y el tipo de error de Resend: su mensaje puede traer direcciones de correo.
+      const detail = (await res.json().catch(() => null)) as { name?: unknown } | null;
+      console.error(`[email:resend] No se envió "${msg.subject}": Resend respondió ${res.status}${typeof detail?.name === 'string' ? ` (${detail.name})` : ''}.`);
     } catch (err) {
       console.error('[email:resend] Falló envío:', err);
     }
@@ -67,7 +70,11 @@ export async function sendEmail(msg: OutboundEmail): Promise<EmailSendResult> {
     }
   }
 
-  if (process.env.NODE_ENV !== 'test') {
+  if (process.env.NODE_ENV === 'production') {
+    // Sin servicio de correo. El cuerpo puede traer un enlace para cambiar la clave: en producción
+    // no se escribe en los registros, porque quien los lea podría entrar a la cuenta.
+    console.warn(`[email] No se envió "${msg.subject}": no hay servicio de correo configurado.`);
+  } else if (process.env.NODE_ENV !== 'test') {
     console.info(`[email:log] Para: ${msg.to} | Asunto: ${msg.subject}\n${msg.text}`);
   }
   return { sent: false, transport: 'log' };

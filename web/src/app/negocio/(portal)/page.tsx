@@ -78,26 +78,32 @@ export default async function MerchantHomePage({
             </span>
             <p className="tnum mt-2 font-display text-[26px] font-extrabold leading-none text-ink">
               {cop(cuadre.summary.todaySalesMinor)}{' '}
-              <span className="text-[14px] font-normal text-ink-muted">
-                de {cop(cuadre.summary.dailyBreakEvenMinor)} ({cuadre.summary.progressPct} %)
-              </span>
+              {cuadre.summary.dailyBreakEvenMinor !== null && (
+                <span className="text-[14px] font-normal text-ink-muted">
+                  de {cop(cuadre.summary.dailyBreakEvenMinor)} ({cuadre.summary.progressPct} %)
+                </span>
+              )}
             </p>
             <p className="mt-1 text-[13px] text-ink-muted">
-              {cuadre.summary.reachedBreakEven
-                ? 'Ya cubriste la meta operativa de hoy.'
-                : `Te faltan ${cop(cuadre.summary.gapToBreakEvenMinor)} hoy · puedes anotar mostrador o prender una oferta relámpago de cero merma.`}
+              {cuadre.summary.dailyBreakEvenMinor === null
+                ? 'Vendido hoy. En el cuadre puedes escribir cuánto necesitas vender al día y te decimos cuánto te falta.'
+                : cuadre.summary.reachedBreakEven
+                  ? 'Ya cubriste tu meta de hoy.'
+                  : `Te faltan ${cop(cuadre.summary.gapToBreakEvenMinor)} hoy. Puedes anotar ventas de mostrador o prender una oferta por horas.`}
             </p>
           </div>
           <Link href="/negocio/cuadre" className="btn-ink shrink-0 text-[13.5px]">
             Abrir cuadre e insumos →
           </Link>
         </div>
-        <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-paper-deep">
-          <div
-            className={`h-full rounded-full ${cuadre.summary.reachedBreakEven ? 'bg-primary' : 'bg-terra'}`}
-            style={{ width: `${Math.min(100, Math.max(4, cuadre.summary.progressPct))}%` }}
-          />
-        </div>
+        {cuadre.summary.dailyBreakEvenMinor !== null && (
+          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-paper-deep">
+            <div
+              className={`h-full rounded-full ${cuadre.summary.reachedBreakEven ? 'bg-primary' : 'bg-terra'}`}
+              style={{ width: `${Math.min(100, Math.max(4, cuadre.summary.progressPct))}%` }}
+            />
+          </div>
+        )}
       </section>
 
       {/* Acceso gigante a Caja para mostrador */}
@@ -133,10 +139,10 @@ export default async function MerchantHomePage({
                 : 'Aún sin oferta activa'}
             </p>
             <p className="mt-1 font-display text-[21px] font-bold leading-snug text-ink">
-              {activeOffers.length > 0 ? 'Ajustar o prender relámpago' : 'Publicar mi primera oferta'}
+              {activeOffers.length > 0 ? 'Ajustar mis ofertas' : 'Publicar mi primera oferta'}
             </p>
             <p className="mt-1 text-[13.5px] text-ink-muted">
-              Campañas para clientes nuevos u ofertas relámpago de horas tranquilas.
+              Ofertas para clientes nuevos u ofertas por horas para los ratos tranquilos.
             </p>
           </div>
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-terra-pale text-terra-dark">

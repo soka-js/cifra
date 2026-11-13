@@ -5,11 +5,8 @@ import {
   computeMerchantBreakEven,
   crossReferenceOffers,
 } from '../crossref';
-import {
-  computeDailyPulse,
-  detectMoneyLeaks,
-  simulateCreditInstallments,
-} from '../daily-value';
+import { cop } from '../../format';
+import { detectMoneyLeaks, simulateCreditInstallments } from '../daily-value';
 import {
   parseChatExpenses,
   parseColombianBankAlert,
@@ -54,21 +51,7 @@ Pagaste $18.500,00 en PANADERIA LA ESPIGA con tu Nequi a las 5:20 p. m.`;
   });
 });
 
-describe('daily-value: tope diario vivo, simulador de cuotas TC y radiografía de fugas', () => {
-  it('calcula el tope diario vivo y premia el ahorro diario hacia mañana', () => {
-    const pulse = computeDailyPulse({
-      safeAvailableMinor: 500_000_00,
-      dailyVariableBaselineMinor: 20_000_00,
-      daysUntilNextIncome: 10,
-      todaySpentMinor: 10_000_00,
-      todayTxCount: 1,
-    });
-    expect(pulse.dailyAllowanceMinor).toBeGreaterThan(40_000_00);
-    expect(pulse.remainingTodayMinor).toBe(pulse.dailyAllowanceMinor - 10_000_00);
-    expect(pulse.tomorrowDeltaMinor).toBeGreaterThan(0);
-    expect(pulse.status).toBe('holgado');
-  });
-
+describe('daily-value: simulador de cuotas de tarjeta y gastos que se repiten', () => {
   it('simula cuotas de tarjeta de crédito con tasa efectiva anual colombiana', () => {
     const sim = simulateCreditInstallments(300_000_00, 30.8, [1, 3, 6, 12]);
     expect(sim.options[0]?.interestLostMinor).toBe(0);
@@ -77,7 +60,13 @@ describe('daily-value: tope diario vivo, simulador de cuotas TC y radiografía d
     expect(sim.options[3]?.interestLostMinor).toBeGreaterThan(sim.options[2]!.interestLostMinor);
   });
 
-  it('detecta recargos ocultos en domicilios y cobros bancarios evitables', () => {
+  it('el consejo del simulador cita los intereses que calculó', () => {
+    const sim = simulateCreditInstallments(300_000_00, 30.8, [1, 3, 6, 12]);
+    expect(sim.plainAdvice).toContain(`A 12 cuotas pagarías ${cop(sim.options[3]!.interestLostMinor)} más`);
+    expect(simulateCreditInstallments(300_000_00, 0).plainAdvice).toMatch(/no pagas intereses/);
+  });
+
+  it('muestra lo que de verdad se pagó en domicilios y en cobros del banco, sin estimar ahorros', () => {
     const leaks = detectMoneyLeaks({
       today: '2026-11-06',
       txs: [
@@ -86,8 +75,12 @@ describe('daily-value: tope diario vivo, simulador de cuotas TC y radiografía d
         { accountId: 'a1', postedOn: '2026-11-05', description: 'CUOTA DE MANEJO TARJETA DEBITO', amountMinor: -16_900_00 },
       ],
     });
-    expect(leaks.some((l) => l.id === 'sobrecosto_domicilios')).toBe(true);
-    expect(leaks.some((l) => l.id === 'cobros_bancarios')).toBe(true);
+    expect(leaks.find((l) => l.id === 'domicilios_app')).toMatchObject({ amountMinor: 78_000_00, count: 2 });
+    expect(leaks.find((l) => l.id === 'cobros_bancarios')).toMatchObject({ amountMinor: 16_900_00, count: 1 });
+    // Ningún texto trae un monto que no esté en los movimientos.
+    for (const l of leaks) expect(`${l.evidence} ${l.concreteAction}`).not.toMatch(/\$\d/);
+    // Los más grandes primero.
+    expect(leaks.map((l) => l.amountMinor)).toEqual([...leaks.map((l) => l.amountMinor)].sort((a, b) => b - a));
   });
 });
 
@@ -173,12 +166,17 @@ describe('crossref: cruce gasto real × hora × cercanía GPS y economía honest
     expect(ranked[0]?.vsHabitualSavingsMinor).toBeGreaterThan(10_000_00);
   });
 
-  it('calcula margen real del tendero frente a apps del 28 % y detecta encarecimiento de insumos', () => {
+  it('calcula margen real del tendero frente a la comisión de app que él escribe y detecta encarecimiento de insumos', () => {
+    // Sin comisión de app escrita, no se supone ninguna: la "venta por app" queda igual a la venta normal.
+    const sinApp = computeHonestMerchantMargin({ regularPriceMinor: 20_000_00, unitCostMinor: 9_000_00, discountKind: 'percent', discountPercent: 10 });
+    expect(sinApp.deliveryAppCommissionMinor).toBe(0);
+
     const margin = computeHonestMerchantMargin({
       regularPriceMinor: 20_000_00,
       unitCostMinor: 9_000_00,
       discountKind: 'percent',
       discountPercent: 10,
+      deliveryAppCommissionPct: 28,
     });
     expect(margin.cifraNetInRegisterMinor).toBe(17_100_00);
     expect(margin.cifraFirstVisitProfitMinor).toBe(8_100_00);
@@ -201,5 +199,20 @@ describe('crossref: cruce gasto real × hora × cercanía GPS y economía honest
     expect(be.needsFlashBoost).toBe(true);
     expect(be.supplyAlerts).toHaveLength(1);
     expect(be.supplyAlerts[0]?.increasePct).toBe(23);
+
+    // Sin meta escrita por el tendero no se inventa una: no hay brecha ni porcentaje.
+    const noGoal = computeMerchantBreakEven({
+      today: '2026-11-06',
+      dailyBreakEvenMinor: null,
+      entries: [{ entryOn: '2026-11-06', kind: 'venta_mostrador', categoryLabel: 'Mostrador', amountMinor: 80_000_00 }],
+    });
+    expect(noGoal).toMatchObject({
+      dailyBreakEvenMinor: null,
+      todaySalesMinor: 80_000_00,
+      gapTodayMinor: 0,
+      progressPct: 0,
+      reachedBreakEven: false,
+      needsFlashBoost: false,
+    });
   });
 });

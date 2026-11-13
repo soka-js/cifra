@@ -21,27 +21,6 @@ const money = (name: string) => bigint(name, { mode: 'number' });
 export const incomeFrequency = pgEnum('income_frequency', ['mensual', 'quincenal', 'semanal', 'irregular']);
 export const userRole = pgEnum('user_role', ['user', 'admin']);
 
-export interface UserConsentMandateConfig {
-  durationDays: 90 | 180 | 365;
-  scopeRecurring: boolean;
-  scopeGeoNba: boolean;
-  scopeFutureOpenFinanceApi: boolean;
-  updatedAtIso: string;
-  mandateHash: string;
-}
-
-export interface UserAppPreferences {
-  goalPresetId?: string;
-  goalTitle?: string;
-  goalCategoryLabel?: string;
-  goalTargetMinor?: number;
-  goalSavedBaseMinor?: number;
-  goalMonthlyPaceMinor?: number;
-  committedNbaIds?: string[];
-  planTier?: 'esencial' | 'plus';
-  consentMandate?: UserConsentMandateConfig;
-}
-
 export const users = pgTable(
   'users',
   {
@@ -49,8 +28,18 @@ export const users = pgTable(
     email: text('email'),
     passwordHash: text('password_hash'),
     name: text('name'),
+    /**
+     * Columna heredada. NO otorga ningún permiso: el admin sale solo de ADMIN_EMAILS
+     * (ver isAdmin en lib/auth/session.ts). Se conserva porque existe en la base.
+     */
     role: userRole('role').notNull().default('user'),
+    /** Usuario de demostración: sin clave, sin entrada propia. Solo se llega a él desde /admin. */
     isDemo: boolean('is_demo').notNull().default(false),
+    /**
+     * Momento en que la persona demostró que el correo es suyo (entró con Google o usó el enlace
+     * que le llegó para cambiar la clave). Sin esto, un correo de ADMIN_EMAILS no da acceso a /admin.
+     */
+    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
     partnerId: uuid('partner_id').references(() => partners.id, { onDelete: 'cascade' }),
     partnerMemberId: text('partner_member_id'),
     incomeFrequency: incomeFrequency('income_frequency'),
@@ -71,8 +60,6 @@ export const users = pgTable(
     consentAt: timestamp('consent_at', { withTimezone: true }),
     signupVariant: text('signup_variant'),
     signupUtm: jsonb('signup_utm').$type<Record<string, string>>(),
-    /** Preferencias persistidas de producto (meta activa, NBA comprometidas, plan Esencial/Plus, mandato Ley 1581). */
-    appPreferences: jsonb('app_preferences').$type<UserAppPreferences>().notNull().default(sql`'{}'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -91,6 +78,11 @@ export const sessions = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    /**
+     * "Ver como" de la demo: un admin real mira la app como un usuario de demostración sin perder
+     * su sesión. Solo lo escribe startDemoView (exige admin y que el destino tenga is_demo).
+     */
+    actingAsUserId: uuid('acting_as_user_id').references(() => users.id, { onDelete: 'set null' }),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -421,17 +413,6 @@ export interface MerchantFeaturedItem {
   tag?: string;
 }
 
-export interface MerchantMandateConfig {
-  collectionMethod: 'debito_automatico' | 'bolsa_prepago';
-  mandateActive: boolean;
-  selectedChannel: 'breb' | 'nequi' | 'bancolombia_ach';
-  safetyCapMinor: number;
-  prepaidBalanceMinor: number;
-  lastAutoSettledAtIso?: string;
-  lastAutoSettledRef?: string;
-  lastAutoSettledAmountMinor?: number;
-}
-
 export const merchants = pgTable(
   'merchants',
   {
@@ -453,18 +434,16 @@ export const merchants = pgTable(
     typicalTicketMinor: money('typical_ticket_minor').notNull().default(2000000),
     /** Productos estrella visibles en la vitrina pública /b/[slug] y calculadora de margen. */
     featuredItems: jsonb('featured_items').$type<MerchantFeaturedItem[]>().notNull().default(sql`'[]'::jsonb`),
-    /** Meta diaria de ventas en centavos para cubrir arriendo + servicios + insumos (punto de equilibrio). */
-    dailyBreakEvenMinor: money('daily_break_even_minor').notNull().default(40000000),
-    /** Costos fijos mensuales del local (arriendo, luz, gas, internet, ayuda) en centavos. */
-    monthlyFixedCostMinor: money('monthly_fixed_cost_minor').notNull().default(450000000),
+    /** Meta diaria de ventas que escribe el tendero, en centavos. Vacía hasta que la escriba: no hay meta por defecto. */
+    dailyBreakEvenMinor: money('daily_break_even_minor'),
+    /** Costos fijos mensuales del local (arriendo, luz, gas, internet, ayuda) que escribe el tendero, en centavos. */
+    monthlyFixedCostMinor: money('monthly_fixed_cost_minor'),
     /** Comisión de CIFRA en puntos básicos sobre el pago neto de la venta atribuida (500 = 5,00 % en G.10 y J.3). */
     commissionBps: integer('commission_bps').notNull().default(500),
     /** Palabras clave que aparecen en extractos bancarios para medir compras previas y retorno sin descuento. */
     matchKeywords: text('match_keywords').array().notNull().default(sql`'{}'::text[]`),
     brebKey: text('breb_key'),
     nequiNumber: text('nequi_number'),
-    /** Configuración de mandato de débito automático quincenal y bolsa prepago en PostgreSQL. */
-    mandateConfig: jsonb('mandate_config').$type<MerchantMandateConfig>().notNull().default(sql`'{}'::jsonb`),
     stage: merchantStage('stage').notNull().default('prospecto'),
     acquiredBy: text('acquired_by'),
     /** Costo de activación de calle (J.4: $25.000 COP = 2_500_000 centavos). */
@@ -535,8 +514,8 @@ export const offers = pgTable(
     /** Control de canibalización #1 (G.10): restringir oferta a quien no compró ahí en los últimos N días. */
     newCustomersOnly: boolean('new_customers_only').notNull().default(true),
     exclusivityDays: integer('exclusivity_days').notNull().default(60),
-    /** Control de canibalización #2 (G.10): % de audiencia retenida como grupo de control sin oferta (ej. 10 %). */
-    holdoutPercent: integer('holdout_percent').notNull().default(10),
+    /** % de personas a las que no se les muestra la oferta, para medir (grupo de control). Apagado: 0. */
+    holdoutPercent: integer('holdout_percent').notNull().default(0),
     monthlyCapRedemptions: integer('monthly_cap_redemptions'),
     /** Oferta Relámpago de horas muertas / cero merma con ventana horaria y cupos vivos. */
     isFlash: boolean('is_flash').notNull().default(false),

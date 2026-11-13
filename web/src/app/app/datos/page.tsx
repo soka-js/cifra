@@ -1,10 +1,9 @@
 import { Building2, Download, FileSpreadsheet, Link2, Plus, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { OpenFinanceConsentShield } from '@/components/app/open-finance-consent-shield';
 import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { bogotaDate, loadAccessLog, loadSources } from '@/lib/data';
-import { shortDate, todayInBogota } from '@/lib/engine/dates';
+import { shortDate } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
 import { toggleAccount } from '../actions';
 import { DeleteAccountForm, ZoneForm } from '../ajustes/forms';
@@ -35,7 +34,6 @@ function when(d: Date | null) {
 export default async function DatosPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
   const [sources, log, sp] = await Promise.all([loadSources(user.id), loadAccessLog(user.id), searchParams]);
-  const consentDateIso = user.consentAt ? bogotaDate(user.consentAt) : todayInBogota();
 
   return (
     <div className="space-y-6">
@@ -46,7 +44,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
         </span>
         <h1 className="mt-2.5 font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Tus datos</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
-          Aquí ves cada fuente que alimenta tu cifra, tu mandato legal de consentimiento explícito y puedes descargar una copia completa o borrar cualquier cuenta al instante.
+          Aquí ves cada fuente que alimenta tu cifra. Puedes descargar una copia completa o borrar cualquier cuenta cuando quieras.
         </p>
         {sp.borrada && (
           <p role="status" className="mt-3 rounded-xl bg-primary-light px-4 py-3 text-[14px] font-medium text-primary-dark">
@@ -55,13 +53,12 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
         )}
       </div>
 
-      {/* Blindaje de Consentimiento Explícito + Preparación Open Finance SFC */}
-      <OpenFinanceConsentShield
-        userName={user.name}
-        userEmail={user.email}
-        consentGrantedAtIso={consentDateIso}
-        initialMandate={user.appPreferences?.consentMandate}
-      />
+      {user.consentAt && (
+        <p className="rounded-xl bg-paper-deep px-4 py-3 text-[13.5px] leading-relaxed text-ink-muted">
+          Autorizaste el tratamiento de tus datos el {shortDate(bogotaDate(user.consentAt))}, al crear tu cuenta. Puedes
+          retirarla borrando tu cuenta al final de esta página.
+        </p>
+      )}
 
       {/* Portabilidad en un clic (JSON completo + CSV de movimientos) */}
       <section className="surface-card p-5">

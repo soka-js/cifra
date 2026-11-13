@@ -14,7 +14,7 @@ import {
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { Category } from '@/lib/engine/merchant';
-import { cop, shortDate } from '@/lib/format';
+import { cop, milesDePesos, shortDate } from '@/lib/format';
 
 interface CategoryRow {
   category: Category;
@@ -254,9 +254,8 @@ export function SpendingDashboardChart({
       if (scopeMode === 'variable' && isStructural) continue;
 
       const absMinor = Math.abs(m.amountMinor);
-      if (isStructural && absMinor >= 500_000_00) {
-        fixedSpikeDates.add(m.postedOn);
-      }
+      // Un día con arriendo u otro cobro fijo no cuenta para la escala de los demás días.
+      if (isStructural) fixedSpikeDates.add(m.postedOn);
 
       byDate.set(m.postedOn, (byDate.get(m.postedOn) ?? 0) + absMinor);
 
@@ -287,10 +286,11 @@ export function SpendingDashboardChart({
     const nonSpikeValues = days14
       .filter((d) => !d.hadFixedSpike)
       .map((d) => d.spentMinor);
-    const highestNormalMinor = Math.max(...nonSpikeValues, dailyAllowanceMinor * 1.4, 80_000_00);
+    // La escala sale solo de los datos; el 1 evita dividir entre cero cuando no hay gastos.
+    const highestNormalMinor = Math.max(...nonSpikeValues, dailyAllowanceMinor * 1.4, 1);
     const maxScaleMinor =
       scopeMode === 'variable'
-        ? Math.max(dailyAllowanceMinor * 1.45, ...days14.map((d) => d.spentMinor), 80_000_00)
+        ? Math.max(dailyAllowanceMinor * 1.45, ...days14.map((d) => d.spentMinor), 1)
         : Math.max(highestNormalMinor * 1.35, dailyAllowanceMinor * 2.1);
 
     const weekdaysSummary = WEEKDAY_NAMES.map((name, idx) => {
@@ -331,7 +331,7 @@ export function SpendingDashboardChart({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="badge-primary">
-              <Sparkles size={12} aria-hidden="true" /> Radiografía visual · últimos 30 días
+              <Sparkles size={12} aria-hidden="true" /> Tus gastos · últimos 30 días
             </span>
             <span className="rounded-full bg-paper px-2.5 py-0.5 text-[11.5px] font-semibold text-ink-muted">
               {scopeMode === 'variable'
@@ -343,7 +343,7 @@ export function SpendingDashboardChart({
             Mapa visual de tu dinero
           </h2>
           <p className="text-[13.5px] text-ink-muted">
-            Inspecciona en qué categorías se va tu plata cada semana y cómo se comporta tu ritmo diario frente a tu tope seguro.
+            Inspecciona en qué categorías se va tu plata cada semana y cómo se comporta tu ritmo diario frente a tu día a día.
           </p>
         </div>
 
@@ -697,26 +697,26 @@ export function SpendingDashboardChart({
             <div className="rounded-2xl border border-line bg-paper/70 p-3.5">
               <span className="flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-wider text-ink-faint">
                 <CalendarDays size={13} className="text-primary-dark" aria-hidden="true" />
-                Tope diario seguro
+                Tu día a día
               </span>
               <p className="tnum mt-1 font-display text-[20px] font-extrabold text-primary-dark">
-                {cop(dailyAllowanceMinor)}/día
+                {cop(dailyAllowanceMinor)} por día
               </p>
               <p className="mt-0.5 text-[11.5px] text-ink-muted">
-                Para llegar holgado a tu próximo ingreso
+                El gasto diario con el que se calcula tu cifra
               </p>
             </div>
 
             <div className="rounded-2xl border border-line bg-paper/70 p-3.5">
               <span className="flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-wider text-ink-faint">
                 <Layers size={13} className="text-primary-dark" aria-hidden="true" />
-                Días dentro de tu tope
+                Días dentro de tu día a día
               </span>
               <p className="tnum mt-1 font-display text-[20px] font-extrabold text-ink">
                 {rhythmData.withinLimitDaysCount} de {Math.max(1, rhythmData.activeDaysCount)} días
               </p>
               <p className="mt-0.5 text-[11.5px] text-ink-muted">
-                Días con compras que respetaron el tope
+                Días con compras que no pasaron de ese monto
               </p>
             </div>
 
@@ -739,24 +739,24 @@ export function SpendingDashboardChart({
           <div className="rounded-2xl border border-line bg-white p-4 sm:p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[12px]">
               <span className="font-bold text-ink">
-                Evolución diaria (últimos 14 días · {scopeMode === 'variable' ? 'Gasto día a día' : 'Todo el mes'})
+                Evolución diaria en miles de pesos (últimos 14 días · {scopeMode === 'variable' ? 'Gasto día a día' : 'Todo el mes'})
               </span>
               <div className="flex flex-wrap items-center gap-3 text-[11.5px] text-ink-muted">
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-xs bg-primary" /> Dentro del tope
+                  <span className="h-2.5 w-2.5 rounded-xs bg-primary" /> Dentro de tu día a día
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-xs bg-terra" /> Superó el tope
+                  <span className="h-2.5 w-2.5 rounded-xs bg-terra" /> Por encima de tu día a día
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="w-4 border-t-2 border-dashed border-primary" /> Tope {cop(dailyAllowanceMinor)}
+                  <span className="w-4 border-t-2 border-dashed border-primary" /> Tu día a día: {cop(dailyAllowanceMinor)}
                 </span>
               </div>
             </div>
 
             <div className="pt-5">
               <div className="relative flex h-48 items-end gap-1.5 border-b border-line pb-2 sm:gap-2.5">
-                {/* Línea punteada de tope diario seguro */}
+                {/* Línea punteada del gasto diario con que se calcula la cifra */}
                 {dailyAllowanceMinor > 0 && (
                   <div
                     className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-dashed border-primary/70"
@@ -765,7 +765,7 @@ export function SpendingDashboardChart({
                     }}
                   >
                     <span className="tnum -top-5 right-0 absolute rounded-md border border-primary/25 bg-primary-pale px-2 py-0.5 text-[10.5px] font-bold text-primary-dark shadow-2xs">
-                      Tope seguro: {cop(dailyAllowanceMinor)}
+                      Tu día a día: {cop(dailyAllowanceMinor)}
                     </span>
                   </div>
                 )}
@@ -778,26 +778,19 @@ export function SpendingDashboardChart({
                       : 4;
                   const overLimit =
                     dailyAllowanceMinor > 0 && day.spentMinor > dailyAllowanceMinor;
-                  const compactAmount =
-                    day.spentMinor >= 1_000_000_00
-                      ? `$${(day.spentMinor / 1_000_000_00).toFixed(1)}M`
-                      : day.spentMinor >= 10_000_00
-                        ? `$${Math.round(day.spentMinor / 1_000_00)}k`
-                        : '';
-
                   return (
                     <div
                       key={day.dateIso}
                       className="group relative flex h-full flex-1 flex-col items-center justify-end"
                     >
-                      {/* Etiqueta compacta visible sobre barras activas */}
+                      {/* Etiqueta corta sobre barras activas, en miles de pesos (rotulado arriba) */}
                       {day.spentMinor > 0 && (
                         <span
                           className={`tnum mb-1 text-[9.5px] font-bold ${
                             overLimit ? 'text-terra-dark' : 'text-primary-dark'
                           }`}
                         >
-                          {compactAmount}
+                          {milesDePesos(day.spentMinor)}
                         </span>
                       )}
 

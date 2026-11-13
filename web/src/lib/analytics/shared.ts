@@ -24,6 +24,10 @@ export const EVENT_NAMES = [
   'quick_capture',
   'merchant_ledger_add',
   'launch_flash_offer',
+  // Prueba sin cuenta en la página pública. Nunca llevan montos.
+  'try_cifra_start',
+  'try_cifra_done',
+  'try_cifra_save',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

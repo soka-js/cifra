@@ -1,6 +1,7 @@
 import { requireUser } from '@/lib/auth/session';
 import { IncomeFields } from '@/components/app/income-fields';
 import { GaOnce } from '@/components/app/ga-once';
+import { TrialHandoff } from '@/components/probar/trial-handoff';
 import { saveOnboarding } from '../actions';
 import { QuickStart } from './quick-start';
 
@@ -34,13 +35,16 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
   return (
     <div>
       {nuevo === '1' && <GaOnce name="sign_up" />}
-      <QuickStart
-        firstName={firstName}
-        frequency={user.incomeFrequency ?? null}
-        days={user.incomeDays ?? null}
-        initialZoneSlug={user.zoneSlug ?? 'chapinero'}
-        alreadyOnboarded={Boolean(user.onboardedAt)}
-      />
+      {/* Si viene de la prueba sin cuenta, se guarda lo que ya escribió; solo para cuentas recién creadas. */}
+      <TrialHandoff enabled={!user.onboardedAt}>
+        <QuickStart
+          firstName={firstName}
+          frequency={user.incomeFrequency ?? null}
+          days={user.incomeDays ?? null}
+          initialZoneSlug={user.zoneSlug ?? 'chapinero'}
+          alreadyOnboarded={Boolean(user.onboardedAt)}
+        />
+      </TrialHandoff>
     </div>
   );
 }

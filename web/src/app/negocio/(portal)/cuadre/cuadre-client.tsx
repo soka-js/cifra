@@ -36,11 +36,11 @@ const SUPPLY_CATEGORIES = [
 ];
 
 function defaultFlashTitle(cat: string): string {
-  if (cat === 'panaderia') return '25 % OFF en horneados frescos de la tarde (cero merma)';
+  if (cat === 'panaderia') return '25 % OFF en horneados de la tarde, antes del cierre';
   if (cat === 'cafeteria') return '20 % OFF en café + pastelería de media tarde';
   if (cat === 'fruver') return '25 % OFF en canasta fresca del día antes del cierre';
   if (cat === 'restaurante') return '20 % OFF en almuerzo ejecutivo de 2:00 a 4:00 p. m.';
-  return '20 % OFF en promoción relámpago de hoy en mostrador';
+  return '20 % OFF hoy en mostrador';
 }
 
 export function CuadreClient({
@@ -54,7 +54,7 @@ export function CuadreClient({
   merchantName: string;
   businessCategory: string;
   typicalTicketMinor: number;
-  monthlyFixedCostMinor: number;
+  monthlyFixedCostMinor: number | null;
   currentHour: number;
   data: MerchantBreakEvenPageData;
 }) {
@@ -80,12 +80,11 @@ export function CuadreClient({
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <span className="badge-terra">Utilidad diaria para tu local · Día 1</span>
           <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
             Cuadre del día y costo de insumos
           </h1>
           <p className="mt-1 text-[15px] text-ink-muted">
-            Mira en segundos si hoy ya libraste el día en {merchantName}, controla alzas de proveedores y prende ofertas relámpago cuando falte movimiento.
+            Mira si hoy ya cubriste el día en {merchantName}, controla las alzas de tus proveedores y prende una oferta por horas cuando falte movimiento.
           </p>
         </div>
 
@@ -95,7 +94,7 @@ export function CuadreClient({
           className="btn-sm border border-line bg-white text-ink-soft hover:text-ink"
         >
           <Settings2 size={14} aria-hidden="true" />
-          Ajustar meta diaria
+          {summary.dailyBreakEvenMinor === null ? 'Escribir meta diaria' : 'Ajustar meta diaria'}
         </button>
       </div>
 
@@ -112,8 +111,8 @@ export function CuadreClient({
               <MoneyInput
                 id="dailyBreakEven"
                 name="dailyBreakEven"
-                defaultValue={Math.round(summary.dailyBreakEvenMinor / 100)}
-                placeholder="450,000"
+                defaultValue={summary.dailyBreakEvenMinor === null ? undefined : Math.round(summary.dailyBreakEvenMinor / 100)}
+                placeholder="Lo que necesitas vender al día"
                 presets={[50000, 100000, 200000]}
               />
             </div>
@@ -124,8 +123,8 @@ export function CuadreClient({
               <MoneyInput
                 id="monthlyFixedCost"
                 name="monthlyFixedCost"
-                defaultValue={Math.round(monthlyFixedCostMinor / 100)}
-                placeholder="4,200,000"
+                defaultValue={monthlyFixedCostMinor === null ? undefined : Math.round(monthlyFixedCostMinor / 100)}
+                placeholder="Arriendo, servicios y ayuda del mes"
                 presets={[200000, 500000, 1000000]}
               />
             </div>
@@ -154,7 +153,7 @@ export function CuadreClient({
               </span>
               {activeFlashCount > 0 && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-900">
-                  ⚡ {activeFlashCount} relámpago encendida hoy
+                  ⚡ {activeFlashCount} {activeFlashCount === 1 ? 'oferta por horas activa' : 'ofertas por horas activas'}
                 </span>
               )}
             </div>
@@ -164,13 +163,28 @@ export function CuadreClient({
               <span className="font-display text-[40px] font-extrabold leading-none tracking-[-0.03em] text-ink">
                 {cop(summary.todaySalesMinor)}
               </span>
-              <span className="text-[14px] text-ink-faint">
-                de {cop(summary.dailyBreakEvenMinor)} de meta diaria ({summary.progressPct} %)
-              </span>
+              {summary.dailyBreakEvenMinor !== null && (
+                <span className="text-[14px] text-ink-faint">
+                  de {cop(summary.dailyBreakEvenMinor)} de meta diaria ({summary.progressPct} %)
+                </span>
+              )}
             </div>
+            {summary.dailyBreakEvenMinor === null && (
+              <p className="mt-2 text-[13.5px] text-ink-muted">
+                <button
+                  id="btn-write-daily-goal"
+                  type="button"
+                  onClick={() => setShowTargetEditor(true)}
+                  className="font-semibold text-terra-dark underline underline-offset-2"
+                >
+                  Escribe cuánto necesitas vender al día
+                </button>{' '}
+                y te decimos cuánto te falta.
+              </p>
+            )}
           </div>
 
-          {!summary.reachedBreakEven && (
+          {summary.gapToBreakEvenMinor > 0 && (
             <button
               id="btn-open-flash-rescue"
               type="button"
@@ -178,20 +192,22 @@ export function CuadreClient({
               className="btn-terra shrink-0"
             >
               <Zap size={16} aria-hidden="true" />
-              Me faltan {cop(summary.gapToBreakEvenMinor)} · Prender Relámpago
+              Me faltan {cop(summary.gapToBreakEvenMinor)} · Prender oferta por horas
             </button>
           )}
         </div>
 
         <div className="mt-4">
-          <div className="h-3 w-full overflow-hidden rounded-full bg-paper-deep">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                summary.reachedBreakEven ? 'bg-primary' : 'bg-terra'
-              }`}
-              style={{ width: `${barPct}%` }}
-            />
-          </div>
+          {summary.dailyBreakEvenMinor !== null && (
+            <div className="h-3 w-full overflow-hidden rounded-full bg-paper-deep">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  summary.reachedBreakEven ? 'bg-primary' : 'bg-terra'
+                }`}
+                style={{ width: `${barPct}%` }}
+              />
+            </div>
+          )}
           <div className="tnum mt-2.5 grid gap-2 text-[13px] text-ink-muted sm:grid-cols-3">
             <span>
               Mostrador directo: <strong className="text-ink">{cop(summary.todayCounterSalesMinor)}</strong>
@@ -205,7 +221,7 @@ export function CuadreClient({
           </div>
         </div>
 
-        {/* Lanzador en 1 toque de Oferta Relámpago de Horas Muertas / Cero Merma */}
+        {/* Lanzador de una oferta por horas para el rato que falta del día */}
         {showFlashBuilder && (
           <form
             action={flashAction}
@@ -214,13 +230,13 @@ export function CuadreClient({
             <div className="flex items-start justify-between gap-2">
               <div>
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/80 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-950">
-                  ⚡ Cero merma y horas tranquilas
+                  ⚡ Oferta por horas
                 </span>
                 <h3 className="mt-1.5 font-display text-[18px] font-bold text-ink">
                   Saca producto fresco antes del cierre y cierra la brecha de hoy
                 </h3>
                 <p className="text-[13px] text-ink-soft">
-                  Aparecerá de inmediato con pin relámpago en el mapa de los vecinos que suelen comprar en tu categoría.
+                  Aparece de inmediato en el mapa de los vecinos que suelen comprar en tu categoría.
                 </p>
               </div>
             </div>
@@ -242,7 +258,7 @@ export function CuadreClient({
 
               <div>
                 <label htmlFor="flash-pct" className="label">
-                  Descuento relámpago (%)
+                  Descuento (%)
                 </label>
                 <select id="flash-pct" name="discountPercent" defaultValue={25} className="field tnum bg-white">
                   {[15, 20, 25, 30, 35].map((p) => (
@@ -300,13 +316,13 @@ export function CuadreClient({
 
               <div className="sm:col-span-2">
                 <label htmlFor="flash-cost" className="label">
-                  Costo aproximado de insumos por venta de {cop(typicalTicketMinor)} ($) — protegemos tu margen
+                  ¿Cuánto te cuestan los insumos de una venta de {cop(typicalTicketMinor)}? Con eso revisamos que no pierdas plata
                 </label>
                 <MoneyInput
                   id="flash-cost"
                   name="unitCost"
-                  defaultValue={Math.round((typicalTicketMinor * 0.36) / 100)}
-                  placeholder="7,200"
+                  required
+                  placeholder="Lo que te cuestan los insumos"
                 />
               </div>
             </div>
@@ -327,7 +343,7 @@ export function CuadreClient({
               </button>
               <button id="btn-submit-flash-rescue" type="submit" disabled={flashPending} className="btn-terra">
                 <Zap size={15} aria-hidden="true" />
-                {flashPending ? 'Encendiendo…' : 'Encender oferta relámpago ahora'}
+                {flashPending ? 'Encendiendo…' : 'Encender oferta por horas'}
               </button>
             </div>
           </form>
@@ -427,7 +443,7 @@ export function CuadreClient({
                 id="ledger-amount"
                 name="amount"
                 required
-                placeholder={entryKind === 'venta_mostrador' ? '185,000' : '92,000'}
+                placeholder={entryKind === 'venta_mostrador' ? '185.000' : '92.000'}
                 presets={[20000, 50000, 100000, 200000]}
               />
             </div>
@@ -488,7 +504,7 @@ export function CuadreClient({
                 placeholder={
                   entryKind === 'venta_mostrador'
                     ? 'Ej. Corte de mediodía'
-                    : 'Ej. Bulto harina 50kg subió $8,000'
+                    : 'Ej. Bulto harina 50kg subió $8.000'
                 }
                 className="field"
               />

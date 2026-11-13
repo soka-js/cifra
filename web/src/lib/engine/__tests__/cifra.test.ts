@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canISpend, computeCifra, type CifraInput } from '../cifra';
+import { canISpend, comfortableSpendMinor, computeCifra, spendReserveMinor, type CifraInput } from '../cifra';
 import { detectIncome } from '../income';
 import { ledger } from './fixtures';
 
@@ -90,6 +90,19 @@ describe('¿puedo hacer este gasto?', () => {
   it('justo, cuando cabe pero deja menos de tres días de gasto normal', () => {
     const a = canISpend(r, r.availableMinor - r.dailyVariableMinor);
     expect(a.verdict).toBe('justo');
+  });
+  it('el gasto con margen es el más grande que todavía recibe un "sí"', () => {
+    const max = comfortableSpendMinor(r);
+    expect(max).toBe(r.availableMinor - spendReserveMinor(r));
+    expect(canISpend(r, max).verdict).toBe('si');
+    expect(canISpend(r, max + 100).verdict).toBe('justo');
+  });
+  it('la reserva son tres días de gasto normal, o menos si el pago llega antes', () => {
+    expect(spendReserveMinor({ dailyVariableMinor: 25_000_00, daysLeft: 10 })).toBe(75_000_00);
+    expect(spendReserveMinor({ dailyVariableMinor: 25_000_00, daysLeft: 2 })).toBe(50_000_00);
+  });
+  it('si la cifra no alcanza para la reserva, el gasto con margen es cero', () => {
+    expect(comfortableSpendMinor({ availableMinor: 40_000_00, dailyVariableMinor: 25_000_00, daysLeft: 5 })).toBe(0);
   });
 });
 

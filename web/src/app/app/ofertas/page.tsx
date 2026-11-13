@@ -28,7 +28,7 @@ export default async function OfertasPage() {
             Ofertas cerca de ti
           </h1>
           <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-ink-muted">
-            Cruzamos tus rubros reales de consumo con comercios independientes cercanos y sus ventanas de descuento u ofertas relámpago de cero merma.
+            Cruzamos en qué gastas con los comercios independientes cerca de ti y sus descuentos, incluidas las ofertas por horas.
           </p>
         </div>
 
@@ -52,7 +52,7 @@ export default async function OfertasPage() {
         bundle={smartMap}
         defaultExpanded={true}
         compactTitle="Mapa en vivo por franjas horarias y cercanía"
-        compactSubtitle="Filtra por hora (Mañana, Mediodía, Tarde · Cero merma, Noche) o activa tu GPS para ver cuántos minutos caminando te separan."
+        compactSubtitle="Filtra por hora (mañana, mediodía, tarde o noche) o activa tu GPS para ver cuántos minutos caminando te separan."
       />
 
       <OffersClient

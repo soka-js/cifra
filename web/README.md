@@ -25,7 +25,7 @@ Claridad diaria sobre cuánto puedes gastar hasta tu próximo pago, conectada co
    - **Data Room de Inversión**: seguimiento en vivo de hipótesis falsables (retención ≥ 40 %, renovación de campañas ≥ 50 %, primera cifra < 5 min, GMV atribuido, ingreso neto CIFRA y embudo A/B).
    - **CRM de Calle y Moderación**: creación de comercios, emisión de enlaces de WhatsApp y curaduría del diccionario colombiano aprendido.
    - **Canal B2B2C**: API REST (`/api/v1/members/...`), sesiones embebidas de 2 minutos (`/e/[token]`) y libro mayor de reparto automático del **30 %** de las comisiones generadas por asociados.
-   - **Modo Demo en 1 clic** (`/demo`): ecosistema piloto en Bogotá (Chapinero, Parkway y Las Aguas) aislado con `is_demo = true`.
+   - **Demo con datos de ejemplo**: ecosistema de Bogotá (Chapinero, Parkway y Las Aguas) marcado con `is_demo = true`. Solo un admin la abre, desde `/admin`, sobre su propia sesión; los usuarios de ejemplo no tienen clave.
 
 ## Desarrollo local
 
@@ -37,7 +37,8 @@ cp .env.example .env.local   # Configura DATABASE_URL y ADMIN_EMAILS
 npm install
 npm run db:migrate
 npm run dev                  # http://localhost:3000
-npm test                     # Suite Vitest del motor financiero, atribución e importadores
+npm test                     # Pruebas unitarias del motor, atribución e importadores
+npm run test:int             # Pruebas de permisos contra la base local (requiere devdb corriendo)
 npm run typecheck
 npm run build
 ```

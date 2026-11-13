@@ -1,6 +1,5 @@
 import 'server-only';
 import { and, eq, inArray } from 'drizzle-orm';
-import { hashPassword } from './auth/password';
 import { randomToken, sha256 } from './crypto';
 import { db } from './db';
 import {
@@ -32,21 +31,25 @@ import { syncMerchantInvoice } from './merchant-data';
 export const DEMO_PERSONA_EMAIL = 'mariana.demo@cifra.co';
 export const DEMO_ROSA_EMAIL = 'rosa.demo@cifra.co';
 export const DEMO_ALLY_MEMBER_EMAIL = 'andres.demo@cifra.co';
-export const DEMO_ADMIN_EMAIL = 'admin@cifra.co';
 export const DEMO_PRIMARY_MERCHANT_SLUG = 'demo-panaderia-la-espiga';
 
 export interface DemoIds {
   marianaUserId: string;
   rosaUserId: string;
   andresUserId?: string;
-  adminUserId?: string;
   espigaMerchantId: string;
   samplePendingCode: string;
 }
 
 /**
- * Siembra de manera idempotente el ecosistema piloto de demostración en Bogotá
- * (Chapinero / Teusaquillo / Las Aguas) completamente marcado con is_demo = true.
+ * Siembra de manera idempotente el ecosistema de demostración en Bogotá
+ * (Chapinero / Teusaquillo / Las Aguas), todo marcado con is_demo = true.
+ *
+ * Reglas de seguridad de la demo:
+ * - Los usuarios de demostración NO tienen clave ni rol: no pueden iniciar sesión por ningún camino.
+ *   A la demo se entra solo desde /admin, cuando un admin real activa "ver como".
+ * - No se crea ningún usuario administrador. El admin sale solo de ADMIN_EMAILS.
+ * - Esta función solo la llaman las acciones de /admin. Nunca corre en una visita anónima.
  */
 export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<DemoIds> {
   if (forceReset) {
@@ -91,27 +94,6 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       .where(eq(users.email, DEMO_ALLY_MEMBER_EMAIL))
       .limit(1);
 
-    let [existingAdmin] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, DEMO_ADMIN_EMAIL))
-      .limit(1);
-
-    if (!existingAdmin) {
-      const demoPassHash = await hashPassword('CifraDemo2026!');
-      const [newAdmin] = await db
-        .insert(users)
-        .values({
-          email: DEMO_ADMIN_EMAIL,
-          passwordHash: demoPassHash,
-          name: 'Sebastián Socarrás (Fundador / Admin)',
-          role: 'admin',
-          isDemo: true,
-        })
-        .returning();
-      existingAdmin = newAdmin;
-    }
-
     // Asegurar que exista siempre un código fresco listo para probar en Caja durante el pitch
     const samplePendingCode = await ensureFreshDemoPosCode(
       existingEspiga.id,
@@ -126,7 +108,6 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       marianaUserId: existingMariana.id,
       rosaUserId: existingRosa.id,
       andresUserId: existingAndres?.id,
-      adminUserId: existingAdmin?.id,
       espigaMerchantId: existingEspiga.id,
       samplePendingCode,
     };
@@ -134,7 +115,6 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
 
   const today = todayInBogota();
   const now = new Date();
-  const demoPassHash = await hashPassword('CifraDemo2026!');
 
   // 1. Aliado B2B2C: Cooperativa Coopfuturo (reparto 30 %)
   const [coopfuturo] = await db
@@ -161,7 +141,6 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     .insert(users)
     .values({
       email: DEMO_PERSONA_EMAIL,
-      passwordHash: demoPassHash,
       name: 'Mariana Rojas',
       isDemo: true,
       incomeFrequency: 'quincenal',
@@ -183,7 +162,6 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     .insert(users)
     .values({
       email: DEMO_ROSA_EMAIL,
-      passwordHash: demoPassHash,
       name: 'Rosa Martínez',
       isDemo: true,
       zoneSlug: 'chapinero',
@@ -202,7 +180,6 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     .insert(users)
     .values({
       email: DEMO_ALLY_MEMBER_EMAIL,
-      passwordHash: demoPassHash,
       name: 'Andrés Gómez',
       isDemo: true,
       partnerId: coopfuturo!.id,
@@ -225,7 +202,6 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     .insert(users)
     .values({
       email: 'camila.demo@cifra.co',
-      passwordHash: demoPassHash,
       name: 'Camila Pardo',
       isDemo: true,
       incomeFrequency: 'mensual',
@@ -239,17 +215,6 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       firstCifraAt: new Date(created195dAgo.getTime() + 165 * 1000),
       lastActiveAt: now,
       createdAt: created195dAgo,
-    })
-    .returning();
-
-  const [admin] = await db
-    .insert(users)
-    .values({
-      email: DEMO_ADMIN_EMAIL,
-      passwordHash: demoPassHash,
-      name: 'Sebastián Socarrás (Fundador / Admin)',
-      role: 'admin',
-      isDemo: true,
     })
     .returning();
 
@@ -602,8 +567,8 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       },
       {
         merchantId: fruverParque!.id,
-        title: '$4,000 de descuento en mercado de fruta y verdura',
-        description: 'Aplica en compras desde $25,000 para vecinos nuevos.',
+        title: '$4.000 de descuento en mercado de fruta y verdura',
+        description: 'Aplica en compras desde $25.000 para vecinos nuevos.',
         targetCategory: 'mercado',
         discountKind: 'fixed',
         discountFixedMinor: 4_000_00,
@@ -665,7 +630,7 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       },
       {
         merchantId: fruverParque!.id,
-        title: '$4,000 de descuento en canasta fresca desde $25,000',
+        title: '$4.000 de descuento en canasta fresca desde $25.000',
         description: 'Fruta seleccionada del día en el Parkway.',
         targetCategory: 'mercado',
         discountKind: 'fixed',
@@ -720,7 +685,7 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     daysAgo: number;
     confirmed: boolean;
   }> = [
-    // Andrés (vía Coopfuturo) conoció Panadería La Espiga este mes ($20,000 exacto como en G.10!)
+    // Andrés (vía Coopfuturo) conoció Panadería La Espiga este mes ($20.000 exacto como en G.10!)
     {
       userId: andres!.id,
       merchantId: laEspiga!.id,
@@ -854,16 +819,16 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     {
       userId: mariana!.id,
       kind: 'redencion_confirmada',
-      title: 'Ahorraste $4,000 en Fruver El Parque',
-      body: 'Pagaste $30,000 en vez de $34,000. Puedes confirmar en Ofertas que recibiste el beneficio.',
+      title: 'Ahorraste $4.000 en Fruver El Parque',
+      body: 'Pagaste $30.000 en vez de $34.000. Puedes confirmar en Ofertas que recibiste el beneficio.',
       actionUrl: '/app/ofertas#recientes',
       dedupeKey: 'demo-notif-redeem',
     },
     {
       userId: mariana!.id,
       kind: 'cobro_recurrente',
-      title: 'Disney+ marcado como «No lo uso» ($34,900/mes)',
-      body: 'Ya sumamos este ahorro mensual verificado a tu contador de pesos ahorrados con CIFRA.',
+      title: 'Disney+ marcado como «No lo uso» ($34.900/mes)',
+      body: 'Ya sumamos este ahorro mensual a lo que llevas ahorrado con CIFRA.',
       actionUrl: '/app/cobros',
       dedupeKey: 'demo-notif-cancel',
       readAt: now,
@@ -881,7 +846,6 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
     marianaUserId: mariana!.id,
     rosaUserId: rosa!.id,
     andresUserId: andres!.id,
-    adminUserId: admin?.id,
     espigaMerchantId: laEspiga!.id,
     samplePendingCode,
   };
@@ -1189,7 +1153,7 @@ async function ensureV3DemoData(params: {
   if (!existingFlash) {
     await db.insert(offers).values({
       merchantId: params.espigaMerchantId,
-      title: '25 % OFF en horneados de la tarde (cero merma)',
+      title: '25 % OFF en horneados de la tarde, antes del cierre',
       description: 'Pan de masa madre y hojaldres recién horneados para cerrar la tarde sin merma.',
       targetCategory: 'comida',
       discountKind: 'percent',
@@ -1265,7 +1229,7 @@ async function ensureV3DemoData(params: {
       await db.insert(offers).values({
         merchantId: fruverParque.id,
         title: 'Canasta cierre de tarde: 30 % en fruta seleccionada',
-        description: 'Fruta fresca de Corabastos antes del cierre. Ayúdanos a tener cero merma.',
+        description: 'Fruta fresca de Corabastos antes del cierre, para no botar nada.',
         targetCategory: 'mercado',
         discountKind: 'percent',
         discountPercent: 30,

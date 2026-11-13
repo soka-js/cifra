@@ -30,7 +30,7 @@ function BalanceForm({ accounts, autoFocus, onDone, onCancel }: { accounts: Edit
               id={`hoy-bal-${a.id}`}
               name={`bal:${a.id}`}
               defaultValue={a.balanceMinor !== null ? Math.round(a.balanceMinor / 100) : ''}
-              placeholder={a.balanceMinor !== null ? formatThousands(Math.round(a.balanceMinor / 100)) : '1,250,000'}
+              placeholder={a.balanceMinor !== null ? formatThousands(Math.round(a.balanceMinor / 100)) : '1.250.000'}
               presets={[50000, 100000, 200000, 500000]}
               autoFocus={autoFocus && i === 0}
             />

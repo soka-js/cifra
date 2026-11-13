@@ -1,8 +1,8 @@
-import { WhiteLabelWalletShowcase } from '@/components/b2b2c/white-label-wallet-showcase';
 import { LegalPage } from '@/components/legal/page';
+import { siteUrl } from '@/lib/site';
 import { B2B2CSimulator } from './api-playground';
 
-export const metadata = { title: 'API y Canal B2B2C para Entidades · CIFRA' };
+export const metadata = { title: 'API para cooperativas, cajas y billeteras · CIFRA' };
 
 function Code({ children }: { children: string }) {
   return (
@@ -12,16 +12,17 @@ function Code({ children }: { children: string }) {
   );
 }
 
-const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cifra.co';
+// La dirección real de la app (producción, la rama de la vista previa o local). Antes caía en
+// 'https://cifra.co', un dominio que la app no usa, cuando NEXT_PUBLIC_SITE_URL no existía (vista previa).
+const site = siteUrl();
 
 export default function DevelopersPage() {
   return (
-    <LegalPage title="API y Canal B2B2C para Entidades" updated="8 de noviembre de 2026">
+    <LegalPage title="API para cooperativas, cajas y billeteras" updated="8 de noviembre de 2026">
       <p>
-        Con esta API una cooperativa, fondo de empleados, caja de compensación, billetera digital o wallet de retail (como Starbucks) integra CIFRA dentro de su propia aplicación usando los saldos y movimientos que ya custodia. No requiere esperar regulación de finanzas abiertas: la entidad mantiene la relación con su usuario, le entrega bienestar financiero inmediato y recibe el <strong>30 % de las comisiones</strong> generadas cuando sus usuarios redimen ofertas en comercios de barrio.
+        Con esta API una cooperativa, fondo de empleados, caja de compensación o billetera digital integra CIFRA dentro de su propia aplicación usando los saldos y movimientos que ya custodia. No requiere esperar regulación de finanzas abiertas: la entidad mantiene la relación con su usuario, le entrega bienestar financiero inmediato y recibe el <strong>30 % de las comisiones</strong> generadas cuando sus usuarios redimen ofertas en comercios de barrio.
       </p>
 
-      <WhiteLabelWalletShowcase />
 
       <B2B2CSimulator />
 
@@ -31,7 +32,7 @@ export default function DevelopersPage() {
       </p>
       <Code>{`Authorization: Bearer cfk_...`}</Code>
       <p>
-        Todos los montos viajan en centavos enteros de peso colombiano (<code>amount_minor</code>): $45,000 es <code>4500000</code>. Negativo indica salida de dinero; positivo indica entrada. Límite: 600 peticiones por minuto por entidad.
+        Todos los montos viajan en centavos enteros de peso colombiano (<code>amount_minor</code>): $45.000 es <code>4500000</code>. Negativo indica salida de dinero; positivo indica entrada. Límite: 600 peticiones por minuto por entidad.
       </p>
 
       <h2>1. Crear o actualizar un asociado</h2>
@@ -59,7 +60,7 @@ export default function DevelopersPage() {
 
       <h2>3. Enviar movimientos (idempotente)</h2>
       <p>
-        Hasta 1,000 movimientos por lote. Reenviar un mismo <code>id</code> externo nunca duplica registros. Recomendamos enviar 90 días al activar para detectar cobros recurrentes y luego sincronizar novedades diarias.
+        Hasta 1.000 movimientos por lote. Reenviar un mismo <code>id</code> externo nunca duplica registros. Recomendamos enviar 90 días al activar para detectar cobros recurrentes y luego sincronizar novedades diarias.
       </p>
       <Code>{`POST ${site}/api/v1/members/{member_id}/accounts/{account_id}/transactions
 {

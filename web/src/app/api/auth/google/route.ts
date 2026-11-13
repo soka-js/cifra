@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { randomToken } from '@/lib/crypto';
+import { siteUrl } from '@/lib/site';
 
 export async function GET(req: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) {
     return NextResponse.redirect(new URL('/entrar?oauth=no_configurado', req.url));
   }
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin).replace(/\/$/, '');
+  const site = siteUrl(req.nextUrl.origin);
   const redirectUri = `${site}/api/auth/google/callback`;
   const state = randomToken(16);
   const next = req.nextUrl.searchParams.get('next') ?? '';

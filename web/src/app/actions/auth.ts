@@ -7,13 +7,14 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { passwordResetTokens, users } from '@/lib/db/schema';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { createSession, destroySession } from '@/lib/auth/session';
+import { createSession, destroyAllSessionsOf, destroySession } from '@/lib/auth/session';
 import { readUtm, recordEvent } from '@/lib/analytics/server';
 import { randomToken, sha256 } from '@/lib/crypto';
 import { renderCifraEmail, sendEmail } from '@/lib/notify/email';
 import { allow } from '@/lib/rate-limit';
 import { CONSENT_VERSION } from '@/lib/format';
 import { getZoneBySlug } from '@/lib/zones';
+import { siteUrl } from '@/lib/site';
 
 export type AuthState =
   | { status: 'idle' }
@@ -108,7 +109,8 @@ export async function login(_prev: AuthState, form: FormData): Promise<AuthState
   }
   const [user] = await db.select().from(users).where(sql`lower(${users.email}) = ${email}`).limit(1);
   const ok = user?.passwordHash ? await verifyPassword(user.passwordHash, password) : false;
-  if (!user || !ok) return { status: 'error', message: 'El correo o la contraseña no coinciden.', values };
+  // Un usuario de demostración nunca inicia sesión: a la demo se entra solo desde /admin.
+  if (!user || !ok || user.isDemo) return { status: 'error', message: 'El correo o la contraseña no coinciden.', values };
   await createSession(user.id);
   const next = safeNextPath(form.get('next'));
   if (next) redirect(next);
@@ -127,13 +129,13 @@ export async function requestPasswordReset(_prev: AuthState, form: FormData): Pr
   }
 
   const [user] = await db
-    .select({ id: users.id, email: users.email, name: users.name })
+    .select({ id: users.id, email: users.email, name: users.name, isDemo: users.isDemo })
     .from(users)
     .where(sql`lower(${users.email}) = ${parsedEmail.data}`)
     .limit(1);
 
   let devResetUrl: string | undefined;
-  if (user && user.email) {
+  if (user && user.email && !user.isDemo) {
     const token = randomToken();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await db.insert(passwordResetTokens).values({
@@ -142,8 +144,7 @@ export async function requestPasswordReset(_prev: AuthState, form: FormData): Pr
       expiresAt,
     });
 
-    const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-    const resetUrl = `${site.replace(/\/$/, '')}/restablecer/${token}`;
+    const resetUrl = `${siteUrl()}/restablecer/${token}`;
     const mail = renderCifraEmail({
       heading: 'Restablece tu contraseña en CIFRA',
       bodyParagraphs: [
@@ -159,8 +160,20 @@ export async function requestPasswordReset(_prev: AuthState, form: FormData): Pr
       html: mail.html,
       text: mail.text,
     });
-    if (!sent.sent && process.env.NODE_ENV !== 'production') {
-      devResetUrl = `/restablecer/${token}`;
+    if (!sent.sent) {
+      if (process.env.NODE_ENV !== 'production') {
+        devResetUrl = `/restablecer/${token}`;
+      } else {
+        // En producción no se finge que salió: la persona sabe que no le va a llegar nada. El enlace
+        // que no se pudo enviar se borra. (Que una cuenta existe ya se sabe por el registro, que
+        // avisa "Ya hay una cuenta con este correo"; este mensaje no revela nada nuevo.)
+        await db.delete(passwordResetTokens).where(eq(passwordResetTokens.tokenHash, sha256(token)));
+        return {
+          status: 'error',
+          message: 'No pudimos enviarte el correo para cambiar la contraseña. Inténtalo de nuevo más tarde.',
+          values: { email: emailRaw },
+        };
+      }
     }
   }
 
@@ -196,18 +209,25 @@ export async function resetPassword(_prev: AuthState, form: FormData): Promise<A
     return { status: 'error', message: 'Este enlace ya venció o ya fue utilizado. Solicita uno nuevo.' };
   }
 
+  const [owner] = await db.select({ isDemo: users.isDemo }).from(users).where(eq(users.id, row.userId)).limit(1);
+  if (!owner || owner.isDemo) {
+    return { status: 'error', message: 'Este enlace ya venció o ya fue utilizado. Solicita uno nuevo.' };
+  }
+
   const passwordHash = await hashPassword(parsed.data.password);
-  await db.update(users).set({ passwordHash }).where(eq(users.id, row.userId));
+  // Quien abre este enlace demostró que el correo es suyo: queda verificado.
+  await db
+    .update(users)
+    .set({ passwordHash, emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())` })
+    .where(eq(users.id, row.userId));
   await db.update(passwordResetTokens).set({ usedAt: new Date() }).where(eq(passwordResetTokens.tokenHash, hash));
+  // Cambiar la clave cierra cualquier sesión abierta con la clave anterior.
+  await destroyAllSessionsOf(row.userId);
   await createSession(row.userId);
   redirect('/app');
 }
 
 export async function logout(): Promise<void> {
-  await destroySession(true);
+  await destroySession();
   redirect('/entrar');
-}
-
-export async function markOnboarded(userId: string) {
-  await db.update(users).set({ onboardedAt: new Date() }).where(eq(users.id, userId));
 }

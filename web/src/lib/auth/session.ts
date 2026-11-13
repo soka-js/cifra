@@ -1,92 +1,115 @@
 import 'server-only';
-import { and, eq, gt, sql } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import { db } from '../db';
 import { merchantMembers, merchants, sessions, users, type Merchant, type User } from '../db/schema';
 import { randomToken, sha256 } from '../crypto';
-import { ensureDemoEcosystemSeeded } from '../demo-seed';
+import { siteUrl } from '../site';
+
+/**
+ * Identidad y permisos de CIFRA. Reglas que este archivo garantiza:
+ *
+ * 1. La sesión sale SOLO de la cookie `cf_session`. Sin cookie válida no hay usuario: no existe
+ *    ningún usuario por defecto.
+ * 2. El admin sale SOLO de `ADMIN_EMAILS`, con el correo verificado. La columna `users.role` no cuenta.
+ * 3. Un usuario de demostración (`is_demo`) nunca es dueño de una sesión. A la demo se llega solo
+ *    cuando un admin real activa "ver como" sobre su propia sesión (`sessions.acting_as_user_id`).
+ * 4. A un negocio se entra solo por membresía (`merchant_members`).
+ */
 
 export const SESSION_COOKIE = 'cf_session';
 export const ACTIVE_MERCHANT_COOKIE = 'cf_merchant';
-export const LOGGED_OUT_COOKIE = 'cf_logged_out';
 const SESSION_DAYS = 30;
+
+export interface SessionContext {
+  /** Hash del token de la cookie: identifica la fila de la sesión. */
+  sessionId: string;
+  /** Quien inició sesión de verdad. Los permisos de admin se deciden solo con este usuario. */
+  realUser: User;
+  /**
+   * Usuario con el que se leen y escriben los datos: el real, o el de demostración si un admin
+   * está "viendo como".
+   */
+  user: User;
+  /** true mientras un admin mira la demo. */
+  demoView: boolean;
+}
 
 export async function createSession(userId: string): Promise<void> {
   const token = randomToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
   await db.insert(sessions).values({ id: sha256(token), userId, expiresAt });
   const jar = await cookies();
-  jar.delete(LOGGED_OUT_COOKIE);
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure:
-      process.env.NODE_ENV === 'production' &&
-      process.env.NEXT_PUBLIC_SITE_URL?.startsWith('https://') === true,
+    // Con la dirección de la rama, la vista previa (https) también recibe la cookie solo por https.
+    secure: process.env.NODE_ENV === 'production' && siteUrl().startsWith('https://'),
     sameSite: 'lax',
     path: '/',
     expires: expiresAt,
   });
 }
 
+export function adminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 /**
- * Devuelve únicamente el usuario autenticado por cookie explícita `cf_session`
- * (usado en /entrar y /registro para permitir cambiar de cuenta o registrarse).
+ * Admin = correo en ADMIN_EMAILS + correo verificado + no es usuario de demostración.
+ * El correo verificado importa: el registro no comprueba que el correo sea de quien lo escribe,
+ * así que sin esta condición cualquiera podría registrarse con el correo de un admin.
  */
-export const getExplicitSessionUser = cache(async (): Promise<User | null> => {
+export function isAdmin(user: User | null | undefined): boolean {
+  if (!user || user.isDemo) return false;
+  if (!user.email || !user.emailVerifiedAt) return false;
+  return adminEmails().includes(user.email.toLowerCase());
+}
+
+export const getSessionContext = cache(async (): Promise<SessionContext | null> => {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const id = sha256(token);
-  const rows = await db
-    .select({ user: users, expiresAt: sessions.expiresAt })
+  const [row] = await db
+    .select({ user: users, session: sessions })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
     .where(and(eq(sessions.id, id), gt(sessions.expiresAt, new Date())))
     .limit(1);
-  const row = rows[0];
   if (!row) return null;
-  if (row.expiresAt.getTime() - Date.now() < 15 * 86_400_000) {
+  // Un usuario de demostración nunca es dueño de una sesión (regla 3).
+  if (row.user.isDemo) return null;
+
+  if (row.session.expiresAt.getTime() - Date.now() < 15 * 86_400_000) {
     await db
       .update(sessions)
       .set({ expiresAt: new Date(Date.now() + SESSION_DAYS * 86_400_000) })
       .where(eq(sessions.id, id));
   }
-  return row.user;
+
+  // "Ver como": vale solo si quien mira sigue siendo admin y el destino es de demostración.
+  // Se revisa en cada petición, no solo al activarlo.
+  let acting: User | null = null;
+  if (row.session.actingAsUserId && isAdmin(row.user)) {
+    const [target] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.id, row.session.actingAsUserId), eq(users.isDemo, true)))
+      .limit(1);
+    acting = target ?? null;
+  }
+
+  return { sessionId: id, realUser: row.user, user: acting ?? row.user, demoView: acting !== null };
 });
 
-/**
- * Usuario de la sesión actual. Si el navegador entra directo al producto sin cookie previa
- * y no ha cerrado sesión explícitamente, resuelve la cuenta activa por defecto para que
- * el producto abra de inmediato listo para operar.
- */
+/** Usuario efectivo de la petición, o null si no hay sesión. */
 export const getCurrentUser = cache(async (): Promise<User | null> => {
-  const explicit = await getExplicitSessionUser();
-  if (explicit) return explicit;
-
-  const jar = await cookies();
-  if (jar.get(LOGGED_OUT_COOKIE)?.value === '1') {
-    return null;
-  }
-
-  const [existingDefault] = await db
-    .select()
-    .from(users)
-    .where(sql`lower(${users.email}) in ('mariana.demo@cifra.co', 'mariana@demo.cifra.co')`)
-    .limit(1);
-
-  if (existingDefault) {
-    return existingDefault;
-  }
-
-  try {
-    const ids = await ensureDemoEcosystemSeeded(false);
-    const [seeded] = await db.select().from(users).where(eq(users.id, ids.marianaUserId)).limit(1);
-    return seeded ?? null;
-  } catch {
-    return null;
-  }
+  return (await getSessionContext())?.user ?? null;
 });
 
 export async function requireUser(): Promise<User> {
@@ -95,31 +118,57 @@ export async function requireUser(): Promise<User> {
   return user;
 }
 
-export async function destroySession(markLoggedOut = false): Promise<void> {
+/**
+ * Exige un admin real. Sin sesión manda a entrar; con sesión pero sin permiso responde 404
+ * para no confirmar que la ruta existe.
+ */
+export async function requireAdmin(): Promise<User> {
+  const ctx = await getSessionContext();
+  if (!ctx) redirect('/entrar?next=/admin');
+  if (!isAdmin(ctx.realUser)) notFound();
+  return ctx.realUser;
+}
+
+export async function destroySession(): Promise<void> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (token) await db.delete(sessions).where(eq(sessions.id, sha256(token)));
   jar.delete(SESSION_COOKIE);
   jar.delete(ACTIVE_MERCHANT_COOKIE);
-  if (markLoggedOut) {
-    jar.set(LOGGED_OUT_COOKIE, '1', {
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 7 * 86_400,
-    });
-  }
 }
 
-export function isAdmin(user: User | null): boolean {
-  if (!user) return false;
-  if (user.role === 'admin') return true;
-  if (!user.email) return false;
-  const admins = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return admins.includes(user.email.toLowerCase());
+/** Cierra todas las sesiones de una persona (por ejemplo, al cambiar la clave). */
+export async function destroyAllSessionsOf(userId: string): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.userId, userId));
 }
+
+// ---------------------------------------------------------------------------
+// Demo: "ver como" un usuario de demostración. Solo un admin real, solo sobre su propia sesión.
+// ---------------------------------------------------------------------------
+
+export async function startDemoView(targetUserId: string): Promise<void> {
+  const ctx = await getSessionContext();
+  if (!ctx || !isAdmin(ctx.realUser)) throw new Error('Acceso administrativo requerido.');
+  const [target] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, targetUserId), eq(users.isDemo, true)))
+    .limit(1);
+  if (!target) throw new Error('Solo se puede ver la app como un usuario de demostración.');
+  await db.update(sessions).set({ actingAsUserId: target.id }).where(eq(sessions.id, ctx.sessionId));
+  (await cookies()).delete(ACTIVE_MERCHANT_COOKIE);
+}
+
+export async function stopDemoView(): Promise<void> {
+  const ctx = await getSessionContext();
+  if (!ctx) return;
+  await db.update(sessions).set({ actingAsUserId: null }).where(eq(sessions.id, ctx.sessionId));
+  (await cookies()).delete(ACTIVE_MERCHANT_COOKIE);
+}
+
+// ---------------------------------------------------------------------------
+// Negocio: acceso solo por membresía.
+// ---------------------------------------------------------------------------
 
 export interface MerchantAccess {
   user: User;
@@ -128,7 +177,7 @@ export interface MerchantAccess {
   allMerchants: Array<{ id: string; name: string; neighborhood: string; role: 'owner' | 'cashier' }>;
 }
 
-/** Obtiene el negocio activo para el usuario autenticado (o el comercio piloto activo en entorno desplegado). */
+/** Negocio activo de quien está en sesión, entre los negocios de los que es miembro. Nada más. */
 export const getMerchantAccess = cache(async (): Promise<MerchantAccess | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -138,47 +187,21 @@ export const getMerchantAccess = cache(async (): Promise<MerchantAccess | null> 
     .from(merchantMembers)
     .innerJoin(merchants, eq(merchants.id, merchantMembers.merchantId))
     .where(eq(merchantMembers.userId, user.id));
+  if (memberships.length === 0) return null;
 
-  const jar = await cookies();
-  const preferredId = jar.get(ACTIVE_MERCHANT_COOKIE)?.value;
-
-  if (memberships.length > 0) {
-    const chosen = memberships.find((m) => m.merchant.id === preferredId) ?? memberships[0]!;
-    return {
-      user,
-      merchant: chosen.merchant,
-      role: chosen.role,
-      allMerchants: memberships.map((m) => ({
-        id: m.merchant.id,
-        name: m.merchant.name,
-        neighborhood: m.merchant.neighborhood,
-        role: m.role,
-      })),
-    };
-  }
-
-  // Admin o sesión activa sin comercio propio puede operar sobre los comercios activos del ecosistema
-  if (isAdmin(user) || user.isDemo) {
-    const all = await db.select().from(merchants);
-    if (all.length === 0) return null;
-    const chosen =
-      all.find((m) => m.id === preferredId) ??
-      all.find((m) => m.slug === 'demo-panaderia-la-espiga' || m.slug === 'la-espiga-chapinero') ??
-      all[0]!;
-    return {
-      user,
-      merchant: chosen,
-      role: 'owner',
-      allMerchants: all.map((m) => ({
-        id: m.id,
-        name: m.name,
-        neighborhood: m.neighborhood,
-        role: 'owner' as const,
-      })),
-    };
-  }
-
-  return null;
+  const preferredId = (await cookies()).get(ACTIVE_MERCHANT_COOKIE)?.value;
+  const chosen = memberships.find((m) => m.merchant.id === preferredId) ?? memberships[0]!;
+  return {
+    user,
+    merchant: chosen.merchant,
+    role: chosen.role,
+    allMerchants: memberships.map((m) => ({
+      id: m.merchant.id,
+      name: m.merchant.name,
+      neighborhood: m.merchant.neighborhood,
+      role: m.role,
+    })),
+  };
 });
 
 export async function requireMerchantAccess(): Promise<MerchantAccess> {

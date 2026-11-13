@@ -91,7 +91,7 @@ export function MoneyInput({
           className={`field tnum pl-8 font-display text-[18px] font-bold tracking-tight ${className}`}
         />
         {/* Input oculto con el valor limpio para que los formularios de server actions sigan funcionando intactos */}
-        <input type="hidden" name={name} value={activeDisplay.replace(/,/g, '')} />
+        <input type="hidden" name={name} value={activeDisplay.replace(/[^0-9]/g, '')} />
       </div>
 
       {presets && presets.length > 0 && (
