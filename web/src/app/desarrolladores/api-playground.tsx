@@ -31,6 +31,9 @@ export function B2B2CSimulator() {
           <h3 className="mt-1.5 font-display text-[20px] font-bold text-ink">
             Calcula el ahorro para tus asociados y tu ingreso por reparto (30 %)
           </h3>
+          <p className="mt-1 text-[13px] text-ink-muted">
+            Los valores con los que abre son un ejemplo, no datos de una entidad. Cámbialos por los tuyos.
+          </p>
         </div>
       </div>
 

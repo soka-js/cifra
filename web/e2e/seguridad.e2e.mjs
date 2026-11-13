@@ -114,6 +114,16 @@ await step('A7. lo público sigue abierto', async () => {
   }
 });
 
+await step('A8. la página de la API para cooperativas muestra la dirección de la app, no un dominio ajeno', async () => {
+  const res = await a.goto(`${BASE}/desarrolladores`, { waitUntil: 'domcontentloaded' });
+  assert.equal(res.status(), 200);
+  const text = await a.locator('body').innerText();
+  assert.ok(text.includes('/api/v1/members/'), 'faltan los ejemplos de la API');
+  assert.ok(!/https:\/\/cifra\.co\//.test(text), 'los ejemplos todavía apuntan a https://cifra.co');
+  assert.ok(!text.includes('Starbucks'), 'todavía nombra a Starbucks');
+  assert.match(text, /Los valores con los que abre son un ejemplo/);
+});
+
 // ============================================================================================
 // B. Datos viejos que ya no deben abrir nada
 // ============================================================================================
