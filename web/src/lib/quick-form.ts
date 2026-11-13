@@ -3,9 +3,9 @@ import { parseBalanceInput, parsePesosInput, toDailyMinor, type SpendPeriod } fr
 
 /**
  * Lee el formulario de los cuatro datos (cada cuánto te pagan, cuánto tienes, qué pagas fijo,
- * cuánto se te va en el día a día). Función pura: la usa la prueba pública en el navegador.
- * Los nombres de los campos son los mismos que usa el modo rápido con cuenta (saveQuickStart),
- * para que lo que la persona escribe aquí se pueda guardar tal cual cuando cree su cuenta.
+ * cuánto se te va en el día a día). Función pura, la única lectura de ese formulario: la usa la
+ * prueba pública en el navegador y el modo rápido con cuenta en el servidor (saveQuickStart), así
+ * que lo que la persona vio como su cifra antes de crear la cuenta es lo mismo que se guarda.
  */
 
 export interface QuickFormValues {
@@ -81,7 +81,7 @@ export function parseQuickForm(form: FormData): QuickFormResult {
     }
     fixed.push({ name, amountMinor, dayOfMonth: day });
   }
-  if (fixed.length > MAX_FIXED) return fail(2, `Escribe hasta ${MAX_FIXED} cobros fijos.`);
+  if (fixed.length > MAX_FIXED) return fail(2, `Escribe hasta ${MAX_FIXED} cobros fijos. Los demás los puedes agregar después.`);
 
   const dailyRaw = String(form.get('daily') ?? '').trim();
   const period = String(form.get('period') ?? '') as SpendPeriod;

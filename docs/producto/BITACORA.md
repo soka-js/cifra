@@ -235,6 +235,23 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Entradas
 
+### 2026-11-13 11:51, Etapa 4: el servidor lee el formulario con la misma función que la prueba
+
+- Rama: `etapa-4-un-formulario`, encima de la entrada de abajo. Sin subir ni mezclar (mismas razones).
+- Qué cambió:
+  - **`saveQuickStart` (`web/src/app/app/actions.ts`) lee el formulario con `parseQuickForm` (`web/src/lib/quick-form.ts`)**, la misma función que usa la prueba sin cuenta en el navegador. Antes tenía su propia copia de esa lectura. Era el pendiente de la entrada de abajo.
+  - Lo que la persona vio como su cifra en la prueba es exactamente lo que se guarda al crear la cuenta: mismos límites (el día del mes entre 1 y 31, hasta 15 cobros fijos) y mismos mensajes de error, en el mismo paso.
+  - Un solo texto cambia en pantalla: con más de 15 cobros fijos, el aviso ahora es "Escribe hasta 15 cobros fijos. Los demás los puedes agregar después." Antes decía "…en Ajustes" con cuenta y no decía nada más en la prueba.
+- Prueba nueva: `web/test/integration/modo-rapido.itest.ts` (2 casos).
+  - Los mismos datos dan lo mismo en el navegador y en la base: frecuencia, días de pago, saldo, cobros fijos y gasto diario.
+  - Un error del formulario devuelve el mismo paso y el mismo mensaje que la prueba sin cuenta, y no escribe nada.
+- Verificación (este equipo, `devdb` local), con este cambio y antes de empezar el alta del tendero:
+  - `npm run test:int`: 6 archivos, **265 de 265** (incluye la prueba nueva).
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos** (6 + 10 + 11 + 31).
+  - Typecheck y unitarias, en verde otra vez con la Etapa 6 encima (entrada siguiente).
+- Decisiones que necesito de SOKA: ninguna nueva.
+
 ### 2026-11-13 11:15, Etapa 4: un solo formulario para la prueba y el modo rápido
 
 - Rama y commits: `etapa-4-un-formulario`, creada desde `producto-v1` en `69a3ef3`. Lleva también el commit de la bitácora del turno de noche (entrada de abajo). Sin mezclar: SOKA pidió no mezclar nada a `producto-v1` antes de las 4:30 p. m. del 13 nov, porque a las 3:00 hace una demo sobre esa vista previa y a las 4:10 Claude en la nube mezcla #5. No toqué `src/app/admin`.
