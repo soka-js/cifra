@@ -213,6 +213,28 @@ Siguen abiertas la 6 (canales reales de pago) y la forma de entrar a `/admin` en
 
 ## Entradas
 
+### 2026-11-12 22:30, vista previa migrada y solicitud de cambio abierta
+
+- Rama y commits: `producto-v1` subida hasta `c392eb9` (quita la pausa). Esta entrada y los ajustes de `DEMO.md` van en el commit siguiente, también subido. **Solicitud de cambio #3** (`producto-v1` → `main`): https://github.com/soka-js/cifra/pull/3. Sin merge: lo aprueba SOKA.
+- Qué pasó:
+  - SOKA comparó la `DATABASE_URL` de producción con la huella de la vista previa. Producción está en otro servidor, distinto de `ep-proud-tooth-b8u1gk85`. Lo confirmé con lo que pegó en el chat.
+  - Quité la pausa de `web/scripts/migrate.mjs`; la huella en el log se queda.
+  - `DEMO.md`: corregí los nombres de los botones y campos tal como se ven en pantalla ("Cada quincena", "Tipo de comercio", "Compra promedio de un cliente"). Agregué cómo pausar la oferta de un ensayo.
+- Verificación:
+  - Log de la vista previa de `c392eb9`, en Vercel: `entorno: preview · rama git: producto-v1`, `DATABASE_URL: ep-proud-tooth-b8u1gk85-pooler / neondb`, `DATABASE_URL_UNPOOLED: ep-proud-tooth-b8u1gk85 / neondb`, **"Migraciones aplicadas."**. "Provisioning Integrations" enlaza la misma rama de Neon, `br-soft-sound-b89yyija`.
+  - En la vista previa (`cifra-git-producto-v1-proyects-soka.vercel.app`), con Chrome:
+    - La prueba sin cuenta con los datos del guion da hoy, 12 nov, **$675.000**: $1.200.000 − $450.000 de arriendo (14 nov) − $25.000 × 3 días. Es lo mismo que calcula el motor; el 13 nov dará $700.000.
+    - "¿Puedo gastar?" con $120.000 responde "Sí. Te quedarían $555.000 hasta el 15 nov."
+    - "Guardar mi cifra" lleva a `/registro?desde=prueba` con el título "Guarda tu cifra".
+    - Los eventos anónimos responden 204 en `/api/events`, que solo responde así después de guardar en la base: la base migrada responde.
+    - `/negocio` lleva al registro de negocio.
+  - **No creé cuentas en la vista previa.** No probé ahí el registro, el Hoy con cuenta, la oferta ni la caja: la dirección no es de un entorno marcado como de pruebas, y crear cuentas ahí lo decide SOKA. Esos pasos los cubren las pruebas de punta a punta locales, 55 de 55 con el mismo código, pero no contra los datos copiados de producción.
+- Decisiones que necesito de SOKA:
+  1. Un ensayo completo del guion en la vista previa antes de las 9:30: lo haces tú, o me autorizas a crear una persona y un negocio de prueba y pausar la oferta al final.
+  2. Canales de pago (decisión 6): el mensaje volvió a traer el espacio sin llenar.
+- Pendientes y riesgos:
+  - **SOKA pegó en el chat la cadena de conexión completa de producción, con la clave.** No la usé, ni la copié a ningún archivo, ni la repito aquí. Quedó en el registro de esta conversación, así que recomiendo cambiar la clave del rol de la base y revisar que Vercel quede con la nueva.
+
 ### 2026-11-12 22:00, rama subida (sin migrar la vista previa), demo del 13 nov y respuestas de SOKA
 
 SOKA confirmó que la vista previa tiene base propia y autorizó subir `producto-v1`, con una condición: antes que nada, confirmar en el log de compilación que las migraciones corren contra una rama de Neon y no contra la principal. **No pude confirmarlo del todo, así que paré antes de migrar y no abrí la solicitud de cambio.**

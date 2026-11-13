@@ -20,6 +20,7 @@ Los montos de este guion son **de ejemplo**: los escribes tú en pantalla, y CIF
 3. Ten a mano dos correos que no hayas usado. Cada demo crea cuentas nuevas, así que para la segunda llamada usa otros (por ejemplo `persona.demo2@…` y `tendero.demo2@…`).
 4. En Meet, comparte la pantalla completa, no una pestaña: vas a pasar de una ventana a la otra.
 5. No abras `/admin` mientras compartes pantalla.
+6. Si haces un ensayo completo antes, crea el negocio del ensayo con otro nombre y, al terminar, en la ventana del tendero ve a Ofertas y toca "Pausar" en su oferta. Así no aparece en la lista de la persona durante la llamada.
 
 ## Guion
 
@@ -31,7 +32,7 @@ Los montos de este guion son **de ejemplo**: los escribes tú en pantalla, y CIF
 
 | Pregunta en pantalla | Qué haces |
 | --- | --- |
-| ¿Cada cuánto te pagan? | Toca "Quincenal" (días 15 y 30) y "Seguir" |
+| ¿Cada cuánto te pagan? | Toca "Cada quincena" (ya trae los días 15 y 30) y "Seguir" |
 | ¿Cuánto tienes hoy? | Escribe `1.200.000` y "Seguir" |
 | ¿Qué pagas fijo cada mes? | Toca "Arriendo", escribe `450.000`, elige "Día 14" y "Seguir" |
 | ¿Cuánto se te va en el día a día? | Escribe `25.000` (por día) y toca "Ver mi cifra" |
@@ -53,12 +54,13 @@ Qué debe verse el **viernes 13**: "Puedes gastar hasta el 15 nov" con **$700.00
 | Campo | Ejemplo |
 | --- | --- |
 | Nombre del negocio | `Café de ejemplo` (que se note que es de prueba) |
-| Categoría | Cafetería |
-| Tu nombre, WhatsApp | El tuyo, o `3105550000` |
-| Zona | Las Aguas |
-| Dirección | `Cra 3 # 18-45` |
-| Venta típica | `20.000` |
-| Correo y clave | El correo del tendero y una clave de 10 o más caracteres |
+| Tipo de comercio | Cafetería / Onces |
+| Tu nombre (dueño o encargado), WhatsApp de contacto | El tuyo, o `3105550000` |
+| Zona en Bogotá | Las Aguas · Centro / Uniandes |
+| Dirección del local | `Cra 3 # 18-45` |
+| Compra promedio de un cliente | `20.000` |
+| Horario, llave Bre-B o Nequi, mapa | Déjalos como están (la llave es opcional) |
+| Correo y contraseña | El correo del tendero y una clave de 10 o más caracteres |
 
 Toca "Registrar mi negocio y crear primera oferta". Qué decir: "El tendero se registra solo, desde el celular, en un minuto."
 
