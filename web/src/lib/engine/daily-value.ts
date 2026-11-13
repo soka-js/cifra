@@ -61,16 +61,16 @@ export function simulateCreditInstallments(
     };
   });
 
-  const opt6 = options.find((o) => o.installments === 6);
-  const opt12 = options.find((o) => o.installments === 12);
+  // El consejo cita los intereses que acaba de calcular; ningún monto sale de otro lado.
+  const withInterest = options.filter((o) => o.interestLostMinor > 0);
+  const longest = withInterest[withInterest.length - 1];
   const plainAdvice =
     cleanAmount === 0
       ? 'Escribe un monto para comparar contado frente a cuotas.'
-      : `A 6 cuotas le regalas intereses equivalentes a varios almuerzos${
-          opt12 ? `, y a 12 cuotas pagas un sobrecosto importante` : ''
-        }. Si no es emergencia, págalo de contado o a 1 sola cuota después de tu fecha de corte.`;
+      : longest
+        ? `A ${longest.installments} cuotas pagarías ${cop(longest.interestLostMinor)} más en intereses. Si no es una emergencia, págalo a 1 sola cuota, después de tu fecha de corte.`
+        : 'Con esta tasa no pagas intereses en ninguna opción.';
 
-  void opt6;
   return {
     amountMinor: cleanAmount,
     annualEffectiveRatePct,
@@ -80,11 +80,17 @@ export function simulateCreditInstallments(
   };
 }
 
+/**
+ * Un gasto que se repite en los últimos 30 días. Solo lleva lo que está en los movimientos de la
+ * persona (cuánto pagó y cuántas veces); no estima pérdidas ni ahorros posibles.
+ */
 export interface MoneyLeakInsight {
-  id: 'sobrecosto_domicilios' | 'cobros_bancarios' | 'impulsos_finde' | 'hormiga_frecuente';
+  id: 'domicilios_app' | 'cobros_bancarios' | 'noches_y_finde';
   title: string;
-  monthlyLossMinor: number;
-  recoverableMonthlyMinor: number;
+  /** Lo que la persona pagó por este concepto en los últimos 30 días (centavos, positivo). */
+  amountMinor: number;
+  /** Cuántos movimientos suman ese monto. */
+  count: number;
   evidence: string;
   concreteAction: string;
   /** Categoría del barrio con la que se puede sustituir (si aplica). */
@@ -99,10 +105,11 @@ export interface LeakInputTx extends RawTx {
 }
 
 /**
- * Radiografía de Fugas con Nombre Propio (últimos 30 días):
- * 1) Recargos ocultos en apps de domicilio
- * 2) Cobros bancarios e impuestos evitables (cuota manejo, 4x1000, seguros)
- * 3) Picos de gasto nocturno / viernes-sábado
+ * Gastos que se repiten en los últimos 30 días, con lo que de verdad se pagó:
+ * 1) Domicilios pedidos por app
+ * 2) Cobros del banco (cuota de manejo, 4x1000, seguros)
+ * 3) Compras de viernes, sábado o de noche
+ * Un mismo movimiento puede aparecer en dos grupos (un domicilio un viernes), así que no se suman entre sí.
  */
 export function detectMoneyLeaks(input: {
   txs: LeakInputTx[];
@@ -115,23 +122,16 @@ export function detectMoneyLeaks(input: {
 
   const leaks: MoneyLeakInsight[] = [];
 
-  // 1. Sobrecosto en apps de domicilio (~26 % entre envío, tarifa de servicio y sobreprecio de carta)
+  // 1. Domicilios por app
   const deliveryTxs = recent.filter((t) => DELIVERY_APPS_RE.test(t.description));
   if (deliveryTxs.length >= 2) {
-    const grossMinor = deliveryTxs.reduce((s, t) => s + Math.abs(t.amountMinor), 0);
-    const hiddenFeesMinor = deliveryTxs.reduce(
-      (s, t) => s + Math.max(6_500_00, Math.round(Math.abs(t.amountMinor) * 0.26)),
-      0,
-    );
-    const grossFormatted = cop(grossMinor);
     leaks.push({
-      id: 'sobrecosto_domicilios',
-      title: 'Recargos ocultos en apps de domicilio',
-      monthlyLossMinor: hiddenFeesMinor,
-      recoverableMonthlyMinor: Math.round(hiddenFeesMinor * 0.65),
-      evidence: `${deliveryTxs.length} pedidos en los últimos 30 días (gasto total pagado en apps: ${grossFormatted}).`,
-      concreteAction:
-        'Cambiando la mitad de tus pedidos a locales independientes a menos de 4 cuadras te ahorras envío, tarifa de servicio y sobreprecio de menú.',
+      id: 'domicilios_app',
+      title: 'Domicilios por app',
+      amountMinor: deliveryTxs.reduce((s, t) => s + Math.abs(t.amountMinor), 0),
+      count: deliveryTxs.length,
+      evidence: `${deliveryTxs.length} pedidos en los últimos 30 días.`,
+      concreteAction: 'Si cambias algunos por un local cerca, te ahorras el envío y la tarifa de servicio de la app.',
       neighborhoodCategory: 'comida',
     });
   }
@@ -146,12 +146,12 @@ export function detectMoneyLeaks(input: {
     if (feesMinor >= 5_000_00) {
       leaks.push({
         id: 'cobros_bancarios',
-        title: 'Cuotas bancarias, 4x1000 o seguros evitables',
-        monthlyLossMinor: feesMinor,
-        recoverableMonthlyMinor: Math.round(feesMinor * 0.8),
-        evidence: `${bankFeeTxs.length} cobros financieros detectados este mes (${identifyMerchant(bankFeeTxs[0]!.description, input.overrides).name}).`,
+        title: 'Cuota de manejo, 4x1000 y seguros',
+        amountMinor: feesMinor,
+        count: bankFeeTxs.length,
+        evidence: `${bankFeeTxs.length} ${bankFeeTxs.length === 1 ? 'cobro del banco' : 'cobros del banco'} en los últimos 30 días (por ejemplo, ${identifyMerchant(bankFeeTxs[0]!.description, input.overrides).name}).`,
         concreteAction:
-          'Marca tu cuenta principal como exenta del 4x1000 en la app de tu banco y pide exoneración de cuota de manejo o cambia a plan $0.',
+          'Pregunta en tu banco por marcar tu cuenta principal como exenta del 4x1000 y por una cuenta sin cuota de manejo.',
         neighborhoodCategory: null,
       });
     }
@@ -181,16 +181,15 @@ export function detectMoneyLeaks(input: {
 
   if (weekendNightCount >= 3 && weekendNightMinor >= 60_000_00) {
     leaks.push({
-      id: 'impulsos_finde',
-      title: 'Pico de gasto en noches y viernes–sábado',
-      monthlyLossMinor: weekendNightMinor,
-      recoverableMonthlyMinor: Math.round(weekendNightMinor * 0.3),
-      evidence: `${weekendNightCount} compras concentradas en viernes, sábado o después de las 7:00 p. m.`,
-      concreteAction:
-        'Pon un tope previo antes del viernes a las 6:00 p. m. en ¿Puedo? y aprovecha ofertas de tarde en tu cuadra antes de la hora pico.',
+      id: 'noches_y_finde',
+      title: 'Viernes, sábado y noches',
+      amountMinor: weekendNightMinor,
+      count: weekendNightCount,
+      evidence: `${weekendNightCount} compras de comida, salidas, transporte o compras en viernes, sábado o después de las 7:00 p. m.`,
+      concreteAction: 'Antes del viernes, pregunta en ¿Puedo? cuánto te alcanza para el fin de semana.',
       neighborhoodCategory: 'comida',
     });
   }
 
-  return leaks.sort((a, b) => b.recoverableMonthlyMinor - a.recoverableMonthlyMinor);
+  return leaks.sort((a, b) => b.amountMinor - a.amountMinor);
 }

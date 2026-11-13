@@ -119,7 +119,7 @@ export default async function MerchantOffersPage({
                         </span>
                         {o.isFlash && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-900">
-                            ⚡ Relámpago
+                            ⚡ Por horas
                             {o.stockRemaining !== null ? ` · Quedan ${o.stockRemaining}/${o.stockLimit ?? o.stockRemaining}` : ''}
                           </span>
                         )}

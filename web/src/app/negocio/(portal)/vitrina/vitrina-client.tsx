@@ -248,7 +248,7 @@ export function VitrinaClient({
 
         <div className="mt-5 flex items-center justify-center gap-2 border-t border-line pt-4 text-[12px] font-semibold text-ink-faint">
           <LogoMark size={18} />
-          <span>Comercio independiente verificado en CIFRA</span>
+          <span>Comercio independiente en CIFRA</span>
         </div>
       </section>
     </div>

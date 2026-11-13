@@ -17,6 +17,17 @@ export function cop(minor: number, opts: { sign?: boolean; space?: boolean } = {
   return `${sign}$${space}${formatted}`;
 }
 
+/**
+ * Un monto en miles de pesos, para etiquetas donde no cabe el número entero (barras de una gráfica
+ * rotulada "en miles de pesos"): 4523400 centavos ($45.234) -> "45"; 120000000 ($1.200.000) -> "1.200".
+ * Un monto positivo de menos de $500 se muestra "<1" para no confundirlo con cero.
+ */
+export function milesDePesos(minor: number): string {
+  const miles = Math.round(Math.abs(minor) / 100 / 1000);
+  if (miles === 0 && minor !== 0) return '<1';
+  return formatThousands(miles);
+}
+
 /** Interpreta lo que escribe la persona ("45.000", "45000", "45 mil") como centavos. */
 export function parsePesosInput(value: string): number | null {
   const s = value.toLowerCase().replace(/\s/g, '');

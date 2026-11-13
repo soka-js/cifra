@@ -828,7 +828,7 @@ export async function ensureDemoEcosystemSeeded(forceReset = false): Promise<Dem
       userId: mariana!.id,
       kind: 'cobro_recurrente',
       title: 'Disney+ marcado como «No lo uso» ($34.900/mes)',
-      body: 'Ya sumamos este ahorro mensual verificado a tu contador de pesos ahorrados con CIFRA.',
+      body: 'Ya sumamos este ahorro mensual a lo que llevas ahorrado con CIFRA.',
       actionUrl: '/app/cobros',
       dedupeKey: 'demo-notif-cancel',
       readAt: now,
@@ -1153,7 +1153,7 @@ async function ensureV3DemoData(params: {
   if (!existingFlash) {
     await db.insert(offers).values({
       merchantId: params.espigaMerchantId,
-      title: '25 % OFF en horneados de la tarde (cero merma)',
+      title: '25 % OFF en horneados de la tarde, antes del cierre',
       description: 'Pan de masa madre y hojaldres recién horneados para cerrar la tarde sin merma.',
       targetCategory: 'comida',
       discountKind: 'percent',
@@ -1229,7 +1229,7 @@ async function ensureV3DemoData(params: {
       await db.insert(offers).values({
         merchantId: fruverParque.id,
         title: 'Canasta cierre de tarde: 30 % en fruta seleccionada',
-        description: 'Fruta fresca de Corabastos antes del cierre. Ayúdanos a tener cero merma.',
+        description: 'Fruta fresca de Corabastos antes del cierre, para no botar nada.',
         targetCategory: 'mercado',
         discountKind: 'percent',
         discountPercent: 30,

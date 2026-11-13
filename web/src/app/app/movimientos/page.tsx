@@ -1,4 +1,4 @@
-import { AlertOctagon, Coffee, Search, Upload, X } from 'lucide-react';
+import { Coffee, Repeat, Search, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import { QuickCaptureModal } from '@/components/app/quick-capture-modal';
 import { SpendingDashboardChart } from '@/components/app/spending-dashboard-chart';
@@ -38,8 +38,6 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
       ? Math.round(((breakdown.currentTotalMinor - breakdown.previousTotalMinor) / breakdown.previousTotalMinor) * 100)
       : null;
 
-  const totalRecoverableLeaksMinor = dailyBundle.leaks.reduce((s, l) => s + l.recoverableMonthlyMinor, 0);
-
   const groups = new Map<string, typeof movements>();
   for (const r of movements) {
     const list = groups.get(r.postedOn) ?? [];
@@ -54,7 +52,7 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
         <div>
           <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">En qué se me va</h1>
           <p className="mt-1.5 text-[15px] leading-relaxed text-ink-muted">
-            Tus gastos clasificados automáticamente y tus fugas con nombre propio. Anota en 3 segundos o reclasifica en un toque.
+            Tus gastos, clasificados solos. Anota uno nuevo o cámbiale la categoría con un toque.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -85,23 +83,18 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
         />
       )}
 
-      {/* Radiografía de Fugas con Nombre Propio (Fase 6) */}
+      {/* Gastos que se repiten: solo lo que está en los movimientos, sin ahorros estimados. */}
       {!q && !activeCat && dailyBundle.leaks.length > 0 && (
-        <section className="surface-card border-neg/20 bg-gradient-to-br from-neg-light/45 via-white to-terra-pale/40 p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-neg-light text-neg">
-                <AlertOctagon size={20} aria-hidden="true" />
-              </span>
-              <div>
-                <span className="badge-neg">Radiografía de fugas reales · últimos 30 días</span>
-                <h2 className="mt-1.5 font-display text-[20px] font-bold text-ink">
-                  Podrías recuperar hasta <span className="tnum text-primary-dark">{cop(totalRecoverableLeaksMinor)}/mes</span>
-                </h2>
-                <p className="mt-0.5 text-[13.5px] text-ink-muted">
-                  Plata que se va en sobrecostos invisibles, comisiones bancarias o picos evitables:
-                </p>
-              </div>
+        <section className="surface-card border-terra/25 bg-gradient-to-br from-terra-pale/50 via-white to-white p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-terra-light text-terra-dark">
+              <Repeat size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="font-display text-[20px] font-bold text-ink">Lo que se repite en tus gastos</h2>
+              <p className="mt-0.5 text-[13.5px] text-ink-muted">
+                Lo que pagaste en los últimos 30 días. Un mismo gasto puede aparecer en dos grupos.
+              </p>
             </div>
           </div>
 
@@ -110,17 +103,10 @@ export default async function MovimientosPage({ searchParams }: { searchParams: 
               <div key={leak.id} className="rounded-2xl border border-line bg-white p-4">
                 <div className="flex items-baseline justify-between gap-2">
                   <h3 className="font-display text-[16px] font-bold text-ink">{leak.title}</h3>
-                  <span className="tnum shrink-0 text-[13.5px] font-extrabold text-neg">
-                    -{cop(leak.monthlyLossMinor)}/mes
-                  </span>
+                  <span className="tnum shrink-0 text-[14px] font-extrabold text-ink">{cop(leak.amountMinor)}</span>
                 </div>
                 <p className="mt-1 text-[12.5px] text-ink-muted">{leak.evidence}</p>
-                <p className="mt-2 rounded-xl bg-paper px-3 py-2 text-[12.5px] leading-snug text-ink-soft">
-                  <strong className="font-semibold text-primary-dark">
-                    Recupera ~{cop(leak.recoverableMonthlyMinor)}/mes:
-                  </strong>{' '}
-                  {leak.concreteAction}
-                </p>
+                <p className="mt-2 rounded-xl bg-paper px-3 py-2 text-[12.5px] leading-snug text-ink-soft">{leak.concreteAction}</p>
               </div>
             ))}
           </div>

@@ -2,16 +2,29 @@
 
 import { CheckCircle2 } from 'lucide-react';
 import { useActionState, useState } from 'react';
+import { cop } from '@/lib/format';
 import { saveCycleClosure, type FormState } from '../actions';
 
-const SUGGESTED_COMMITMENTS = [
-  'Cancelar 1 suscripción que marqué como «no la uso» antes del próximo cobro',
-  'Limitar domicilios y cafés fuera de casa a dos veces por semana',
-  'Apartar un colchón de $100.000 apenas entre mi próximo ingreso',
-  'Preguntar en ¿Puedo? antes de cualquier gasto mayor a $60.000',
-];
+/** Compromisos sugeridos. El único monto sale del gasto diario de la persona. */
+function suggestedCommitments(dailyVariableMinor: number): string[] {
+  return [
+    'Cancelar 1 suscripción que marqué como «no la uso» antes del próximo cobro',
+    'Pedir domicilios y cafés fuera de casa máximo dos veces por semana',
+    'Apartar un colchón apenas entre mi próximo pago',
+    dailyVariableMinor > 0
+      ? `Preguntar en ¿Puedo? antes de cualquier gasto mayor a lo que gasto en un día (${cop(dailyVariableMinor)})`
+      : 'Preguntar en ¿Puedo? antes de cualquier gasto grande',
+  ];
+}
 
-export function CycleClosureForm({ initialCommitment }: { initialCommitment?: string | null }) {
+export function CycleClosureForm({
+  initialCommitment,
+  dailyVariableMinor,
+}: {
+  initialCommitment?: string | null;
+  dailyVariableMinor: number;
+}) {
+  const SUGGESTED_COMMITMENTS = suggestedCommitments(dailyVariableMinor);
   const [state, action, pending] = useActionState<FormState, FormData>(saveCycleClosure, { status: 'idle' });
   const [text, setText] = useState(initialCommitment ?? SUGGESTED_COMMITMENTS[0]!);
 

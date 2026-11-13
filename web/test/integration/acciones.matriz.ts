@@ -149,7 +149,7 @@ export const SPECS: Spec[] = [
   {
     id: 'actions/v3.ts#launchQuickFlashOfferAction',
     audience: 'negocio',
-    call: () => v3Actions.launchQuickFlashOfferAction(idle, fd({ title: 'Pan de la tarde', discountPercent: 20, stockLimit: 10 })),
+    call: () => v3Actions.launchQuickFlashOfferAction(idle, fd({ title: 'Pan de la tarde', discountPercent: 20, stockLimit: 10, unitCost: '7000' })),
     selfOnly: true,
   },
   {

@@ -301,6 +301,7 @@ await step('E1. un tendero sin cuenta abre /negocio y registra su negocio él so
   await s.fill('#whatsapp', '3105550000');
   await s.selectOption('#zoneSlug', 'las-aguas');
   await s.fill('#address', 'Cra 3 # 18-45');
+  await s.fill('#typicalTicket', '20000');
   await s.fill('#email', shopEmail);
   await s.fill('#password', PASSWORD);
   await Promise.all([
@@ -375,6 +376,25 @@ await step('E7. a la persona le llega el aviso del ahorro', async () => {
   await p.goto(`${BASE}/app/avisos`, { waitUntil: 'networkidle' });
   const text = await p.locator('main').innerText();
   assert.ok(text.includes(`Ahorraste ${pesos(2_000)}`), text.slice(0, 300));
+});
+
+await step('E8. el tendero no ve una meta que no escribió, ni supuestos ni jerga, y su meta sale de lo que escribe', async () => {
+  for (const route of ['/negocio', '/negocio/cuadre', '/negocio/ofertas']) {
+    await s.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
+    const text = await s.locator('body').innerText();
+    for (const made of [pesos(400_000), pesos(4_500_000), '28 %']) {
+      assert.ok(!text.includes(made), `${route} muestra "${made}", que el tendero no escribió`);
+    }
+    assert.ok(!/rel[áa]mpago|cero merma|B2B2C|verificado/i.test(text), `${route} todavía tiene jerga o afirmaciones sin respaldo`);
+  }
+  await s.goto(`${BASE}/negocio/cuadre`, { waitUntil: 'networkidle' });
+  assert.ok(await s.locator('#btn-write-daily-goal').isVisible(), 'sin meta, el cuadre debe pedirla');
+  await s.click('#btn-write-daily-goal');
+  await s.fill('#dailyBreakEven', '350000');
+  await s.locator('form:has(#dailyBreakEven) button[type="submit"]').click();
+  await s.getByText(`Meta diaria actualizada a ${pesos(350_000)}`).waitFor({ timeout: 20_000 });
+  await s.goto(`${BASE}/negocio`, { waitUntil: 'networkidle' });
+  assert.ok((await s.locator('main').innerText()).includes(`de ${pesos(350_000)}`), 'el resumen debe usar la meta escrita');
 });
 
 await browser.close();

@@ -8,7 +8,7 @@ import { executeEvaluatedSpendAction } from '@/app/actions/v3';
 import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
 import { MoneyInput } from '@/components/ui/money-input';
 import { track } from '@/lib/analytics/client';
-import { canISpend, type CifraResult } from '@/lib/engine/cifra';
+import { canISpend, comfortableSpendMinor, spendReserveMinor, type CifraResult } from '@/lib/engine/cifra';
 import { simulateCreditInstallments } from '@/lib/engine/daily-value';
 import { shortDate } from '@/lib/engine/dates';
 import { parseNaturalSpendQuery } from '@/lib/engine/insights';
@@ -24,6 +24,9 @@ interface NearbyOfferHint {
   neighborhood: string;
   estimatedSavingsMinor: number;
 }
+
+/** Tasas de ejemplo para el simulador de cuotas. Se rotulan como ejemplo en pantalla; no son la tasa de nadie. */
+const EXAMPLE_EA_RATES = [26.5, 30.8, 33.9];
 
 const QUICK_EXAMPLES = [
   '¿Puedo pedir domicilio de 38 mil hoy?',
@@ -45,7 +48,7 @@ export function Ask({
   const [naturalText, setNaturalText] = useState('');
   const [raw, setRaw] = useState('');
   const [what, setWhat] = useState('');
-  const [eaRate, setEaRate] = useState<number>(30.8);
+  const [eaRate, setEaRate] = useState<number>(EXAMPLE_EA_RATES[1]!);
   const [answer, setAnswer] = useState<ReturnType<typeof canISpend> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [executedMessage, setExecutedMessage] = useState<string | null>(null);
@@ -87,8 +90,10 @@ export function Ask({
     evaluate(parsed.amountMinor, parsed.concept);
   }
 
-  const safeAlternativeMinor =
-    cifra.availableMinor > 10_000_00 ? Math.floor((cifra.availableMinor * 0.65) / 5_000_00) * 5_000_00 : 0;
+  // El gasto más grande que todavía recibe un "sí": la cifra menos tres días de tu día a día.
+  const comfortableMinor = comfortableSpendMinor(cifra);
+  const reserveMinor = spendReserveMinor(cifra);
+  const reserveDays = Math.min(3, cifra.daysLeft);
 
   const usedSharePct =
     answer && cifra.availableMinor > 0
@@ -283,19 +288,21 @@ export function Ask({
             <div className="mt-4 space-y-2.5 rounded-2xl bg-white/90 p-4 text-[14px]">
               <p className="font-semibold text-ink">Opciones concretas para decidir tranquilo:</p>
               <ul className="space-y-2 text-ink-soft">
-                {safeAlternativeMinor > 0 && (
+                {comfortableMinor > 0 && comfortableMinor < answer.amountMinor && (
                   <li className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     <span>
-                      <strong>Tope cómodo hoy:</strong> hasta{' '}
+                      <strong>Con margen, hasta</strong>{' '}
                       <button
+                        id="btn-ask-comfortable"
                         type="button"
-                        onClick={() => evaluate(safeAlternativeMinor, what)}
+                        onClick={() => evaluate(comfortableMinor, what)}
                         className="tnum font-semibold text-primary-dark underline underline-offset-2"
                       >
-                        {cop(safeAlternativeMinor)}
-                      </button>{' '}
-                      sin apretar el resto de tus días.
+                        {cop(comfortableMinor)}
+                      </button>
+                      : te quedan <span className="tnum">{cop(reserveMinor)}</span> de margen, lo que gastas en {reserveDays}{' '}
+                      {reserveDays === 1 ? 'día' : 'días'} de tu día a día.
                     </span>
                   </li>
                 )}
@@ -371,21 +378,25 @@ export function Ask({
               </h3>
             </div>
             <label className="flex items-center gap-1.5 text-[12.5px] text-ink-muted">
-              <span>Tasa E.A.:</span>
+              <span>Tasa de ejemplo:</span>
               <select
+                id="ask-ea-rate"
                 value={eaRate}
                 onChange={(e) => setEaRate(Number(e.target.value))}
                 className="rounded-lg border border-line bg-paper px-2 py-1 text-[12.5px] font-semibold text-ink"
               >
-                <option value={30.8}>30,8 % E.A. (promedio TC Colombia)</option>
-                <option value={26.5}>26,5 % E.A. (tasa preferencial)</option>
-                <option value={33.9}>33,9 % E.A. (cerca a usura)</option>
+                {EXAMPLE_EA_RATES.map((r) => (
+                  <option key={r} value={r}>
+                    {String(r).replace('.', ',')} % E.A.
+                  </option>
+                ))}
               </select>
             </label>
           </div>
 
           <p className="mt-1.5 text-[13.5px] text-ink-muted">
-            Equivale a <strong className="tnum text-ink">{creditSim.monthlyRatePct} % mes vencido</strong>. Mira cuánto terminas pagando de verdad:
+            Es un ejemplo: la tasa de tu tarjeta sale en su extracto. Con esta tasa, que equivale a{' '}
+            <strong className="tnum text-ink">{creditSim.monthlyRatePct} % mes vencido</strong>, terminarías pagando:
           </p>
 
           <div className="tnum mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -436,7 +447,7 @@ export function Ask({
               ? 'En vez de pagar recargos de app: locales a minutos de ti con descuento activo'
               : '¿Prefieres resolverlo caminando en tu barrio y ahorrando?'
           }
-          compactSubtitle="Compara cuánto te cuesta a pie en comercios independientes verificados frente a pedir por aplicación."
+          compactSubtitle="Compara cuánto te cuesta a pie en comercios independientes de tu barrio frente a pedir por aplicación."
         />
       )}
     </div>

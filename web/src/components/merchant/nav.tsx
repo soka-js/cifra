@@ -31,7 +31,7 @@ const SIDEBAR_ITEMS = [
   { href: '/negocio', label: 'Resumen del mes', icon: Home, exact: true },
   { href: '/negocio/caja', label: 'Caja · Cobrar código', icon: QrCode },
   { href: '/negocio/cuadre', label: 'Cuadre diario e insumos', icon: Calculator },
-  { href: '/negocio/ofertas', label: 'Mis ofertas y relámpago', icon: Tag },
+  { href: '/negocio/ofertas', label: 'Mis ofertas', icon: Tag },
   { href: '/negocio/vitrina', label: 'Mi vitrina y afiche QR', icon: Share2 },
   { href: '/negocio/informe', label: 'Informe de 1 página', icon: FileText },
   { href: '/negocio/cuenta', label: 'Comisiones y pagos', icon: Receipt },

@@ -27,7 +27,7 @@ export function B2B2CSimulator() {
     <div className="my-6 rounded-2xl border border-line bg-paper p-5 sm:p-6 not-prose">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <span className="badge-primary">Calculadora Financiera B2B2C · Reparto 70 / 30</span>
+          <span className="badge-primary">Calculadora de reparto · 70 / 30</span>
           <h3 className="mt-1.5 font-display text-[20px] font-bold text-ink">
             Calcula el ahorro para tus asociados y tu ingreso por reparto (30 %)
           </h3>

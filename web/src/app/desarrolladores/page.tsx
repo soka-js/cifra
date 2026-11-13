@@ -1,7 +1,7 @@
 import { LegalPage } from '@/components/legal/page';
 import { B2B2CSimulator } from './api-playground';
 
-export const metadata = { title: 'API y Canal B2B2C para Entidades · CIFRA' };
+export const metadata = { title: 'API para cooperativas, cajas y billeteras · CIFRA' };
 
 function Code({ children }: { children: string }) {
   return (
@@ -15,7 +15,7 @@ const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cifra.co';
 
 export default function DevelopersPage() {
   return (
-    <LegalPage title="API y Canal B2B2C para Entidades" updated="8 de noviembre de 2026">
+    <LegalPage title="API para cooperativas, cajas y billeteras" updated="8 de noviembre de 2026">
       <p>
         Con esta API una cooperativa, fondo de empleados, caja de compensación, billetera digital o wallet de retail (como Starbucks) integra CIFRA dentro de su propia aplicación usando los saldos y movimientos que ya custodia. No requiere esperar regulación de finanzas abiertas: la entidad mantiene la relación con su usuario, le entrega bienestar financiero inmediato y recibe el <strong>30 % de las comisiones</strong> generadas cuando sus usuarios redimen ofertas en comercios de barrio.
       </p>

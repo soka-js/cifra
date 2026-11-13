@@ -14,7 +14,7 @@ import {
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { Category } from '@/lib/engine/merchant';
-import { cop, shortDate } from '@/lib/format';
+import { cop, milesDePesos, shortDate } from '@/lib/format';
 
 interface CategoryRow {
   category: Category;
@@ -254,9 +254,8 @@ export function SpendingDashboardChart({
       if (scopeMode === 'variable' && isStructural) continue;
 
       const absMinor = Math.abs(m.amountMinor);
-      if (isStructural && absMinor >= 500_000_00) {
-        fixedSpikeDates.add(m.postedOn);
-      }
+      // Un día con arriendo u otro cobro fijo no cuenta para la escala de los demás días.
+      if (isStructural) fixedSpikeDates.add(m.postedOn);
 
       byDate.set(m.postedOn, (byDate.get(m.postedOn) ?? 0) + absMinor);
 
@@ -287,10 +286,11 @@ export function SpendingDashboardChart({
     const nonSpikeValues = days14
       .filter((d) => !d.hadFixedSpike)
       .map((d) => d.spentMinor);
-    const highestNormalMinor = Math.max(...nonSpikeValues, dailyAllowanceMinor * 1.4, 80_000_00);
+    // La escala sale solo de los datos; el 1 evita dividir entre cero cuando no hay gastos.
+    const highestNormalMinor = Math.max(...nonSpikeValues, dailyAllowanceMinor * 1.4, 1);
     const maxScaleMinor =
       scopeMode === 'variable'
-        ? Math.max(dailyAllowanceMinor * 1.45, ...days14.map((d) => d.spentMinor), 80_000_00)
+        ? Math.max(dailyAllowanceMinor * 1.45, ...days14.map((d) => d.spentMinor), 1)
         : Math.max(highestNormalMinor * 1.35, dailyAllowanceMinor * 2.1);
 
     const weekdaysSummary = WEEKDAY_NAMES.map((name, idx) => {
@@ -331,7 +331,7 @@ export function SpendingDashboardChart({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="badge-primary">
-              <Sparkles size={12} aria-hidden="true" /> Radiografía visual · últimos 30 días
+              <Sparkles size={12} aria-hidden="true" /> Tus gastos · últimos 30 días
             </span>
             <span className="rounded-full bg-paper px-2.5 py-0.5 text-[11.5px] font-semibold text-ink-muted">
               {scopeMode === 'variable'
@@ -739,7 +739,7 @@ export function SpendingDashboardChart({
           <div className="rounded-2xl border border-line bg-white p-4 sm:p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[12px]">
               <span className="font-bold text-ink">
-                Evolución diaria (últimos 14 días · {scopeMode === 'variable' ? 'Gasto día a día' : 'Todo el mes'})
+                Evolución diaria en miles de pesos (últimos 14 días · {scopeMode === 'variable' ? 'Gasto día a día' : 'Todo el mes'})
               </span>
               <div className="flex flex-wrap items-center gap-3 text-[11.5px] text-ink-muted">
                 <span className="inline-flex items-center gap-1.5">
@@ -778,26 +778,19 @@ export function SpendingDashboardChart({
                       : 4;
                   const overLimit =
                     dailyAllowanceMinor > 0 && day.spentMinor > dailyAllowanceMinor;
-                  const compactAmount =
-                    day.spentMinor >= 1_000_000_00
-                      ? `$${(day.spentMinor / 1_000_000_00).toFixed(1)}M`
-                      : day.spentMinor >= 10_000_00
-                        ? `$${Math.round(day.spentMinor / 1_000_00)}k`
-                        : '';
-
                   return (
                     <div
                       key={day.dateIso}
                       className="group relative flex h-full flex-1 flex-col items-center justify-end"
                     >
-                      {/* Etiqueta compacta visible sobre barras activas */}
+                      {/* Etiqueta corta sobre barras activas, en miles de pesos (rotulado arriba) */}
                       {day.spentMinor > 0 && (
                         <span
                           className={`tnum mb-1 text-[9.5px] font-bold ${
                             overLimit ? 'text-terra-dark' : 'text-primary-dark'
                           }`}
                         >
-                          {compactAmount}
+                          {milesDePesos(day.spentMinor)}
                         </span>
                       )}
 

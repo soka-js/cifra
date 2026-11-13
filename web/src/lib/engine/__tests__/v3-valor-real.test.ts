@@ -5,6 +5,7 @@ import {
   computeMerchantBreakEven,
   crossReferenceOffers,
 } from '../crossref';
+import { cop } from '../../format';
 import { detectMoneyLeaks, simulateCreditInstallments } from '../daily-value';
 import {
   parseChatExpenses,
@@ -59,7 +60,13 @@ describe('daily-value: simulador de cuotas de tarjeta y gastos que se repiten', 
     expect(sim.options[3]?.interestLostMinor).toBeGreaterThan(sim.options[2]!.interestLostMinor);
   });
 
-  it('detecta recargos ocultos en domicilios y cobros bancarios evitables', () => {
+  it('el consejo del simulador cita los intereses que calculó', () => {
+    const sim = simulateCreditInstallments(300_000_00, 30.8, [1, 3, 6, 12]);
+    expect(sim.plainAdvice).toContain(`A 12 cuotas pagarías ${cop(sim.options[3]!.interestLostMinor)} más`);
+    expect(simulateCreditInstallments(300_000_00, 0).plainAdvice).toMatch(/no pagas intereses/);
+  });
+
+  it('muestra lo que de verdad se pagó en domicilios y en cobros del banco, sin estimar ahorros', () => {
     const leaks = detectMoneyLeaks({
       today: '2026-11-06',
       txs: [
@@ -68,8 +75,12 @@ describe('daily-value: simulador de cuotas de tarjeta y gastos que se repiten', 
         { accountId: 'a1', postedOn: '2026-11-05', description: 'CUOTA DE MANEJO TARJETA DEBITO', amountMinor: -16_900_00 },
       ],
     });
-    expect(leaks.some((l) => l.id === 'sobrecosto_domicilios')).toBe(true);
-    expect(leaks.some((l) => l.id === 'cobros_bancarios')).toBe(true);
+    expect(leaks.find((l) => l.id === 'domicilios_app')).toMatchObject({ amountMinor: 78_000_00, count: 2 });
+    expect(leaks.find((l) => l.id === 'cobros_bancarios')).toMatchObject({ amountMinor: 16_900_00, count: 1 });
+    // Ningún texto trae un monto que no esté en los movimientos.
+    for (const l of leaks) expect(`${l.evidence} ${l.concreteAction}`).not.toMatch(/\$\d/);
+    // Los más grandes primero.
+    expect(leaks.map((l) => l.amountMinor)).toEqual([...leaks.map((l) => l.amountMinor)].sort((a, b) => b - a));
   });
 });
 
@@ -155,12 +166,17 @@ describe('crossref: cruce gasto real × hora × cercanía GPS y economía honest
     expect(ranked[0]?.vsHabitualSavingsMinor).toBeGreaterThan(10_000_00);
   });
 
-  it('calcula margen real del tendero frente a apps del 28 % y detecta encarecimiento de insumos', () => {
+  it('calcula margen real del tendero frente a la comisión de app que él escribe y detecta encarecimiento de insumos', () => {
+    // Sin comisión de app escrita, no se supone ninguna: la "venta por app" queda igual a la venta normal.
+    const sinApp = computeHonestMerchantMargin({ regularPriceMinor: 20_000_00, unitCostMinor: 9_000_00, discountKind: 'percent', discountPercent: 10 });
+    expect(sinApp.deliveryAppCommissionMinor).toBe(0);
+
     const margin = computeHonestMerchantMargin({
       regularPriceMinor: 20_000_00,
       unitCostMinor: 9_000_00,
       discountKind: 'percent',
       discountPercent: 10,
+      deliveryAppCommissionPct: 28,
     });
     expect(margin.cifraNetInRegisterMinor).toBe(17_100_00);
     expect(margin.cifraFirstVisitProfitMinor).toBe(8_100_00);
@@ -183,5 +199,20 @@ describe('crossref: cruce gasto real × hora × cercanía GPS y economía honest
     expect(be.needsFlashBoost).toBe(true);
     expect(be.supplyAlerts).toHaveLength(1);
     expect(be.supplyAlerts[0]?.increasePct).toBe(23);
+
+    // Sin meta escrita por el tendero no se inventa una: no hay brecha ni porcentaje.
+    const noGoal = computeMerchantBreakEven({
+      today: '2026-11-06',
+      dailyBreakEvenMinor: null,
+      entries: [{ entryOn: '2026-11-06', kind: 'venta_mostrador', categoryLabel: 'Mostrador', amountMinor: 80_000_00 }],
+    });
+    expect(noGoal).toMatchObject({
+      dailyBreakEvenMinor: null,
+      todaySalesMinor: 80_000_00,
+      gapTodayMinor: 0,
+      progressPct: 0,
+      reachedBreakEven: false,
+      needsFlashBoost: false,
+    });
   });
 });

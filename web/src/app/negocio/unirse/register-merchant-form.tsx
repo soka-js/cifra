@@ -173,8 +173,8 @@ export function RegisterMerchantForm({
           <MoneyInput
             id="typicalTicket"
             name="typicalTicket"
-            defaultValue={20000}
-            placeholder="20.000"
+            required
+            placeholder="Lo que gasta un cliente en una visita"
             presets={[10000, 20000, 35000, 50000]}
           />
         </div>

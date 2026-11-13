@@ -66,12 +66,8 @@ describe('cada número tiene recibo', () => {
         why: 'Umbral de validación (meta diaria mínima de un negocio). No se muestra como dato.',
       },
       'src/app/app/gasto/ask.tsx': {
-        max: 4,
-        why: 'PENDIENTE Etapa 2: alternativa sugerida con un factor 0,65 sin explicar y umbral del simulador de cuotas.',
-      },
-      'src/components/app/spending-dashboard-chart.tsx': {
-        max: 7,
-        why: 'PENDIENTE Etapa 2: umbrales de escala de la gráfica y etiquetas "$45k" armadas a mano.',
+        max: 1,
+        why: 'Umbral para mostrar el simulador de cuotas (compras desde $20.000). Decide si aparece; no se muestra como dato.',
       },
     });
     expect(problems).toEqual([]);
@@ -79,12 +75,32 @@ describe('cada número tiene recibo', () => {
 
   it('ningún monto se formatea a mano: todo pasa por cop()', () => {
     // Plantillas que arman "$" + número, por ejemplo `$${valor}`.
-    const problems = check(/`[^`\n]*\$\$\{/g, {
-      'src/components/app/spending-dashboard-chart.tsx': {
-        max: 2,
-        why: 'PENDIENTE Etapa 2: etiquetas compactas del eje ("$1.2M", "$45k").',
-      },
-    });
+    const problems = check(/`[^`\n]*\$\$\{/g, {});
+    expect(problems).toEqual([]);
+  });
+
+  it('sin jerga del equipo en lo que ve una persona o un tendero', () => {
+    // Pantallas, componentes, textos del motor que llegan a pantalla y los datos de la demo.
+    // Queda fuera /admin: es la consola interna de SOKA. Los comentarios no cuentan.
+    const files = [
+      ...screenFiles.filter((f) => !f.startsWith('src/app/admin/')),
+      ...walk(path.join(ROOT, 'src/lib/engine'))
+        .filter((f) => /\.ts$/.test(f) && !f.includes('__tests__'))
+        .map((f) => path.relative(ROOT, f).split(path.sep).join('/')),
+      'src/lib/demo-seed.ts',
+    ];
+    const JARGON = /rel[áa]mpago|cero merma|intocable|\bNBA\b|(?<![A-Za-z])B2B2C(?![A-Za-z])/i;
+    const problems: string[] = [];
+    for (const file of files) {
+      readFileSync(path.join(ROOT, file), 'utf8')
+        .split(/\r?\n/)
+        .forEach((line, i) => {
+          const code = line.replace(/\/\/.*$/, '').replace(/\{?\/\*.*?\*\/\}?/g, '').trim();
+          if (code.startsWith('*') || code.startsWith('/*')) return;
+          const m = code.match(JARGON);
+          if (m) problems.push(`${file}:${i + 1}  ${m[0]}`);
+        });
+    }
     expect(problems).toEqual([]);
   });
 

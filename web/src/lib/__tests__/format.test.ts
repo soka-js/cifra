@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cop, formatThousands, parseBalanceInput, parsePesosInput, toDailyMinor } from '../format';
+import { cop, formatThousands, milesDePesos, parseBalanceInput, parsePesosInput, toDailyMinor } from '../format';
 
 describe('saldo escrito a mano', () => {
   it('entiende puntos, signo pesos y "mil"', () => {
@@ -49,6 +49,13 @@ describe('pesos en pantalla (formato colombiano)', () => {
     expect(formatThousands(1234567)).toBe('1.234.567');
     expect(formatThousands(999)).toBe('999');
     expect(formatThousands('1.250.000')).toBe('1.250.000');
+  });
+  it('etiquetas cortas en miles de pesos, sin "k" ni "M"', () => {
+    expect(milesDePesos(45_234_00)).toBe('45');
+    expect(milesDePesos(45_500_00)).toBe('46');
+    expect(milesDePesos(1_200_000_00)).toBe('1.200');
+    expect(milesDePesos(300_00)).toBe('<1');
+    expect(milesDePesos(0)).toBe('0');
   });
   it('lo que se muestra se puede volver a leer', () => {
     for (const minor of [900_00, 18_000_00, 1_100_000_00, 1_808_228_00]) {

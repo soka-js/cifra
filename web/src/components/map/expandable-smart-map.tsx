@@ -38,7 +38,7 @@ const TIME_PILLS: Array<{ key: MapTimeFilter; label: string }> = [
   { key: 'ahora', label: 'Activas ahora' },
   { key: 'manana', label: 'Mañana' },
   { key: 'almuerzo', label: 'Mediodía' },
-  { key: 'tarde', label: 'Tarde · Cero merma' },
+  { key: 'tarde', label: 'Tarde' },
   { key: 'noche', label: 'Noche' },
 ];
 
@@ -190,7 +190,7 @@ export function ExpandableSmartMap({
             <span className="badge-terra inline-flex items-center gap-1">
               <Zap size={12} aria-hidden="true" />
               {flashCount > 0
-                ? `${flashCount} relámpago${flashCount === 1 ? '' : 's'} viva${flashCount === 1 ? '' : 's'}`
+                ? `${flashCount} ${flashCount === 1 ? 'oferta por horas' : 'ofertas por horas'} ahora`
                 : `${matched.length} locales cerca`}
             </span>
             {habitCount > 0 && (
@@ -323,7 +323,7 @@ export function ExpandableSmartMap({
                 <span className="inline-grid h-4 w-4 place-items-center rounded-full bg-amber-600 text-[9px] font-bold text-white">
                   ⚡
                 </span>
-                Oferta relámpago / cero merma con cupos vivos
+                Oferta por horas, con cupos contados
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="inline-block h-3 w-3 rounded-full bg-terra" />
@@ -370,7 +370,7 @@ export function ExpandableSmartMap({
                       <div className="flex flex-wrap items-center gap-1.5">
                         {item.isFlash ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-900">
-                            ⚡ Relámpago
+                            ⚡ Por horas
                             {item.stockRemaining !== null ? ` · Quedan ${item.stockRemaining}` : ''}
                           </span>
                         ) : (

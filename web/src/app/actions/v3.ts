@@ -247,7 +247,7 @@ export async function claimOfferCodeInlineAction(offerId: string): Promise<Claim
     return { ok: false, error: 'Esta oferta ya no está activa.' };
   }
   if (row.offer.stockRemaining !== null && row.offer.stockRemaining <= 0) {
-    return { ok: false, error: 'Se agotaron los cupos relámpago de hoy en este comercio.' };
+    return { ok: false, error: 'Se agotaron los cupos de hoy de esta oferta.' };
   }
 
   const [existing] = await db
@@ -461,7 +461,7 @@ export async function updateMerchantBreakEvenTargetsAction(
   const monthlyFixedCostMinor = parsePesosInput(String(formData.get('monthlyFixedCost') ?? ''));
 
   if (!dailyBreakEvenMinor || dailyBreakEvenMinor < 20_000_00) {
-    return { status: 'error', message: 'Define una meta diaria realista (por ejemplo $350.000).' };
+    return { status: 'error', message: 'Escribe cuánto necesitas vender al día, en pesos (desde $20.000).' };
   }
 
   await db
@@ -490,10 +490,14 @@ export async function launchQuickFlashOfferAction(
   const stockLimit = Math.min(80, Math.max(3, Number(formData.get('stockLimit') ?? 10)));
   const startHour = Math.min(23, Math.max(5, Number(formData.get('startHour') ?? currentBogotaHour())));
   const endHour = Math.min(23, Math.max(startHour + 1, Number(formData.get('endHour') ?? Math.min(22, startHour + 3))));
-  const unitCostMinor = parsePesosInput(String(formData.get('unitCost') ?? '')) ?? Math.round(access.merchant.typicalTicketMinor * 0.38);
+  const unitCostMinor = parsePesosInput(String(formData.get('unitCost') ?? ''));
 
   if (title.length < 4) {
-    return { status: 'error', message: 'Escribe qué vas a sacar en promoción relámpago hoy.' };
+    return { status: 'error', message: 'Escribe qué vas a ofrecer hoy.' };
+  }
+  // Sin el costo de insumos que escribe el tendero no se puede revisar que no pierda plata: no se supone uno.
+  if (unitCostMinor === null) {
+    return { status: 'error', message: 'Escribe cuánto te cuestan los insumos de una venta para revisar que no pierdas plata.' };
   }
 
   const margin = computeHonestMerchantMargin({
@@ -517,7 +521,7 @@ export async function launchQuickFlashOfferAction(
   await db.insert(offers).values({
     merchantId: access.merchant.id,
     title,
-    description: `Oferta relámpago de hoy (${stockLimit} cupos disponibles en mostrador).`,
+    description: `Oferta por horas (${stockLimit} cupos en mostrador).`,
     targetCategory: access.merchant.targetSpendCategory,
     discountKind: 'percent',
     discountPercent,
@@ -551,7 +555,7 @@ export async function launchQuickFlashOfferAction(
 
   return {
     status: 'ok',
-    message: `¡Oferta Relámpago encendida! Aparece con pin ⚡ en el mapa del barrio (${stockLimit} cupos, te quedan ${cop(margin.cifraFirstVisitProfitMinor)} limpios por venta).`,
+    message: `Oferta encendida. Ya aparece en el mapa del barrio (${stockLimit} cupos; te quedan ${cop(margin.cifraFirstVisitProfitMinor)} limpios por venta).`,
   };
 }
 

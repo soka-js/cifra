@@ -434,10 +434,10 @@ export const merchants = pgTable(
     typicalTicketMinor: money('typical_ticket_minor').notNull().default(2000000),
     /** Productos estrella visibles en la vitrina pública /b/[slug] y calculadora de margen. */
     featuredItems: jsonb('featured_items').$type<MerchantFeaturedItem[]>().notNull().default(sql`'[]'::jsonb`),
-    /** Meta diaria de ventas en centavos para cubrir arriendo + servicios + insumos (punto de equilibrio). */
-    dailyBreakEvenMinor: money('daily_break_even_minor').notNull().default(40000000),
-    /** Costos fijos mensuales del local (arriendo, luz, gas, internet, ayuda) en centavos. */
-    monthlyFixedCostMinor: money('monthly_fixed_cost_minor').notNull().default(450000000),
+    /** Meta diaria de ventas que escribe el tendero, en centavos. Vacía hasta que la escriba: no hay meta por defecto. */
+    dailyBreakEvenMinor: money('daily_break_even_minor'),
+    /** Costos fijos mensuales del local (arriendo, luz, gas, internet, ayuda) que escribe el tendero, en centavos. */
+    monthlyFixedCostMinor: money('monthly_fixed_cost_minor'),
     /** Comisión de CIFRA en puntos básicos sobre el pago neto de la venta atribuida (500 = 5,00 % en G.10 y J.3). */
     commissionBps: integer('commission_bps').notNull().default(500),
     /** Palabras clave que aparecen en extractos bancarios para medir compras previas y retorno sin descuento. */

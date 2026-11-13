@@ -357,13 +357,17 @@ export async function selfRegisterMerchant(_prev: MerchantActionState, formData:
   const neighborhood = String(formData.get('neighborhood') ?? '').trim().slice(0, 60) || zone.name;
   const address = String(formData.get('address') ?? '').trim().slice(0, 120);
   const hoursText = String(formData.get('hoursText') ?? '').trim().slice(0, 80) || 'Lun a Sáb 7:00 a. m. – 8:00 p. m.';
-  const typicalTicketMinor = parsePesosInput(String(formData.get('typicalTicket') ?? '20000')) ?? 2_000_000;
+  // La compra promedio la escribe el tendero; sin ella no se calcula ninguna ganancia por venta.
+  const typicalTicketMinor = parsePesosInput(String(formData.get('typicalTicket') ?? ''));
   const brebKey = String(formData.get('brebKey') ?? '').trim().slice(0, 80) || null;
   const lat = Number(formData.get('lat') ?? zone.lat) || zone.lat;
   const lng = Number(formData.get('lng') ?? zone.lng) || zone.lng;
 
   if (businessName.length < 2 || ownerName.length < 2 || whatsapp.length < 7 || address.length < 4) {
     return { status: 'error', message: 'Completa el nombre del negocio, tu nombre, WhatsApp y dirección.' };
+  }
+  if (typicalTicketMinor === null) {
+    return { status: 'error', message: 'Escribe cuánto compra en promedio un cliente en tu negocio.' };
   }
 
   if (!user) {

@@ -107,7 +107,6 @@ export default async function PublicMerchantStorefrontPage({
             <span className="font-display text-[19px] font-bold tracking-[-0.025em] text-ink">
               cifra
             </span>
-            <span className="badge-terra text-[10.5px]">Barrio verificado</span>
           </Link>
 
           <Link
@@ -185,7 +184,7 @@ export default async function PublicMerchantStorefrontPage({
                   {offer.isFlash ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/85 px-3 py-1 text-[12px] font-bold text-amber-950">
                       <Zap size={13} aria-hidden="true" />
-                      Oferta Relámpago
+                      Oferta por horas
                       {offer.stockRemaining !== null ? ` · Quedan ${offer.stockRemaining} cupos hoy` : ''}
                     </span>
                   ) : (

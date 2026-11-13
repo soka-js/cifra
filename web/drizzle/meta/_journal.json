@@ -57,6 +57,13 @@
       "when": 1794447166310,
       "tag": "0007_seguridad",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794517200000,
+      "tag": "0008_metas_del_negocio",
+      "breakpoints": true
     }
   ]
 }

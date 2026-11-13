@@ -172,6 +172,14 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
 | Rótulo de la cifra | **"Puedes gastar hasta el…"**, el mismo en la prueba sin cuenta y en el Hoy. |
 | 5. Campo opcional "¿cuánto crees que puedes gastar?" | **Se queda.** |
 
+12 de noviembre de 2026, por el cuadro de preguntas de la sesión:
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| Cerrar los pendientes de la Etapa 2 | **"Sí, cierra todos los pendientes."** |
+| Volver a levantar el Postgres local, detenido otra vez por memoria | **Sí, levántalo.** |
+| Migración `0008`: además de la estructura, vaciar en producción la meta diaria ($400.000) y los costos fijos ($4.500.000) iguales a los de fábrica, solo en negocios que no son de la demo | **Sí, borra los valores de fábrica.** Corre cuando SOKA despliegue. |
+
 Siguen abiertas la 6 (canales reales de pago), la 7 (fecha de la feria y negocios de Las Aguas) y la pregunta de cómo se verifica el correo del admin en producción (Google o servicio de correo).
 
 ## Estado
@@ -180,7 +188,7 @@ Siguen abiertas la 6 (canales reales de pago), la 7 (fecha de la feria y negocio
 | --- | --- | --- | --- |
 | 0 | Base de trabajo y plan | Hecha, commit local en `producto-v1` | Sin subir (ver decisión 3) |
 | 1 | Cerrar la puerta (seguridad) | **Cerrada en local.** 162 unitarias, 257 de integración y 38 pasos en navegador, todo en verde | Sin subir (falta confirmar la base de Preview) |
-| 2 | Cada número con recibo | En curso: pesos con punto, guardián de montos y el Hoy sin "tope de hoy" listos. Falta el 0,65 de ¿Puedo?, las etiquetas `$1.2M` de la gráfica, los valores por defecto del negocio y la pasada de lenguaje fuera del Hoy | Sin subir |
+| 2 | Cada número con recibo | **Cerrada en local.** Sin factores ni montos inventados en ¿Puedo?, la gráfica, "Lo que se repite", el cierre y el negocio; jerga fuera de lo que ve una persona o un tendero. 167 unitarias, 257 de integración y 55 pasos en navegador, todo en verde | Sin subir |
 | 3 | Hoy en dos pantallas | **Cerrada en local.** Mide 1,58 pantallas con usuario nuevo (antes 4,1). 161 unitarias, 257 de integración y 54 pasos en navegador, todo en verde | Sin subir |
 | 4 | Del QR a la cifra sin cuenta | Hecho lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy, comprobado en navegador (17 pasos). Falta unificar los dos formularios y medir a una persona | Sin subir |
 | 5 | Demo para el Pitch Day | Pendiente | |
@@ -188,6 +196,71 @@ Siguen abiertas la 6 (canales reales de pago), la 7 (fecha de la feria y negocio
 | 7 | Feria | Pendiente | |
 
 ## Entradas
+
+### 2026-11-12 21:30, Etapa 2: cerrada
+
+SOKA pidió cerrar todos los pendientes de la etapa. Quedan hechos y verificados en local; sigue sin subir porque falta confirmar la base de Preview.
+
+- Rama y commits: `producto-v1`, un commit local sobre `390a394`. Sin subir.
+- Qué cambió (36 archivos de `web/`: 35 modificados y 1 nuevo; +477 y −290 líneas en los modificados, contando pruebas):
+  - **¿Puedo gastar?** (`web/src/app/app/gasto/ask.tsx`, `web/src/lib/engine/cifra.ts`):
+    - La "alternativa segura" ya no multiplica por 0,65. Ahora dice "Con margen, hasta $X: te quedan $R de margen, lo que gastas en N días de tu día a día".
+    - El margen es el gasto diario de la persona por los días que faltan, hasta un máximo de 3. Lo calculan dos funciones nuevas del motor: `spendReserveMinor()` y `comfortableSpendMinor()`. `canISpend` usa la misma reserva, así que la respuesta y la alternativa no se contradicen. Tienen 3 pruebas nuevas.
+    - Las tasas del simulador de cuotas ya no dicen "promedio de tarjetas en Colombia" ni "cerca a usura". Quedan como "Tasa de ejemplo" (26,5 %, 30,8 % y 33,9 % E.A.).
+  - **Gráfica de `/app/movimientos`** (`spending-dashboard-chart.tsx`, `web/src/lib/format.ts`):
+    - Las etiquetas `$1.2M` y `$45k` se armaban a mano. Ahora salen de `milesDePesos()`, una función nueva con prueba, y el encabezado dice "en miles de pesos".
+    - Quité el piso fijo de escala ($80.000) y el umbral de $500.000 para marcar días con cobros grandes: ahora se marca cualquier cobro fijo.
+    - "Radiografía visual" pasó a "Tus gastos · últimos 30 días".
+  - **"Lo que se repite en tus gastos"** (antes "Podrías recuperar", `detectMoneyLeaks` en `web/src/lib/engine/daily-value.ts`):
+    - Ya no estima cuánto se podría recuperar. Esa estimación usaba porcentajes y montos sin recibo: 26 %, $6.500, 65 %, 80 % y 30 %.
+    - Ahora muestra lo que pasó: cuánto suma, cuántas veces y en qué movimientos, más una acción concreta. Se ordena por monto.
+    - El consejo del simulador de cuotas cita los intereses que él mismo calcula.
+    - Salieron "3 segundos" y "(3 seg)" de los textos.
+  - **Cierre del ciclo** (`closure-form.tsx`, `cierre/page.tsx`): los compromisos sugeridos salen del gasto diario de la persona. Ya no traen $100.000 ni $60.000 puestos. "Empezar en 1 minuto" pasó a "Calcular mi cifra".
+  - **Negocio, metas que nadie escribió** (hallazgo de gravedad 2 del plan):
+    - `web/src/lib/db/schema.ts` y la migración nueva `web/drizzle/0008_metas_del_negocio.sql`: la meta diaria y los costos fijos pueden quedar vacíos y no tienen valor por defecto.
+    - La migración también vacía, en negocios que no son de la demo, los valores iguales a los de fábrica ($400.000 y $4.500.000). SOKA lo autorizó hoy.
+    - `computeMerchantBreakEven` (`crossref.ts`) acepta "sin meta". El resumen y el cuadre muestran "Escribe tu meta del día" (`#btn-write-daily-goal`) en vez de un avance contra un número inventado.
+    - El costo de insumos ya no se supone (antes era el 36 % o el 38 % del precio). Es obligatorio en el cuadre y en la oferta rápida.
+    - La comisión de las apps de domicilio ya no viene en 28 %. Es un campo opcional, y la comparación con la app aparece solo si el tendero lo escribe.
+    - La comisión de CIFRA en la calculadora sale de la configuración del negocio.
+    - El registro de negocio ya no trae el ticket típico de $20.000 puesto: ahora es obligatorio.
+  - **Jerga** (22 reemplazos en 12 archivos, más los de la demo):
+    - "relámpago" pasó a "por horas".
+    - Salieron "cero merma" y los "verificado" que nada verificaba (vitrina, "Barrio verificado" en `/b/[slug]`, el texto por defecto de las ofertas).
+    - Salió el "$900" escrito a mano en `commission-cycle.ts`.
+    - "B2B2C" en `/desarrolladores` pasó a "API para cooperativas, cajas y billeteras".
+    - "Cliente nuevo verificado" en la caja se queda: ahí sí lo verifica el sistema.
+    - No toqué `/admin`: la Etapa 5 rehace la presentación.
+  - **Guardián** (`web/src/lib/__tests__/recibos.test.ts`):
+    - La lista de montos escritos a mano bajó a 5 en 3 archivos: los 3 del ejemplo rotulado de la página de presentación, el mínimo de la meta del negocio y el umbral de $20.000 desde el que aparece el simulador de cuotas. Los 3 últimos son umbrales que deciden algo y no se muestran como dato.
+    - Prueba nueva "sin jerga del equipo": revisa pantallas, componentes, los textos del motor y los datos de la demo (fuera de `/admin`). Falla si aparecen relámpago, cero merma, intocable, NBA o B2B2C.
+  - **Pruebas actualizadas:** `cifra.test.ts`, `v3-valor-real.test.ts`, `format.test.ts`, la matriz de acciones y la prueba de acciones públicas (insumos y ticket típico ahora se envían).
+  - **Paso nuevo E8** en `web/e2e/seguridad.e2e.mjs`: un tendero recién registrado no ve $400.000, $4.500.000, "28 %" ni jerga en el resumen, el cuadre y las ofertas. Escribe una meta de $350.000 y el resumen dice "de $350.000".
+- Por qué: punto 2 del brief ("cada número tiene recibo") y su criterio de salida: guardián en verde y cero jerga en pantalla.
+- Verificación (comando y resultado, con números), todo sobre el mismo árbol:
+  - `npm run typecheck`: 0 errores.
+  - `npx vitest run`: 15 archivos, **167 de 167**. Son 6 más que en la Etapa 3: 3 de la reserva de ¿Puedo?, 1 de `milesDePesos`, 1 del consejo del simulador de cuotas y la del guardián de jerga. El caso "sin meta" del negocio quedó dentro de la prueba del punto de equilibrio que ya existía, y dos pruebas se reescribieron: "Lo que se repite" sin estimar ahorros y el margen del tendero con la comisión que él escribe.
+  - `npm run test:int`: 4 archivos, **257 de 257**, 299,6 s.
+  - `npx next build`: sin errores.
+  - `npm run e2e`: 4 archivos, **55 de 55 pasos**, 71 s: guardar cifra 6, Hoy 10, prueba sin cuenta 11, seguridad 28.
+  - Migración `0008` probada en una base desechable (`cifra_mig`, ya borrada) con tres negocios:
+    - uno real con los valores de fábrica: quedó vacío;
+    - uno real con su propia meta: no cambió;
+    - uno de la demo: no cambió.
+  - Vi dos capturas rehechas. En `e1-demo-tendero.jpg` el negocio de ejemplo muestra su propia meta ($340.000 de $450.000) y "oferta por horas". En `e4-prueba-3-puedo.jpg` la prueba sin cuenta no cambió.
+- Qué revisar en la vista previa: no hay vista previa. En local, con `devdb` corriendo: `cd web && npm run build && npm run e2e`. Para mirarlo a mano:
+  1. Registra un negocio nuevo en `/negocio/unirse`. El resumen debe pedir "Escribe tu meta del día", sin $400.000. En Ofertas, el costo de insumos debe estar vacío y no debe aparecer ninguna app con 28 %.
+  2. Con una persona, abre `/app/gasto` y pregunta por algo que sí te alcance. La alternativa debe decir "Con margen, hasta…" y explicar el margen en días de tu día a día.
+  3. Abre `/app/movimientos`. Las etiquetas de la gráfica deben estar en miles de pesos, sin `M` ni `k`.
+- Decisiones que necesito de SOKA: ninguna nueva. Sigue abierta la confirmación de la base de Preview para poder subir.
+- Pendientes y riesgos:
+  - **La migración `0008` cambia datos de producción cuando despliegues** (autorizado). Si un tendero real había escrito justo $400.000 o $4.500.000, ese valor también se vacía y tendrá que volver a escribirlo.
+  - `web/src/app/admin/actions.ts:94` usa $20.000 como respaldo del ticket típico. Está en `/admin`, fuera del guardián; se revisa en la Etapa 5.
+  - `/admin/presentacion` describe cosas que ya se borraron (misiones, meta de ahorro, "fugas hormiga") y usa "B2B2C". Se rehace en la Etapa 5.
+  - `/app/movimientos` conserva el título "Gastos hormiga del último mes". Es una expresión de uso común, no jerga del equipo, y la dejé a propósito. Del Hoy sí está prohibida por su prueba.
+  - La prueba de recibo con extracto real (cobros detectados, traslados) sigue sin automatizar.
+  - Siguen igual: "Anotar un gasto" quedó debajo de la primera pantalla (Etapa 3) y falta unificar los dos formularios de la Etapa 4.
 
 ### 2026-11-12 15:30, Etapa 3: el Hoy en dos pantallas (cerrada en local)
 

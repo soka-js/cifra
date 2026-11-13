@@ -316,6 +316,7 @@ describe('actions/merchant.ts#selfRegisterMerchant', () => {
       businessCategory: 'cafeteria',
       zoneSlug: 'las-aguas',
       address: 'Cra 3 # 18-45',
+      typicalTicket: '20000',
       ...over,
     });
 

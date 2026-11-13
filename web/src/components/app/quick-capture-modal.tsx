@@ -30,7 +30,7 @@ export function QuickCaptureModal({
   accounts,
   todayIso,
   currentHour,
-  buttonLabel = 'Anotar gasto o pegar SMS (3 seg)',
+  buttonLabel = 'Anotar gasto o pegar SMS',
   buttonClassName = 'btn-ink w-full sm:w-auto',
   buttonId = 'btn-open-quick-capture',
   children,
