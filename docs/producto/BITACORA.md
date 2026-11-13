@@ -235,6 +235,24 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Entradas
 
+### 2026-11-13 12:05, Etapa 6: la comisión que se ve es la del negocio, no un "5 %" escrito a mano
+
+- Rama: `etapa-6-tendero`. Sin subir ni mezclar.
+- Qué cambió:
+  - **Dentro del portal del tendero se muestra la comisión guardada en el negocio** (`merchant.commissionBps`), con `percentFromBps`.
+    - La caja decía "5 % al corte quincenal" y, si el código no traía la comisión, calculaba con 500 escrito a mano. Ahora usa la del negocio.
+    - El informe del mes decía "del 5 % de comisión CIFRA".
+    - La activación por enlace decía "una comisión del 5 %".
+  - **Las páginas públicas** (portada, `/negocio/unirse` y `/negocio/registro`) muestran la comisión de un negocio nuevo desde una sola fuente: `DEFAULT_COMMISSION_BPS` en `web/src/lib/commission.ts` (nuevo), que sale de la regla de cobro del motor.
+- Prueba nueva: `web/src/lib/__tests__/comision.test.ts` (2). Comprueba que esa comisión anunciada es la misma que la base pone por defecto a un negocio y a cada venta (`commission_bps = 500`). Si alguien cambia una sin la otra, la prueba falla.
+- Lo que no toqué: `/admin` (pedido de SOKA para hoy) y el ejemplo de `/desarrolladores`, que está rotulado como ejemplo.
+- Verificación (este equipo, `devdb` local):
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, **192 de 192**.
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos** (6 + 10 + 11 + 31). E5 sigue cobrando $18.000 con comisión de $900 en la caja.
+  - `npm run test:int`: 7 archivos, **273 de 273**, 270 s.
+- Decisiones que necesito de SOKA: ninguna.
+
 ### 2026-11-13 11:59, Etapa 6: plantillas de oferta según el tipo de negocio, y fuera el "OFF"
 
 - Rama: `etapa-6-tendero`, encima de la entrada de abajo. Sin subir ni mezclar.
