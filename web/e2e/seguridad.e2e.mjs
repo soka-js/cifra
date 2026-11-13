@@ -319,10 +319,11 @@ await step('E2. publica su primera oferta', async () => {
   ]);
   await s.waitForLoadState('networkidle');
   assert.match(await s.locator('h1').first().innerText(), new RegExp(shopName));
-  // La oferta nace con un grupo de control del 10 % (personas a las que no se les muestra, para
-  // medir). Se apaga aquí para que la persona de la prueba siempre pueda reclamarla.
-  await sql`update offers set holdout_percent = 0
+  // Sin grupo de control: la oferta nace visible para todas las personas (pedido de SOKA para la feria).
+  const holdouts = await sql`select holdout_percent from offers
             where merchant_id in (select id from merchants where name = ${shopName})`;
+  assert.equal(holdouts.length, 1, 'el negocio debe tener una oferta');
+  assert.equal(holdouts[0].holdout_percent, 0, 'la oferta no debe dejar a nadie por fuera');
 });
 
 await step('E3. su cuenta no muestra mandatos ni canales de pago inventados', async () => {

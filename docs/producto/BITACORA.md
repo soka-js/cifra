@@ -118,18 +118,20 @@ Recomiendo borrar el código, no apagarlo: queda en el historial de Git, y varia
 
 ### Etapas y criterio de salida
 
-Las fechas son estimadas por mí, no medidas. Pitch Day: jueves 19 de noviembre.
+Fechas fijas (SOKA, 12 nov, noche): **Semana de la Innovación, con stand, el jueves 19 de noviembre**; es el primer plazo. **Pitch final: jueves 26 de noviembre.** Para la noche del **miércoles 18** debe estar en producción: etapas 1 a 4, la demo desde `/admin` (Etapa 5) y la parte de la feria que no depende de negocios reales (7a). La Etapa 6 puede quedar para el 26. Para desplegar el 18, SOKA necesita revisar la vista previa antes; las fechas de abajo dejan el 18 para su revisión, el merge y el despliegue.
 
-| Etapa | Qué | Se cierra cuando (verificable) | Fecha estimada |
+| Etapa | Qué | Se cierra cuando (verificable) | Fecha |
 | --- | --- | --- | --- |
-| 0 | Base de trabajo: rama, fin de línea, `CLAUDE.md`, base local, plan | Hecho en esta sesión | 11 nov |
-| 1 | **Cerrar la puerta.** Sesión, admin, demo aislada, permisos por acción, borrado de acciones de plata simulada | Sin sesión: toda ruta de `/app`, `/negocio` (salvo registro y activación) y `/admin` redirige, y las API responden 401. `admin@cifra.co` con la clave publicada no entra. Un correo fuera de `ADMIN_EMAILS` no ve `/admin` ni ejecuta sus acciones. Una prueba de permisos por acción, todas en verde, más la metaprueba. La demo se abre solo desde `/admin` | 11 a 12 nov |
-| 2 | **Cada número con recibo.** Pesos con punto, bloques inventados fuera, valores por defecto inventados fuera, lenguaje sin jerga | Prueba de recibo y guardián de literales en verde. Cero apariciones en pantalla de los términos de jerga del brief | 13 nov |
-| 3 | **Hoy en dos pantallas** y "¿Puedo gastar?" en el sitio | Hoy mide 2 pantallas o menos a 390x844 con usuario nuevo (hoy 4,1), medido por la prueba | 14 nov |
-| 4 | **Del QR a la cifra.** `/` pública, prueba sin cuenta, guardar con cuenta | Recorrido automatizado: de abrir `/` a ver la cifra sin crear cuenta; ningún monto viaja por la red antes de guardar; al crear la cuenta el Hoy muestra la misma cifra | 15 a 16 nov |
-| 5 | **Demo para el Pitch Day**: lanzador pulido, tablero de `/admin` honesto, ensayo | Guion del pitch recorrido de principio a fin sin tocar nada fuera de `/admin` y la demo | 17 nov (18 de colchón) |
-| 6 | **El tendero se registra solo**: página pública del negocio, registro corto, cuenta honesta, cámara para el QR | Recorrido automatizado en celular: de `/negocio` sin sesión a validar un código en caja | Después del pitch |
-| 7 | **Feria**: ofertas reales de Las Aguas, afiches, aviso del día de pago, embudo de la feria en `/admin` | Lista de revisión de la feria completa | Antes de la feria |
+| 0 | Base de trabajo: rama, fin de línea, `CLAUDE.md`, base local, plan | Hecho en esta sesión | 11 nov (hecha) |
+| 1 | **Cerrar la puerta.** Sesión, admin, demo aislada, permisos por acción, borrado de acciones de plata simulada | Sin sesión: toda ruta de `/app`, `/negocio` (salvo registro y activación) y `/admin` redirige, y las API responden 401. `admin@cifra.co` con la clave publicada no entra. Un correo fuera de `ADMIN_EMAILS` no ve `/admin` ni ejecuta sus acciones. Una prueba de permisos por acción, todas en verde, más la metaprueba. La demo se abre solo desde `/admin` | 12 nov (cerrada en local) |
+| 2 | **Cada número con recibo.** Pesos con punto, bloques inventados fuera, valores por defecto inventados fuera, lenguaje sin jerga | Prueba de recibo y guardián de literales en verde. Cero apariciones en pantalla de los términos de jerga del brief | 12 nov (cerrada en local) |
+| 3 | **Hoy en dos pantallas** y "¿Puedo gastar?" en el sitio | Hoy mide 2 pantallas o menos a 390x844 con usuario nuevo (hoy 4,1), medido por la prueba | 12 nov (cerrada en local) |
+| 4 | **Del QR a la cifra.** `/` pública, prueba sin cuenta, guardar con cuenta | Recorrido automatizado: de abrir `/` a ver la cifra sin crear cuenta; ningún monto viaja por la red antes de guardar; al crear la cuenta el Hoy muestra la misma cifra | 15 nov |
+| 5 | **Demo desde `/admin`**: lanzador pulido, tablero de `/admin` honesto, ensayo | Guion del pitch recorrido de principio a fin sin tocar nada fuera de `/admin` y la demo | 16 nov |
+| 7a | **Feria, sin negocios reales**: QR que lleva a `/`, embudo de la feria en `/admin`, ofertas sin grupo de control (hecho el 12 nov), y si hay ofertas de ejemplo, rotuladas como ejemplo | Lista de revisión de la feria (sin negocios) completa y recorrido del QR a la cifra en celular | 17 nov |
+| — | **Producción**: SOKA revisa la vista previa, aprueba el merge a `main` y despliega | Producción con etapas 1 a 5 y 7a, revisada en celular | 18 nov, noche |
+| 6 | **El tendero se registra solo**: página pública del negocio, registro corto, cuenta honesta, cámara para el QR | Recorrido automatizado en celular: de `/negocio` sin sesión a validar un código en caja | 26 nov (pitch) |
+| 7b | **Feria, con negocios reales**: ofertas reales de Las Aguas, afiches de cada negocio, aviso del día de pago | Lista de revisión con negocios confirmados | Cuando haya negocios confirmados (hoy no hay ninguno) |
 
 Orden y por qué: la 1 va primero porque es regla del brief y porque sin ella la meta 2 es imposible. La 2 va antes que la 3 porque no tiene sentido diseñar el Hoy alrededor de bloques que se van. La 4 depende de la 3 porque el visitante debe caer en el Hoy nuevo. La 5 va al final del tramo del pitch porque muestra lo que dejaron las anteriores; aun así, desde la Etapa 1 SOKA tiene una demo que funciona.
 
@@ -180,7 +182,20 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
 | Volver a levantar el Postgres local, detenido otra vez por memoria | **Sí, levántalo.** |
 | Migración `0008`: además de la estructura, vaciar en producción la meta diaria ($400.000) y los costos fijos ($4.500.000) iguales a los de fábrica, solo en negocios que no son de la demo | **Sí, borra los valores de fábrica.** Corre cuando SOKA despliegue. |
 
-Siguen abiertas la 6 (canales reales de pago), la 7 (fecha de la feria y negocios de Las Aguas) y la pregunta de cómo se verifica el correo del admin en producción (Google o servicio de correo).
+12 de noviembre de 2026, noche, por mensaje:
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| 3. ¿Preview de Vercel tiene base propia? | **Sí.** En Vercel, Storage > `neon-lime-sail` > conexión con `cifra`, "Create Database Branch For Deployment" está activado para Preview y apagado para Production: cada vista previa corre contra su propia rama de Neon, copia de producción. `DATABASE_URL` figura como "Production and Preview", pero la integración de Neon la reemplaza en Preview. **Autoriza `git push` de `producto-v1` y abrir la solicitud de cambio**, con una condición: antes que nada, confirmar en el log de compilación de la vista previa que las migraciones corrieron contra una rama y no contra la principal; si no se puede confirmar, parar y avisar. **No hacer merge a `main`**: lo aprueba SOKA después de ver la vista previa. |
+| Admin en producción | En Vercel solo están `ADMIN_EMAILS`, `NEXT_PUBLIC_GA_ID`, `NEXT_PUBLIC_SITE_URL` y las variables de la base. No hay Google ni servicio de correo. Pide la forma más simple y segura de entrar a `/admin` en la vista previa y en producción. |
+| 7. Fechas | Feria con stand el **jueves 19 de noviembre** (primer plazo); pitch final el **jueves 26**. Para la noche del 18, en producción: etapas 1 a 4, la demo desde `/admin` y lo de la feria que no dependa de negocios reales (QR a `/`, embudo de la feria en `/admin`). La Etapa 6 puede quedar para el 26. |
+| Demos del viernes 13 | 10:30 con el equipo de crecimiento de Bold y 3:00 p.m. con Financiera Comultrasan, por Meet. Demo funcionando a las 10:00, preferiblemente en la vista previa; si no, local con un solo comando. Guion de 5 minutos en `docs/producto/DEMO.md`. **No construir nada nuevo para mañana.** |
+| Grupo de control del 10 % en las ofertas | **Apagarlo para la feria**: todas las personas ven las ofertas. |
+| 7. Negocios de Las Aguas | **Todavía no hay ninguno confirmado.** No inventar negocios; si en la feria hay ofertas de ejemplo, deben decir que son de ejemplo. |
+| 6. Canales reales de pago | El mensaje traía el espacio sin llenar ("[COMPLETA AQUÍ…]"). **Sigue abierta.** Mientras tanto, la cuenta del tendero no muestra ningún canal. |
+| Vistas previas viejas (`feat/fase-*`, `feat/v3-valor-real`) | Pide revisar si la protección de despliegues las deja públicas y cómo cerrarlas. |
+
+Siguen abiertas la 6 (canales reales de pago) y la forma de entrar a `/admin` en producción (propuesta en la entrada del 12 nov, noche).
 
 ## Estado
 
@@ -190,10 +205,11 @@ Siguen abiertas la 6 (canales reales de pago), la 7 (fecha de la feria y negocio
 | 1 | Cerrar la puerta (seguridad) | **Cerrada en local.** 162 unitarias, 257 de integración y 38 pasos en navegador, todo en verde | Sin subir (falta confirmar la base de Preview) |
 | 2 | Cada número con recibo | **Cerrada en local.** Sin factores ni montos inventados en ¿Puedo?, la gráfica, "Lo que se repite", el cierre y el negocio; jerga fuera de lo que ve una persona o un tendero. 167 unitarias, 257 de integración y 55 pasos en navegador, todo en verde | Sin subir |
 | 3 | Hoy en dos pantallas | **Cerrada en local.** Mide 1,58 pantallas con usuario nuevo (antes 4,1). 161 unitarias, 257 de integración y 54 pasos en navegador, todo en verde | Sin subir |
-| 4 | Del QR a la cifra sin cuenta | Hecho lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy, comprobado en navegador (17 pasos). Falta unificar los dos formularios y medir a una persona | Sin subir |
-| 5 | Demo para el Pitch Day | Pendiente | |
-| 6 | El tendero se registra solo | Pendiente | |
-| 7 | Feria | Pendiente | |
+| 4 | Del QR a la cifra sin cuenta | Hecho lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy, comprobado en navegador (17 pasos). Falta unificar los dos formularios y medir a una persona. Meta: 15 nov | Sin subir |
+| 5 | Demo desde `/admin` | Pendiente. Meta: 16 nov. Para las demos del 13 nov hay guion sin `/admin` en `docs/producto/DEMO.md` | |
+| 7a | Feria sin negocios reales | Ofertas sin grupo de control: hecho en local (migración `0009`). Falta el QR a `/`, el embudo de la feria en `/admin` y la lista de revisión. Meta: 17 nov | |
+| 6 | El tendero se registra solo | Pendiente. Meta: 26 nov | |
+| 7b | Feria con negocios reales | Esperando negocios confirmados | |
 
 ## Entradas
 

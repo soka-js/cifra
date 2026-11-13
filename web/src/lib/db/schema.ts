@@ -514,8 +514,8 @@ export const offers = pgTable(
     /** Control de canibalización #1 (G.10): restringir oferta a quien no compró ahí en los últimos N días. */
     newCustomersOnly: boolean('new_customers_only').notNull().default(true),
     exclusivityDays: integer('exclusivity_days').notNull().default(60),
-    /** Control de canibalización #2 (G.10): % de audiencia retenida como grupo de control sin oferta (ej. 10 %). */
-    holdoutPercent: integer('holdout_percent').notNull().default(10),
+    /** % de personas a las que no se les muestra la oferta, para medir (grupo de control). Apagado: 0. */
+    holdoutPercent: integer('holdout_percent').notNull().default(0),
     monthlyCapRedemptions: integer('monthly_cap_redemptions'),
     /** Oferta Relámpago de horas muertas / cero merma con ventana horaria y cupos vivos. */
     isFlash: boolean('is_flash').notNull().default(false),

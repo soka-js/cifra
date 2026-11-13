@@ -231,7 +231,7 @@ export async function loadMerchantDashboard(
     allValidRedemptions.map((r) => `${r.userId}:${bogotaDate(r.redeemedAt)}`),
   );
 
-  const holdoutPct = merchantOffers[0]?.holdoutPercent ?? 10;
+  const holdoutPct = merchantOffers[0]?.holdoutPercent ?? 0;
   const organicObservations: OrganicVisitObservation[] = [];
   for (const tx of candidateTxs) {
     if (tx.amountMinor >= 0) continue;

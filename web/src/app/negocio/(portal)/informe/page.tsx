@@ -172,10 +172,12 @@ export default async function MerchantOnePageReport({
         </section>
 
         <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-line-strong pt-4 text-[12px] text-ink-muted">
-          <span>
-            Control de incrementalidad activo: grupo de comparación sin oferta ({report.holdoutOrganicBuyersCount}{' '}
-            compradores orgánicos observados).
-          </span>
+          {report.holdoutOrganicBuyersCount > 0 ? (
+            <span>
+              Grupo de comparación sin oferta: {report.holdoutOrganicBuyersCount} compradores que llegaron por su
+              cuenta.
+            </span>
+          ) : null}
           <span>CIFRA · Cuentas claras para comercios de barrio en Colombia</span>
         </footer>
       </article>

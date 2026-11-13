@@ -598,7 +598,8 @@ export async function createMerchantOffer(_prev: MerchantActionState, formData: 
     minPurchaseMinor,
     newCustomersOnly,
     exclusivityDays: isFlash ? 30 : 60,
-    holdoutPercent: isFlash ? 0 : 10,
+    // Sin grupo de control: para la feria, toda persona ve las ofertas (SOKA, 2026-11-12).
+    holdoutPercent: 0,
     monthlyCapRedemptions,
     isFlash,
     startHour,

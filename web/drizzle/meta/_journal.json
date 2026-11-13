@@ -64,6 +64,13 @@
       "when": 1794517200000,
       "tag": "0008_metas_del_negocio",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794560400000,
+      "tag": "0009_ofertas_sin_grupo_de_control",
+      "breakpoints": true
     }
   ]
 }
