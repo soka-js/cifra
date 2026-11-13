@@ -227,6 +227,10 @@ export async function disputeRedemptionByUser(formData: FormData): Promise<void>
 // Activación en 1 toque por enlace de WhatsApp y auto-registro de comercio
 // ---------------------------------------------------------------------------
 
+/** La casilla de autorización de datos (Ley 1581). Sin ella no se crea ninguna cuenta. */
+const CONSENT_MISSING = 'Para crear tu cuenta necesitamos tu autorización para tratar tus datos. Marca la casilla.';
+const hasConsent = (formData: FormData) => formData.get('consent') === 'on';
+
 export async function redeemMerchantInvite(_prev: MerchantActionState, formData: FormData): Promise<MerchantActionState> {
   const token = String(formData.get('token') ?? '').trim();
   if (!token) return { status: 'error', message: 'Enlace inválido.' };
@@ -262,8 +266,11 @@ export async function redeemMerchantInvite(_prev: MerchantActionState, formData:
     if (!z.string().email().safeParse(email).success) {
       return { status: 'error', message: 'Escribe un correo válido para entrar a tu negocio cuando cambies de celular.' };
     }
-    if (password.length < 8) {
-      return { status: 'error', message: 'Elige una clave de al menos 8 caracteres.' };
+    if (password.length < 10) {
+      return { status: 'error', message: 'Elige una clave de al menos 10 caracteres.' };
+    }
+    if (!hasConsent(formData)) {
+      return { status: 'error', message: CONSENT_MISSING };
     }
 
     const [existingByEmail] = await db
@@ -356,7 +363,8 @@ export async function selfRegisterMerchant(_prev: MerchantActionState, formData:
   const zone = getZoneBySlug(zoneSlug);
   const neighborhood = String(formData.get('neighborhood') ?? '').trim().slice(0, 60) || zone.name;
   const address = String(formData.get('address') ?? '').trim().slice(0, 120);
-  const hoursText = String(formData.get('hoursText') ?? '').trim().slice(0, 80) || 'Lun a Sáb 7:00 a. m. – 8:00 p. m.';
+  // El horario lo escribe el tendero (aquí o después en su perfil). Si no lo escribe, no se muestra ninguno.
+  const hoursText = String(formData.get('hoursText') ?? '').trim().slice(0, 80) || null;
   // La compra promedio la escribe el tendero; sin ella no se calcula ninguna ganancia por venta.
   const typicalTicketMinor = parsePesosInput(String(formData.get('typicalTicket') ?? ''));
   const brebKey = String(formData.get('brebKey') ?? '').trim().slice(0, 80) || null;
@@ -378,6 +386,9 @@ export async function selfRegisterMerchant(_prev: MerchantActionState, formData:
     }
     if (password.length < 10) {
       return { status: 'error', message: 'La contraseña debe tener al menos 10 caracteres.' };
+    }
+    if (!hasConsent(formData)) {
+      return { status: 'error', message: CONSENT_MISSING };
     }
     const [exists] = await db.select({ id: users.id }).from(users).where(sql`lower(${users.email}) = ${email}`).limit(1);
     if (exists) {
