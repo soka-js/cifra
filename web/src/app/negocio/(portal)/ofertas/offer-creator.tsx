@@ -42,6 +42,8 @@ export function OfferCreator({
   const [monthlyCap, setMonthlyCap] = useState('40');
   const [durationDays, setDurationDays] = useState('30');
   const [activeHoursText, setActiveHoursText] = useState('');
+  // Lo que casi nadie cambia en su primera oferta queda guardado en "Más opciones", con los valores de la plantilla.
+  const [showMore, setShowMore] = useState(templates[0]!.isFlash);
 
   function applyTemplate(tpl: OfferTemplate) {
     setSelectedTpl(tpl.id);
@@ -57,6 +59,7 @@ export function OfferCreator({
     setStockLimit(tpl.stock);
     setNewCustomersOnly(tpl.newOnly);
     setActiveHoursText(tpl.hours);
+    if (tpl.isFlash) setShowMore(true);
   }
 
   // La venta de ejemplo es el ticket típico que escribió el tendero (o la compra mínima, si es mayor).
@@ -104,7 +107,7 @@ export function OfferCreator({
       {/* Paso 1 */}
       <div className="space-y-3">
         <p className="text-[14px] font-bold text-ink">
-          Paso 1 · Elige una plantilla o escríbela a tu gusto
+          1. Elige una idea y ponle tu título
         </p>
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           {templates.map((tpl) => {
@@ -129,6 +132,183 @@ export function OfferCreator({
           })}
         </div>
 
+        <div className="pt-1">
+          <div>
+            <label htmlFor="offer-title" className="label">
+              Título que verán los vecinos
+            </label>
+            <input
+              id="offer-title"
+              name="title"
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="field"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Paso 2 + Calculadora Honesta de Margen Real */}
+      <div className="space-y-4 border-t border-line pt-5">
+        <p className="text-[14px] font-bold text-ink">
+          2. Cuánto descuento das
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label htmlFor="discountKind" className="label">
+              Tipo de descuento
+            </label>
+            <select
+              id="discountKind"
+              name="discountKind"
+              value={discountKind}
+              onChange={(e) => setDiscountKind(e.target.value === 'fixed' ? 'fixed' : 'percent')}
+              className="field"
+            >
+              <option value="percent">Porcentaje (%)</option>
+              <option value="fixed">Valor fijo ($)</option>
+            </select>
+          </div>
+
+          {discountKind === 'percent' ? (
+            <div>
+              <label htmlFor="discountPercent" className="label">
+                Porcentaje
+              </label>
+              <select
+                id="discountPercent"
+                name="discountPercent"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(Number(e.target.value))}
+                className="field tnum"
+              >
+                {[5, 8, 10, 12, 15, 20, 25, 30, 35].map((pct) => (
+                  <option key={pct} value={pct}>
+                    {pct} %
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label htmlFor="discountFixed" className="label">
+                Descuento ($)
+              </label>
+              <MoneyInput
+                id="discountFixed"
+                name="discountFixed"
+                value={discountFixed}
+                onChangeValue={(minor) => setDiscountFixed(String(Math.round(minor / 100)))}
+                presets={[2000, 3000, 5000, 10000]}
+                placeholder="3.000"
+              />
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="minPurchase" className="label">
+              Compra mínima ($)
+            </label>
+            <MoneyInput
+              id="minPurchase"
+              name="minPurchase"
+              value={minPurchase}
+              onChangeValue={(minor) => setMinPurchase(String(Math.round(minor / 100)))}
+              presets={[10000, 15000, 20000, 30000]}
+              placeholder="12.000"
+            />
+          </div>
+
+        </div>
+
+        {/* Cuánto le queda al tendero, con sus propios números: ticket, costo de insumos y, si la escribe, la comisión de su app. */}
+        <div
+          className={`rounded-2xl border p-4 ${
+            honestMargin?.isLosingMoney ? 'border-neg/35 bg-neg-light/70' : 'border-primary/25 bg-primary-pale/70'
+          }`}
+        >
+          <p className="text-[12.5px] font-bold uppercase tracking-wider text-primary-dark">
+            En una venta de {cop(sampleGrossMinor)}
+            {parsedCostMinor !== null ? `, con ${cop(parsedCostMinor)} de insumos` : ''}
+          </p>
+
+          <div className="tnum mt-3 grid gap-2.5 text-[13px] sm:grid-cols-3">
+            {honestMargin && appPctNum !== null && (
+              <div className="rounded-xl border border-line bg-white p-3">
+                <p className="font-semibold text-ink-muted">Por tu app de domicilios ({String(appPctNum).replace('.', ',')} %)</p>
+                <p className="mt-1 font-display text-[20px] font-extrabold text-ink">{cop(honestMargin.deliveryAppProfitMinor)}</p>
+                <p className="text-[11.5px] text-ink-faint">Te queda limpio después de la comisión de la app</p>
+              </div>
+            )}
+
+            <div className="rounded-xl border border-primary/40 bg-white p-3 ring-1 ring-primary/20">
+              <p className="font-semibold text-primary-dark">Con la oferta, primera visita</p>
+              {honestMargin ? (
+                <p
+                  className={`mt-1 font-display text-[20px] font-extrabold ${
+                    honestMargin.cifraFirstVisitProfitMinor < 0 ? 'text-neg' : 'text-primary-dark'
+                  }`}
+                >
+                  {cop(honestMargin.cifraFirstVisitProfitMinor)}
+                </p>
+              ) : (
+                <p className="mt-1 font-display text-[20px] font-extrabold text-primary-dark">
+                  {cop(previewSplit.netPaidByUserMinor - previewSplit.cifraCommissionMinor)}
+                </p>
+              )}
+              <p className="text-[11.5px] text-ink-muted">
+                Cobras {cop(previewSplit.netPaidByUserMinor)} · Comisión {commissionLabel} ({cop(previewSplit.cifraCommissionMinor)})
+                {honestMargin ? '' : ' · Te queda en caja'}
+              </p>
+            </div>
+
+            {honestMargin && (
+              <div className="rounded-xl border border-line bg-white p-3">
+                <p className="font-semibold text-ink">Cuando el vecino vuelve</p>
+                <p className="mt-1 font-display text-[20px] font-extrabold text-primary-dark">
+                  {cop(honestMargin.repeatOrganicProfitMinor)}
+                </p>
+                <p className="text-[11.5px] text-primary-dark">Sin descuento y sin comisión</p>
+              </div>
+            )}
+          </div>
+
+          {!honestMargin ? (
+            <p className="mt-2.5 text-[12.5px] text-ink-soft">
+              En "Más opciones" puedes escribir cuánto te cuestan los insumos y te decimos cuánto te queda limpio.
+            </p>
+          ) : honestMargin.isLosingMoney ? (
+            <p className="mt-2.5 flex items-center gap-1.5 text-[13px] font-semibold text-neg-dark">
+              <AlertTriangle size={15} aria-hidden="true" />
+              Cuidado: con este descuento no cubres el costo de tus insumos. Baja el porcentaje antes de publicar.
+            </p>
+          ) : appPctNum !== null && honestMargin.advantageVsDeliveryMinor >= 0 ? (
+            <p className="mt-2.5 text-[12.5px] text-ink-soft">
+              Aun dando el descuento, te quedan {cop(honestMargin.advantageVsDeliveryMinor)} más limpios que por tu app, y el cliente conoce tu local en persona.
+            </p>
+          ) : (
+            <p className="mt-2.5 text-[12.5px] text-ink-soft">
+              Pones {cop(previewSplit.totalMerchantCacMinor)} una sola vez para traer al vecino; desde su segunda compra te queda todo (
+              {cop(honestMargin.repeatOrganicProfitMinor)} limpios).
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="border-t border-line pt-4">
+        <button
+          type="button"
+          id="btn-offer-more"
+          onClick={() => setShowMore((v) => !v)}
+          aria-expanded={showMore}
+          className="text-left text-[14px] font-semibold text-terra-dark underline underline-offset-2"
+        >
+          {showMore ? 'Ocultar las opciones' : 'Más opciones: por horas, cupos, vigencia y tus costos'}
+        </button>
+        <div className={showMore ? 'mt-4 space-y-4' : 'hidden'}>
         {/* Oferta por horas: ventana horaria y cupos */}
         <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50/70 p-4">
           <input
@@ -200,21 +380,6 @@ export function OfferCreator({
           </div>
         )}
 
-        <div className="grid gap-3.5 pt-1 sm:grid-cols-2">
-          <div>
-            <label htmlFor="offer-title" className="label">
-              Título que verán los vecinos
-            </label>
-            <input
-              id="offer-title"
-              name="title"
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="field"
-            />
-          </div>
           <div>
             <label htmlFor="offer-desc" className="label">
               Detalle corto (opcional)
@@ -229,81 +394,7 @@ export function OfferCreator({
               className="field"
             />
           </div>
-        </div>
-      </div>
-
-      {/* Paso 2 + Calculadora Honesta de Margen Real */}
-      <div className="space-y-4 border-t border-line pt-5">
-        <p className="text-[14px] font-bold text-ink">
-          Paso 2 · Define el beneficio y mira cuánto te queda limpio
-        </p>
-
-        <div className="grid gap-4 sm:grid-cols-5">
-          <div>
-            <label htmlFor="discountKind" className="label">
-              Tipo de descuento
-            </label>
-            <select
-              id="discountKind"
-              name="discountKind"
-              value={discountKind}
-              onChange={(e) => setDiscountKind(e.target.value === 'fixed' ? 'fixed' : 'percent')}
-              className="field"
-            >
-              <option value="percent">Porcentaje (%)</option>
-              <option value="fixed">Valor fijo ($)</option>
-            </select>
-          </div>
-
-          {discountKind === 'percent' ? (
-            <div>
-              <label htmlFor="discountPercent" className="label">
-                Porcentaje
-              </label>
-              <select
-                id="discountPercent"
-                name="discountPercent"
-                value={discountPercent}
-                onChange={(e) => setDiscountPercent(Number(e.target.value))}
-                className="field tnum"
-              >
-                {[5, 8, 10, 12, 15, 20, 25, 30, 35].map((pct) => (
-                  <option key={pct} value={pct}>
-                    {pct} %
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div>
-              <label htmlFor="discountFixed" className="label">
-                Descuento ($)
-              </label>
-              <MoneyInput
-                id="discountFixed"
-                name="discountFixed"
-                value={discountFixed}
-                onChangeValue={(minor) => setDiscountFixed(String(Math.round(minor / 100)))}
-                presets={[2000, 3000, 5000, 10000]}
-                placeholder="3.000"
-              />
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="minPurchase" className="label">
-              Compra mínima ($)
-            </label>
-            <MoneyInput
-              id="minPurchase"
-              name="minPurchase"
-              value={minPurchase}
-              onChangeValue={(minor) => setMinPurchase(String(Math.round(minor / 100)))}
-              presets={[10000, 15000, 20000, 30000]}
-              placeholder="12.000"
-            />
-          </div>
-
+          <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="unitCost" className="label">
               Costo insumos ($)
@@ -331,88 +422,7 @@ export function OfferCreator({
               className="field tnum"
             />
           </div>
-        </div>
-
-        {/* Cuánto le queda al tendero, con sus propios números: ticket, costo de insumos y, si la escribe, la comisión de su app. */}
-        <div
-          className={`rounded-2xl border p-4 ${
-            honestMargin?.isLosingMoney ? 'border-neg/35 bg-neg-light/70' : 'border-primary/25 bg-primary-pale/70'
-          }`}
-        >
-          <p className="text-[12.5px] font-bold uppercase tracking-wider text-primary-dark">
-            En una venta de {cop(sampleGrossMinor)}
-            {parsedCostMinor !== null ? `, con ${cop(parsedCostMinor)} de insumos` : ''}
-          </p>
-
-          <div className="tnum mt-3 grid gap-2.5 text-[13px] sm:grid-cols-3">
-            {honestMargin && appPctNum !== null && (
-              <div className="rounded-xl border border-line bg-white p-3">
-                <p className="font-semibold text-ink-muted">Por tu app de domicilios ({String(appPctNum).replace('.', ',')} %)</p>
-                <p className="mt-1 font-display text-[20px] font-extrabold text-ink">{cop(honestMargin.deliveryAppProfitMinor)}</p>
-                <p className="text-[11.5px] text-ink-faint">Te queda limpio después de la comisión de la app</p>
-              </div>
-            )}
-
-            <div className="rounded-xl border border-primary/40 bg-white p-3 ring-1 ring-primary/20">
-              <p className="font-semibold text-primary-dark">Con la oferta, primera visita</p>
-              {honestMargin ? (
-                <p
-                  className={`mt-1 font-display text-[20px] font-extrabold ${
-                    honestMargin.cifraFirstVisitProfitMinor < 0 ? 'text-neg' : 'text-primary-dark'
-                  }`}
-                >
-                  {cop(honestMargin.cifraFirstVisitProfitMinor)}
-                </p>
-              ) : (
-                <p className="mt-1 font-display text-[20px] font-extrabold text-primary-dark">
-                  {cop(previewSplit.netPaidByUserMinor - previewSplit.cifraCommissionMinor)}
-                </p>
-              )}
-              <p className="text-[11.5px] text-ink-muted">
-                Cobras {cop(previewSplit.netPaidByUserMinor)} · Comisión {commissionLabel} ({cop(previewSplit.cifraCommissionMinor)})
-                {honestMargin ? '' : ' · Te queda en caja'}
-              </p>
-            </div>
-
-            {honestMargin && (
-              <div className="rounded-xl border border-line bg-white p-3">
-                <p className="font-semibold text-ink">Cuando el vecino vuelve</p>
-                <p className="mt-1 font-display text-[20px] font-extrabold text-primary-dark">
-                  {cop(honestMargin.repeatOrganicProfitMinor)}
-                </p>
-                <p className="text-[11.5px] text-primary-dark">Sin descuento y sin comisión</p>
-              </div>
-            )}
           </div>
-
-          {!honestMargin ? (
-            <p className="mt-2.5 text-[12.5px] text-ink-soft">
-              Escribe cuánto te cuestan los insumos de una venta y te decimos cuánto te queda limpio y si el descuento te deja perdiendo.
-            </p>
-          ) : honestMargin.isLosingMoney ? (
-            <p className="mt-2.5 flex items-center gap-1.5 text-[13px] font-semibold text-neg-dark">
-              <AlertTriangle size={15} aria-hidden="true" />
-              Cuidado: con este descuento no cubres el costo de tus insumos. Baja el porcentaje antes de publicar.
-            </p>
-          ) : appPctNum !== null && honestMargin.advantageVsDeliveryMinor >= 0 ? (
-            <p className="mt-2.5 text-[12.5px] text-ink-soft">
-              Aun dando el descuento, te quedan {cop(honestMargin.advantageVsDeliveryMinor)} más limpios que por tu app, y el cliente conoce tu local en persona.
-            </p>
-          ) : (
-            <p className="mt-2.5 text-[12.5px] text-ink-soft">
-              Pones {cop(previewSplit.totalMerchantCacMinor)} una sola vez para traer al vecino; desde su segunda compra te queda todo (
-              {cop(honestMargin.repeatOrganicProfitMinor)} limpios).
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Paso 3: que la oferta no se coma la clientela que ya tiene */}
-      <div className="space-y-4 border-t border-line pt-5">
-        <p className="text-[14px] font-bold text-ink">
-          Paso 3 · Protege tu clientela actual y pon límites claros
-        </p>
-
         {!isFlash && (
           <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-paper p-4">
             <input
@@ -424,9 +434,9 @@ export function OfferCreator({
             />
             <span className="text-[13.5px] leading-relaxed text-ink-soft">
               <strong className="block font-semibold text-ink">
-                Solo para clientes nuevos (recomendado en campañas permanentes)
+                Solo para clientes nuevos
               </strong>
-              Solo ven tu oferta vecinos que no registran compras recientes en tu negocio.
+              La ven solo vecinos que no te han comprado hace poco, para no regalarle descuento a tu clientela de siempre.
             </span>
           </label>
         )}
@@ -499,11 +509,12 @@ export function OfferCreator({
             />
           </div>
         </div>
+              </div>
       </div>
 
       <button type="submit" disabled={pending || Boolean(honestMargin?.isLosingMoney)} className="btn-terra w-full sm:w-auto">
         <Tag size={17} aria-hidden="true" />
-        {pending ? 'Publicando oferta...' : isFlash ? 'Encender oferta por horas' : 'Publicar oferta ahora'}
+        {pending ? 'Publicando...' : isFlash ? 'Encender oferta por horas' : 'Publicar oferta'}
         <CheckCircle2 size={17} aria-hidden="true" />
       </button>
     </form>

@@ -235,6 +235,19 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Entradas
 
+### 2026-11-13 22:20, "app real": segunda pasada, las pantallas largas (rama `app-real`)
+
+- Quién: Claude en la sesión de la nube de SOKA ("Continua"). Rama `app-real`, encima de la entrada de abajo. Sin mezclar.
+- Qué cambió:
+  - **Creador de ofertas del tendero:** quedan a la vista la idea, el título, el descuento, la compra mínima y cuánto le queda. Lo demás (oferta por horas, detalle, cupos, vigencia, tope, horario, solo clientes nuevos, costo de insumos y comisión de su app) va en "Más opciones", con los valores de la plantilla. Si la plantilla es por horas, se abre sola. Los campos siguen en el formulario aunque estén ocultos: la acción del servidor recibe lo mismo que antes.
+  - **Cuenta del tendero:** la quincena se lee como una resta, igual que el Hoy de la persona: ventas con código, descuentos, cobrado en caja, comisión y "= Lo que te queda". Reemplaza cuatro tarjetas y una franja. El aviso de "al día" queda en una línea. Sin "pagar por Bre-B / Nequi" en el aviso de corte por pagar, porque todavía no hay canal publicado.
+  - **Tus datos:** fuera la insignia "Ley 1581 de 2012 · Habeas Data" (la ley se nombra en el texto), fuera la zona repetida (está en Ajustes) y textos más cortos. "Bitácora de acceso a tus datos" pasa a "Quién ha visto tus datos".
+  - **Ajustes:** solo títulos más cortos. Sigue midiendo 3,4 pantallas; es una pantalla de configuración y no la partí.
+- Medido con `recorridos.e2e.mjs`, contra la línea base del 13 nov: ofertas del tendero 3,9 a 2,5 pantallas (352 a 227 palabras, 25 a 16 cosas para tocar); cuenta del tendero 2,8 a 1,8 (329 a 236); Tus datos 2,6 a 2,1 (311 a 209). Total de las 18 pantallas: 3.008 a 2.528 palabras.
+- Verificación (nube): `npm run typecheck` 0 errores; `npm test` 192 de 192; `npm run build` sin errores; `npm run e2e`: 6 de 6, 10 de 10 (Hoy 1,86 pantallas), prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31 (E2 publica la oferta con las opciones cerradas; E5 sigue cobrando $18.000 con $900 de comisión). `npm run test:int` no se repitió: no cambió ninguna acción del servidor.
+- Pendiente: el texto de la política de cobro de la cuenta (`COMMISSION_POLICY`) sigue largo y nombra Bre-B y Nequi; el cuadre (2,2), la vitrina (2,8), el perfil (2,4) y el informe (2,3) del tendero.
+- Decisiones que necesito de SOKA: ninguna nueva.
+
 ### 2026-11-13 21:40, "que se sienta como una app real": primera pasada (rama `app-real`)
 
 - Quién: Claude en la sesión de la nube de SOKA, con su OK ("revisa y avanza con lo que ha avanzado Claude Code"). Rama `app-real`, encima de `etapa-6-tendero` (#8). Sin mezclar.

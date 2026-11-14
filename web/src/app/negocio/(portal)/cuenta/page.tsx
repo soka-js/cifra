@@ -1,14 +1,9 @@
 import {
-  AlertCircle,
-  Calendar,
   CheckCircle2,
   Clock,
-  Coins,
   Receipt,
   ShieldAlert,
   ShieldCheck,
-  TrendingUp,
-  Wallet,
 } from 'lucide-react';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { bogotaDate } from '@/lib/data';
@@ -68,10 +63,6 @@ export default async function MerchantBillingPage() {
       <div>
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">Tu cuenta con CIFRA</h1>
         <p className="mt-1 text-[15px] font-medium text-ink">Comisión del {commissionLabel}, solo sobre lo que cobraste con código.</p>
-        <p className="mt-1 text-[15px] text-ink-muted">
-          No pagas la comisión venta por venta. CIFRA suma tus ventas de la quincena en un solo corte y te da 5 días
-          para pagarlo.
-        </p>
       </div>
 
       {/* Alerta de Salud Financiera y Estado del Corte */}
@@ -114,7 +105,7 @@ export default async function MerchantBillingPage() {
                 Comisión acumulada a liquidar: {cop(billingHealth.pendingAmountMinor)}
               </h2>
               <p className="text-[14px] text-amber-800">
-                Tienes plazo de gracia hasta el <strong>{shortDate(billingHealth.activeCycle.graceDueDate)}</strong> para enviar el comprobante o pagar por Bre-B / Nequi sin interrumpir tus campañas activas.
+                Tienes plazo de gracia hasta el <strong>{shortDate(billingHealth.activeCycle.graceDueDate)}</strong> para pagar y reportar el comprobante sin que se pausen tus ofertas.
               </p>
             </div>
           </div>
@@ -132,10 +123,10 @@ export default async function MerchantBillingPage() {
                 Comprobante en verificación
               </span>
               <h2 className="font-display text-[20px] font-bold text-sky-950">
-                Estamos conciliando tu comprobante de liquidación
+                Estamos revisando tu comprobante
               </h2>
               <p className="text-[14px] text-sky-800">
-                Tu reporte fue recibido. Mientras nuestro equipo administrativo valida la transferencia, tus ofertas continúan encendidas con total normalidad.
+                Recibimos tu reporte. Mientras lo revisamos, tus ofertas siguen encendidas.
               </p>
             </div>
           </div>
@@ -143,113 +134,51 @@ export default async function MerchantBillingPage() {
       )}
 
       {billingHealth.status === 'al_dia' && (
-        <section className="rounded-2xl border border-emerald-300 bg-emerald-50/70 p-5 text-emerald-950 sm:p-6">
-          <div className="flex items-start gap-3.5">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800">
-              <CheckCircle2 size={24} aria-hidden="true" />
-            </span>
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-emerald-200 px-3 py-0.5 text-[12px] font-bold uppercase tracking-wider text-emerald-900">
-                  Al día · Corte en curso
-                </span>
-                <span className="text-[13px] text-emerald-800">
-                  Próximo corte: <strong>{shortDate(billingHealth.activeCycle.cutDate)}</strong> ({billingHealth.activeCycle.daysUntilCut} días)
-                </span>
-              </div>
-              <h2 className="font-display text-[20px] font-bold text-emerald-950">
-                {billingHealth.activeCycle.label}
-              </h2>
-              <p className="text-[14px] text-emerald-800">
-                No tienes cobros pendientes de cortes anteriores. La comisión de {commissionLabel} de este periodo se suma
-                sola y se paga en un solo corte al final de la quincena.
-              </p>
-            </div>
-          </div>
-        </section>
+        <p className="flex items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50/70 px-4 py-3 text-[14px] text-emerald-900">
+          <CheckCircle2 size={18} className="shrink-0" aria-hidden="true" />
+          <span>
+            <strong>Estás al día.</strong> Próximo corte: {shortDate(billingHealth.activeCycle.cutDate)} ({billingHealth.activeCycle.daysUntilCut}{' '}
+            {billingHealth.activeCycle.daysUntilCut === 1 ? 'día' : 'días'}).
+          </span>
+        </p>
       )}
 
-      {/* Resumen numérico del corte actual (con comas y diseño financiero) */}
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-display text-[20px] font-bold text-ink">
-            Acumulado del corte activo ({billingHealth.activeCycle.label})
-          </h2>
-          <span className="text-[13px] text-ink-muted">
-            Cierre de corte: {shortDate(billingHealth.activeCycle.cutDate)}
-          </span>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="surface-card p-4">
-            <p className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wider text-ink-muted">
-              <Receipt size={14} aria-hidden="true" />
-              Ventas con CIFRA
-            </p>
-            <p className="tnum mt-1.5 font-display text-[24px] font-bold text-ink">
-              {cop(cycleSummary.grossSalesMinor)}
-            </p>
-            <p className="mt-1 text-[12.5px] text-ink-soft">
-              {cycleSummary.salesCount} {cycleSummary.salesCount === 1 ? 'pedido atendido' : 'pedidos atendidos'}
-            </p>
+      {/* La quincena en curso, como una resta: de lo vendido a lo que le queda al tendero. */}
+      <section className="surface-card p-5 sm:p-6" aria-labelledby="quincena">
+        <h2 id="quincena" className="font-display text-[20px] font-bold text-ink">Esta quincena</h2>
+        <p className="mt-0.5 text-[13px] text-ink-muted">
+          {billingHealth.activeCycle.label}. Cierra el {shortDate(billingHealth.activeCycle.cutDate)}.
+        </p>
+        <dl className="tnum mt-4 space-y-3 text-[15px]">
+          <div className="flex items-baseline justify-between gap-3">
+            <dt>
+              <span className="font-medium text-ink">Ventas con código CIFRA</span>
+              <span className="block text-[12.5px] text-ink-faint">
+                {cycleSummary.salesCount} {cycleSummary.salesCount === 1 ? 'venta' : 'ventas'}, a precio sin descuento
+              </span>
+            </dt>
+            <dd className="shrink-0 font-semibold text-ink">{cop(cycleSummary.grossSalesMinor)}</dd>
           </div>
-
-          <div className="surface-card p-4">
-            <p className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wider text-terra-dark">
-              <Coins size={14} aria-hidden="true" />
-              Descuentos clientes
-            </p>
-            <p className="tnum mt-1.5 font-display text-[24px] font-bold text-terra-dark">
-              {cop(cycleSummary.discountsGrantedMinor)}
-            </p>
-            <p className="mt-1 text-[12.5px] text-ink-soft">
-              Inversión en atraer clientes
-            </p>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="font-medium text-ink">Descuentos que diste</dt>
+            <dd className="shrink-0 font-semibold text-ink">− {cop(cycleSummary.discountsGrantedMinor)}</dd>
           </div>
-
-          <div className="surface-card p-4">
-            <p className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wider text-ink-muted">
-              <Wallet size={14} aria-hidden="true" />
-              Cobrado en tu caja
-            </p>
-            <p className="tnum mt-1.5 font-display text-[24px] font-bold text-ink">
-              {cop(cycleSummary.collectedInCashMinor)}
-            </p>
-            <p className="mt-1 text-[12.5px] text-ink-soft">
-              Entró a tu caja / Nequi
-            </p>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="font-medium text-ink">Cobraste en tu caja</dt>
+            <dd className="shrink-0 font-semibold text-ink">{cop(cycleSummary.collectedInCashMinor)}</dd>
           </div>
-
-          <div className="surface-card border-terra/30 bg-terra-pale/40 p-4">
-            <p className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-terra-dark">
-              <TrendingUp size={14} aria-hidden="true" />
-              Comisión CIFRA ({commissionLabel})
-            </p>
-            <p className="tnum mt-1.5 font-display text-[26px] font-bold text-terra-dark">
-              {cop(cycleSummary.accumulatedCommissionMinor)}
-            </p>
-            <p className="mt-1 text-[12.5px] text-ink-soft">
-              A liquidar tras el corte del {shortDate(billingHealth.activeCycle.cutDate)}
-            </p>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt>
+              <span className="font-medium text-ink">Comisión CIFRA ({commissionLabel})</span>
+              <span className="block text-[12.5px] text-ink-faint">Se paga después del corte, no venta por venta</span>
+            </dt>
+            <dd className="shrink-0 font-semibold text-terra-dark">− {cop(cycleSummary.accumulatedCommissionMinor)}</dd>
           </div>
-        </div>
-
-        {/* Franja de plata neta libre retenida por el tendero */}
-        <div className="rounded-2xl border border-primary/25 bg-primary-pale/80 p-4 sm:p-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-[12px] font-bold uppercase tracking-wider text-primary-dark">
-                Lo que te queda
-              </p>
-              <p className="mt-0.5 text-[14px] text-ink-soft">
-                Lo cobrado en tu caja menos la comisión de {commissionLabel}:
-              </p>
-            </div>
-            <p className="tnum font-display text-[32px] font-bold text-primary-dark sm:text-right">
-              {cop(cycleSummary.merchantNetKeepMinor)}
-            </p>
+          <div className="flex items-baseline justify-between gap-3 border-t border-dashed border-line-strong pt-3 text-[16px] font-bold text-primary-dark">
+            <dt>= Lo que te queda</dt>
+            <dd>{cop(cycleSummary.merchantNetKeepMinor)}</dd>
           </div>
-        </div>
+        </dl>
       </section>
 
       {/* Cómo funciona el cobro de la comisión */}
@@ -330,13 +259,13 @@ export default async function MerchantBillingPage() {
 
       {/* Historial de estados de cuenta y cortes */}
       <section className="space-y-3">
-        <h2 className="font-display text-[20px] font-bold text-ink">Historial de cortes de comisiones</h2>
+        <h2 className="font-display text-[20px] font-bold text-ink">Cortes anteriores</h2>
 
         {data.invoices.length === 0 ? (
           <div className="surface-card flex items-center gap-3 p-5 text-[14px] text-ink-muted">
             <Receipt size={19} className="shrink-0 text-terra" aria-hidden="true" />
             <span>
-              Todavía no tienes comisiones acumuladas. Tu primer estado de cuenta se abrirá automáticamente cuando cobres tu primera venta con código CIFRA en Caja.
+              Todavía no hay cortes. El primero se abre cuando cobres tu primera venta con código en la Caja.
             </span>
           </div>
         ) : (
@@ -395,7 +324,7 @@ export default async function MerchantBillingPage() {
       {/* Historial de comprobantes de pago enviados */}
       {data.payments.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-display text-[18px] font-bold text-ink">Comprobantes de pago enviados</h2>
+          <h2 className="font-display text-[18px] font-bold text-ink">Pagos que reportaste</h2>
           <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
             {data.payments.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 text-[13.5px]">

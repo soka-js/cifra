@@ -34,7 +34,7 @@ export default async function AjustesPage() {
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Ajustes</h1>
         <Link href="/app/datos" className="text-[14px] font-semibold text-primary-dark underline underline-offset-2">
-          Ir a Tus datos (Ley 1581) →
+          Tus datos y privacidad
         </Link>
       </div>
 
@@ -42,7 +42,7 @@ export default async function AjustesPage() {
         <IncomeForm frequency={user.incomeFrequency ?? null} days={user.incomeDays ?? null} />
       </Section>
 
-      <Section id="zona" title="Tu zona para ofertas cercanas">
+      <Section id="zona" title="Tu zona">
         <ZoneForm currentZone={user.zoneSlug ?? null} />
       </Section>
 
@@ -86,7 +86,7 @@ export default async function AjustesPage() {
         <CommitmentForm />
       </Section>
 
-      <Section title="Tu sesión y comercio">
+      <Section title="Tu sesión">
         <p className="text-[14.5px] text-ink-muted">{user.email ?? 'Cuenta creada a través de entidad aliada'}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <form action={logout}>
@@ -95,12 +95,12 @@ export default async function AjustesPage() {
             </button>
           </form>
           <Link href="/negocio" className="btn-subtle">
-            Tengo un negocio de barrio →
+            Tengo un negocio
           </Link>
         </div>
       </Section>
 
-      <Section title="Borrar mi cuenta y revocar autorización">
+      <Section title="Borrar mi cuenta">
         <DeleteAccountForm />
       </Section>
     </div>
