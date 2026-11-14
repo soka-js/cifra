@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   CheckCircle2,
-  FileText,
   PlusCircle,
   QrCode,
   Repeat2,
@@ -13,7 +12,7 @@ import {
 import Link from 'next/link';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { bogotaDate } from '@/lib/data';
-import { cop, shortDate } from '@/lib/format';
+import { cop, percentFromBps, shortDate } from '@/lib/format';
 import { loadMerchantDashboard } from '@/lib/merchant-data';
 import { loadMerchantBreakEvenData } from '@/lib/v3-data';
 
@@ -47,64 +46,10 @@ export default async function MerchantHomePage({
         </div>
       )}
 
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <span className="badge-terra">{data.periodLabel}</span>
-          <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
-            Hola, {firstName} · {access.merchant.name}
-          </h1>
-          <p className="mt-1 text-[15px] text-ink-muted">
-            Cuentas claras de tu día y de tu mes en pesos reales, sin enredos técnicos.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href="/negocio/vitrina" className="btn-ghost text-[14px]">
-            Mi vitrina y QR
-          </Link>
-          <Link href="/negocio/informe" className="btn-ghost text-[14px]">
-            <FileText size={16} aria-hidden="true" />
-            Informe de 1 página
-          </Link>
-        </div>
+      <div>
+        <p className="text-[15px] text-ink-muted">Hola, {firstName}</p>
+        <h1 className="mt-0.5 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">{access.merchant.name}</h1>
       </div>
-
-      {/* Termómetro vivo del día: valor desde el Día 1 aunque aún lleguen pocos códigos */}
-      <section className="surface-card border-terra/25 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span className={cuadre.summary.reachedBreakEven ? 'badge-primary' : 'badge-terra'}>
-              Punto de equilibrio de hoy
-            </span>
-            <p className="tnum mt-2 font-display text-[26px] font-extrabold leading-none text-ink">
-              {cop(cuadre.summary.todaySalesMinor)}{' '}
-              {cuadre.summary.dailyBreakEvenMinor !== null && (
-                <span className="text-[14px] font-normal text-ink-muted">
-                  de {cop(cuadre.summary.dailyBreakEvenMinor)} ({cuadre.summary.progressPct} %)
-                </span>
-              )}
-            </p>
-            <p className="mt-1 text-[13px] text-ink-muted">
-              {cuadre.summary.dailyBreakEvenMinor === null
-                ? 'Vendido hoy. En el cuadre puedes escribir cuánto necesitas vender al día y te decimos cuánto te falta.'
-                : cuadre.summary.reachedBreakEven
-                  ? 'Ya cubriste tu meta de hoy.'
-                  : `Te faltan ${cop(cuadre.summary.gapToBreakEvenMinor)} hoy. Puedes anotar ventas de mostrador o prender una oferta por horas.`}
-            </p>
-          </div>
-          <Link href="/negocio/cuadre" className="btn-ink shrink-0 text-[13.5px]">
-            Abrir cuadre e insumos →
-          </Link>
-        </div>
-        {cuadre.summary.dailyBreakEvenMinor !== null && (
-          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-paper-deep">
-            <div
-              className={`h-full rounded-full ${cuadre.summary.reachedBreakEven ? 'bg-primary' : 'bg-terra'}`}
-              style={{ width: `${Math.min(100, Math.max(4, cuadre.summary.progressPct))}%` }}
-            />
-          </div>
-        )}
-      </section>
 
       {/* Acceso gigante a Caja para mostrador */}
       <div className="grid gap-3.5 sm:grid-cols-2">
@@ -113,14 +58,9 @@ export default async function MerchantHomePage({
           className="group flex items-center justify-between gap-4 rounded-2xl bg-terra p-5 text-white shadow-card transition hover:bg-terra-dark"
         >
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-wider text-white/80">
-              Atención rápida en mostrador
-            </p>
-            <p className="mt-1 font-display text-[22px] font-bold leading-snug">
-              Cobrar código o QR en Caja
-            </p>
+            <p className="font-display text-[22px] font-bold leading-snug">Cobrar un código</p>
             <p className="mt-1 text-[13.5px] text-white/85">
-              Valida las 6 letras del cliente y calcula cuánto cobrarle al instante.
+              Escribe o escanea las 6 letras del cliente y te decimos cuánto cobrarle.
             </p>
           </div>
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
@@ -151,17 +91,54 @@ export default async function MerchantHomePage({
         </Link>
       </div>
 
+      {/* Termómetro vivo del día: valor desde el Día 1 aunque aún lleguen pocos códigos */}
+      <section className="surface-card border-terra/25 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className={cuadre.summary.reachedBreakEven ? 'badge-primary' : 'badge-terra'}>
+              Punto de equilibrio de hoy
+            </span>
+            <p className="tnum mt-2 font-display text-[26px] font-extrabold leading-none text-ink">
+              {cop(cuadre.summary.todaySalesMinor)}{' '}
+              {cuadre.summary.dailyBreakEvenMinor !== null && (
+                <span className="text-[14px] font-normal text-ink-muted">
+                  de {cop(cuadre.summary.dailyBreakEvenMinor)} ({cuadre.summary.progressPct} %)
+                </span>
+              )}
+            </p>
+            <p className="mt-1 text-[13px] text-ink-muted">
+              {cuadre.summary.dailyBreakEvenMinor === null
+                ? 'Vendido hoy. En el cuadre puedes escribir cuánto necesitas vender al día y te decimos cuánto te falta.'
+                : cuadre.summary.reachedBreakEven
+                  ? 'Ya cubriste tu meta de hoy.'
+                  : `Te faltan ${cop(cuadre.summary.gapToBreakEvenMinor)} hoy. Puedes anotar ventas de mostrador o prender una oferta por horas.`}
+            </p>
+          </div>
+          <Link href="/negocio/cuadre" className="btn-ink shrink-0 text-[13.5px]">
+            Abrir el cuadre
+          </Link>
+        </div>
+        {cuadre.summary.dailyBreakEvenMinor !== null && (
+          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-paper-deep">
+            <div
+              className={`h-full rounded-full ${cuadre.summary.reachedBreakEven ? 'bg-primary' : 'bg-terra'}`}
+              style={{ width: `${Math.min(100, Math.max(4, cuadre.summary.progressPct))}%` }}
+            />
+          </div>
+        )}
+      </section>
+
       {/* Las 4 cifras llanas definidas en G.10 */}
-      <section aria-label="Las 4 cifras del mes" className="space-y-3">
+      <section aria-label="Este mes con CIFRA" className="space-y-3">
         <h2 className="font-display text-[20px] font-bold text-ink">
-          Las 4 cifras de tu negocio este mes
+          Este mes con CIFRA
         </h2>
 
         <div className="grid gap-3.5 sm:grid-cols-2">
           <div className="surface-card p-5">
             <div className="flex items-center justify-between">
               <span className="text-[13px] font-semibold text-ink-muted">
-                1. Ventas con oferta CIFRA
+                Ventas con oferta CIFRA
               </span>
               <Tag size={17} className="text-terra" aria-hidden="true" />
             </div>
@@ -177,7 +154,7 @@ export default async function MerchantHomePage({
           <div className="surface-card p-5">
             <div className="flex items-center justify-between">
               <span className="text-[13px] font-semibold text-ink-muted">
-                2. Plata libre que te queda en caja
+                Lo que te queda
               </span>
               <Wallet size={17} className="text-primary-dark" aria-hidden="true" />
             </div>
@@ -185,7 +162,7 @@ export default async function MerchantHomePage({
               {cop(report.merchantNetKeptMinor)}
             </p>
             <p className="mt-1 text-[13px] text-ink-muted">
-              Cobraste <span className="tnum font-medium text-ink">{cop(report.netCollectedSalesMinor)}</span> · Comisión CIFRA (5 %):{' '}
+              Cobraste <span className="tnum font-medium text-ink">{cop(report.netCollectedSalesMinor)}</span> · Comisión CIFRA ({percentFromBps(access.merchant.commissionBps)}):{' '}
               <span className="tnum font-medium text-ink">{cop(report.cifraCommissionMinor)}</span>
             </p>
           </div>
@@ -193,7 +170,7 @@ export default async function MerchantHomePage({
           <div className="surface-card p-5">
             <div className="flex items-center justify-between">
               <span className="text-[13px] font-semibold text-ink-muted">
-                3. Clientes nuevos para tu local
+                Clientes nuevos
               </span>
               <UserPlus size={17} className="text-terra" aria-hidden="true" />
             </div>
@@ -210,7 +187,7 @@ export default async function MerchantHomePage({
           <div className="surface-card p-5">
             <div className="flex items-center justify-between">
               <span className="text-[13px] font-semibold text-ink-muted">
-                4. Volvieron después sin descuento
+                Volvieron sin descuento
               </span>
               <Repeat2 size={17} className="text-primary-dark" aria-hidden="true" />
             </div>
@@ -282,7 +259,7 @@ export default async function MerchantHomePage({
 
       <div className="flex justify-end">
         <Link href="/negocio/informe" className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-terra-dark hover:underline">
-          Abrir informe mensual imprimible y enviar por WhatsApp
+          Informe del mes, para imprimir o mandar por WhatsApp
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </div>

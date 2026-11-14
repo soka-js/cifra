@@ -1,11 +1,10 @@
 'use client';
 
-import { CheckCircle2, Copy, ExternalLink, MessageCircle, Printer, Share2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Copy, ExternalLink, MessageCircle, Printer, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { saveMerchantFeaturedItemsAction, type V3ActionState } from '@/app/actions/v3';
 import { LogoMark } from '@/components/logo';
-import { BackButton } from '@/components/ui/back-button';
 import { MoneyInput } from '@/components/ui/money-input';
 import type { MerchantFeaturedItem } from '@/lib/db/schema';
 
@@ -51,15 +50,10 @@ export function VitrinaClient({
     <div className="space-y-6">
       {/* Cabecera y barra de compartir (se oculta al imprimir el afiche) */}
       <div className="no-print space-y-4">
-        <div>
-          <BackButton fallbackHref="/negocio" label="Volver al resumen" />
-        </div>
-
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="badge-terra">Herramienta gratuita de mostrador y WhatsApp</span>
-            <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
-              Mi vitrina digital y afiche QR
+            <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
+              Tu vitrina y tu afiche
             </h1>
             <p className="mt-1 text-[15px] text-ink-muted">
               Comparte tu página propia en estados de WhatsApp o Instagram e imprime el hablador QR para tu mostrador.
@@ -123,13 +117,8 @@ export function VitrinaClient({
         {/* Editor de recomendados de la casa */}
         <form action={action} className="surface-card space-y-5 p-5 sm:p-6">
           <div>
-            <span className="badge-primary">
-              <Sparkles size={12} aria-hidden="true" />
-              Precios directos sin sobreprecio de apps
-            </span>
-            <h2 className="mt-2 font-display text-[20px] font-bold text-ink">
-              Productos estrella que verán tus vecinos en /b/{merchantSlug}
-            </h2>
+            <h2 className="font-display text-[20px] font-bold text-ink">Lo que recomiendas</h2>
+            <p className="mt-1 text-[13.5px] text-ink-muted">Tus vecinos lo ven en tu página, /b/{merchantSlug}.</p>
           </div>
 
           <div className="grid gap-3.5 sm:grid-cols-2">

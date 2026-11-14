@@ -45,17 +45,17 @@ export function AppTopBar({
     if (pathname.startsWith('/app/cobros')) return 'Cobros fijos y suscripciones';
     if (pathname.startsWith('/app/cierre')) return 'Cierre de ciclo';
     if (pathname.startsWith('/app/datos/importar')) return 'Subir extracto';
-    if (pathname.startsWith('/app/datos')) return 'Tus datos (Ley 1581)';
+    if (pathname.startsWith('/app/datos')) return 'Tus datos';
     if (pathname.startsWith('/app/avisos')) return 'Avisos y alertas';
     if (pathname.startsWith('/app/ajustes')) return 'Ajustes';
 
-    if (pathname === '/negocio') return 'Resumen del local';
-    if (pathname.startsWith('/negocio/caja')) return 'Caja · Cobrar código';
+    if (pathname === '/negocio') return 'Inicio';
+    if (pathname.startsWith('/negocio/caja')) return 'Caja';
     if (pathname.startsWith('/negocio/cuadre')) return 'Cuadre diario e insumos';
     if (pathname.startsWith('/negocio/ofertas')) return 'Mis ofertas';
-    if (pathname.startsWith('/negocio/vitrina')) return 'Mi vitrina y afiche QR';
-    if (pathname.startsWith('/negocio/informe')) return 'Informe de 1 página';
-    if (pathname.startsWith('/negocio/cuenta')) return 'Comisiones y facturación';
+    if (pathname.startsWith('/negocio/vitrina')) return 'Vitrina y afiche';
+    if (pathname.startsWith('/negocio/informe')) return 'Informe del mes';
+    if (pathname.startsWith('/negocio/cuenta')) return 'Tu cuenta';
     if (pathname.startsWith('/negocio/perfil')) return 'Datos del negocio';
 
     return 'CIFRA';

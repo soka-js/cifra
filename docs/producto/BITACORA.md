@@ -235,6 +235,30 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Entradas
 
+### 2026-11-13 21:40, "que se sienta como una app real": primera pasada (rama `app-real`)
+
+- Quién: Claude en la sesión de la nube de SOKA, con su OK ("revisa y avanza con lo que ha avanzado Claude Code"). Rama `app-real`, encima de `etapa-6-tendero` (#8). Sin mezclar.
+- Por qué: en la llamada del 13 nov, Financiera Comultrasan dijo que la app se ve muy de demo y que al entrar uno queda perdido.
+- Antes de tocar nada:
+  - Traje de la carpeta de SOKA las ramas `etapa-4-un-formulario` y `etapa-6-tendero`, sin cambios, y abrí #7 y #8. La entrada de las 12:22 había quedado sin verificar; en la nube pasó todo (abajo).
+  - `web/e2e/recorridos.e2e.mjs` lo dejó Claude Code sin commit. Va en esta rama como línea base. Corriendo antes de `seguridad.e2e.mjs`, su negocio quedaba en Las Aguas y E4 tocaba el primer "Generar código" de la zona; E4 ahora toca el de su propio negocio.
+- Qué cambió:
+  - **Sin frases de propaganda dentro de la app:** "Cruce inteligente: gastos × distancia × franja horaria", "Control total de tus campañas", "Creador guiado con protección de margen", "Herramienta gratuita de mostrador y WhatsApp", "Precios directos sin sobreprecio de apps", "Termómetro de ventas de hoy", "Cuentas claras... sin enredos técnicos", "Cruce CIFRA:" y el número de cada cifra del mes ("1.", "2."...). Los textos de entrada de ¿Puedo?, Ofertas y Cobros quedaron en una o dos líneas.
+  - **Sin el botón "Volver" en las pantallas que ya están en el menú de abajo** (persona: ¿Puedo?, Gastos, Ofertas, Cobros; tendero: Caja, Ofertas, Cuenta, Vitrina). Las demás lo conservan.
+  - **Ofertas de la persona:** fuera el enlace "¿Tienes un negocio? Portal tendero" y, sin ofertas, ya no le pide a la persona "publicar su primera campaña".
+  - **Inicio del tendero:** arriba "Hola, Carlos" y el nombre del negocio; primero "Cobrar un código", luego sus ofertas y después el cuadre. El menú de abajo queda Inicio, Caja, Ofertas, Cuenta y Vitrina; el cuadre y el informe se abren desde el inicio y desde el menú lateral.
+  - **La comisión del inicio del tendero decía "(5 %)" escrito a mano;** ahora sale de `commissionBps` con `percentFromBps`, como el resto del portal desde la Etapa 6.
+  - **Bienvenida en el Hoy** al llegar de la prueba o del modo rápido (`?listo=rapido`): tres renglones que dicen qué es la cifra, dónde preguntar y qué hay en el menú. No guarda nada; desaparece con "Entendido" o al volver a entrar.
+- Medido con `recorridos.e2e.mjs`, antes y después (palabras en pantalla): ¿Puedo? 82 a 64, Ofertas 119 a 90, Cobros 66 a 54, inicio del tendero 226 a 177 (2,4 a 2,1 pantallas), Caja 42 a 36. Total de las 18 pantallas medidas: 3.008 a 2.852. El Hoy con la bienvenida mide 1,86 pantallas (la meta de la Etapa 3 es 2 o menos).
+- Verificación (nube, Linux, Node 22, Postgres 16 local), con la rama completa:
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, 192 de 192.
+  - `npm run test:int`: 8 archivos, 278 de 278 (en `etapa-6-tendero`; esta rama no toca acciones del servidor).
+  - `npm run build`: sin errores.
+  - `npm run e2e`: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31.
+- Qué revisar en la vista previa de `app-real`: entrar como persona y como tendero desde la demo de `/admin`, recorrer el menú de abajo y decir qué todavía suena a demo.
+- Pendiente para la siguiente pasada: el creador de ofertas (3,7 pantallas), la cuenta del tendero (2,6), Ajustes (3,4) y Tus datos (2,6).
+- Decisiones que necesito de SOKA: si el cuadre puede salir del menú de abajo del tendero (hoy queda en el inicio y en el menú lateral).
+
 ### 2026-11-13 12:22, Etapa 6: revisión a ojo del tendero en celular, y lo que encontró
 
 - Rama: `etapa-6-tendero`. Sin subir ni mezclar.
