@@ -36,11 +36,11 @@ const SUPPLY_CATEGORIES = [
 ];
 
 function defaultFlashTitle(cat: string): string {
-  if (cat === 'panaderia') return '25 % OFF en horneados de la tarde, antes del cierre';
-  if (cat === 'cafeteria') return '20 % OFF en café + pastelería de media tarde';
-  if (cat === 'fruver') return '25 % OFF en canasta fresca del día antes del cierre';
-  if (cat === 'restaurante') return '20 % OFF en almuerzo ejecutivo de 2:00 a 4:00 p. m.';
-  return '20 % OFF hoy en mostrador';
+  if (cat === 'panaderia') return '25 % de descuento en horneados de la tarde, antes del cierre';
+  if (cat === 'cafeteria') return '20 % de descuento en café y pastelería de media tarde';
+  if (cat === 'fruver') return '25 % de descuento en la canasta fresca del día, antes del cierre';
+  if (cat === 'restaurante') return '20 % de descuento en el almuerzo de 2:00 a 4:00 p. m.';
+  return '20 % de descuento hoy en el mostrador';
 }
 
 export function CuadreClient({

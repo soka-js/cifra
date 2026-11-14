@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, CreditCard, Send, Sparkles } from 'lucide-react';
+import { CheckCircle2, CreditCard, Send } from 'lucide-react';
 import { useActionState, useState } from 'react';
 import { reportMerchantPayment, type MerchantActionState } from '@/app/actions/merchant';
 import { cop } from '@/lib/format';
@@ -11,30 +11,18 @@ export function PaymentReportForm({
   invoiceId,
   periodLabel,
   amountMinor,
-  wompiPublicKey,
-  siteUrl,
+  wompiUrl,
 }: {
   invoiceId: string;
   periodLabel: string;
   amountMinor: number;
-  wompiPublicKey?: string;
-  siteUrl: string;
+  /** Enlace de pago en línea con el monto firmado en el servidor; null si Wompi no está configurado. */
+  wompiUrl: string | null;
 }) {
   const [state, action, pending] = useActionState(reportMerchantPayment, INITIAL);
   const [reference, setReference] = useState('');
   const [note, setNote] = useState('');
   const [method, setMethod] = useState<'breb' | 'nequi' | 'transferencia'>('breb');
-
-  const wompiUrl = wompiPublicKey
-    ? `https://checkout.wompi.co/p/?public-key=${encodeURIComponent(wompiPublicKey)}&currency=COP&amount-in-cents=${amountMinor}&reference=${encodeURIComponent(`CIFRA-${invoiceId}`)}&redirect-url=${encodeURIComponent(`${siteUrl}/negocio/cuenta`)}`
-    : null;
-
-  function handleDemoAutofill() {
-    const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setMethod('breb');
-    setReference(`BREB-${randomHex}`);
-    setNote('Liquidación de comisiones quincenales CIFRA');
-  }
 
   return (
     <div className="space-y-4">
@@ -53,19 +41,9 @@ export function PaymentReportForm({
       <form action={action} className="space-y-3.5 rounded-2xl border border-line bg-paper p-4">
         <input type="hidden" name="invoiceId" value={invoiceId} />
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[14px] font-bold text-ink">
-            Reportar pago realizado por Bre-B, Nequi o transferencia ({periodLabel})
-          </p>
-          <button
-            type="button"
-            onClick={handleDemoAutofill}
-            className="btn-sm border border-line bg-white text-[12px] text-ink-soft hover:bg-paper-deep"
-          >
-            <Sparkles size={13} aria-hidden="true" className="text-terra" />
-            Autocompletar referencia de hoy
-          </button>
-        </div>
+        <p className="text-[14px] font-bold text-ink">
+          Reportar pago realizado por Bre-B, Nequi o transferencia ({periodLabel})
+        </p>
 
         {state.status === 'ok' && (
           <div className="flex items-center gap-2 rounded-xl bg-primary-pale px-3.5 py-2.5 text-[13.5px] font-medium text-primary-dark">

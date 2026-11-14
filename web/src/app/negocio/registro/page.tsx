@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { LogoMark } from '@/components/logo';
 import { getMerchantAccess, requireUser } from '@/lib/auth/session';
+import { DEFAULT_COMMISSION_LABEL } from '@/lib/commission';
 import { RegisterMerchantForm } from '../unirse/register-merchant-form';
 
 export const metadata = { title: 'Registrar mi negocio · CIFRA' };
@@ -32,7 +33,7 @@ export default async function RegistroNegocioAutenticadoPage() {
             Registra tu negocio de barrio en CIFRA
           </h1>
           <p className="mt-2 text-[14.5px] leading-relaxed text-ink-muted">
-            Tu negocio quedará asociado a tu cuenta ({user.email}). No tiene costo fijo: solo pagas el 5 % cuando cobras en caja una venta traída por CIFRA.
+            Tu negocio quedará asociado a tu cuenta ({user.email}). No tiene costo fijo: solo pagas el {DEFAULT_COMMISSION_LABEL} cuando cobras en caja una venta traída por CIFRA.
           </p>
 
           <div className="mt-6 border-t border-line pt-6">

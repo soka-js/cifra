@@ -1,93 +1,31 @@
 'use client';
 
 import { AlertTriangle, CheckCircle2, Sparkles, Tag, Zap } from 'lucide-react';
-import { useActionState, useState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import { createMerchantOffer, type MerchantActionState } from '@/app/actions/merchant';
 import { MoneyInput } from '@/components/ui/money-input';
 import { computeRedemptionSplit } from '@/lib/engine/attribution';
 import { computeHonestMerchantMargin } from '@/lib/engine/crossref';
-import { cop, parsePesosInput } from '@/lib/format';
+import { cop, parsePesosInput, percentFromBps } from '@/lib/format';
+import { offerTemplates, type OfferTemplate } from '@/lib/offer-templates';
 
 const INITIAL: MerchantActionState = { status: 'idle' };
-
-const TEMPLATES = [
-  {
-    id: 'bienvenida-10',
-    badge: 'Recomendada · 1ra visita',
-    title: '10 % de descuento en tu primera compra',
-    description: 'Para vecinos de la zona que aún no conocen nuestro local.',
-    kind: 'percent' as const,
-    percent: 10,
-    fixedPesos: '3000',
-    minPesos: '12000',
-    newOnly: true,
-    isFlash: false,
-    startHour: '14',
-    endHour: '18',
-    stock: '10',
-    hours: '',
-  },
-  {
-    id: 'por-horas-cierre',
-    badge: '⚡ Por horas · Antes del cierre',
-    title: '25 % OFF en horneados y productos frescos de la tarde',
-    description: 'Saca el inventario del día antes del cierre con cupos contados.',
-    kind: 'percent' as const,
-    percent: 25,
-    fixedPesos: '3000',
-    minPesos: '0',
-    newOnly: false,
-    isFlash: true,
-    startHour: '16',
-    endHour: '19',
-    stock: '8',
-    hours: '4:00 p. m. a 7:00 p. m.',
-  },
-  {
-    id: 'por-horas-tarde',
-    badge: '⚡ Por horas · Tarde tranquila',
-    title: '20 % de descuento en hora tranquila de la tarde',
-    description: 'Llena mesas o mostrador en las horas de menor movimiento.',
-    kind: 'percent' as const,
-    percent: 20,
-    fixedPesos: '3000',
-    minPesos: '10000',
-    newOnly: false,
-    isFlash: true,
-    startHour: '14',
-    endHour: '17',
-    stock: '12',
-    hours: '2:00 p. m. a 5:00 p. m.',
-  },
-  {
-    id: 'bono-fijo',
-    badge: 'Monto fijo en pesos',
-    title: '$3.000 de descuento por compras desde $20.000',
-    description: 'Descuento fijo fácil de entender en mostrador.',
-    kind: 'fixed' as const,
-    percent: 10,
-    fixedPesos: '3000',
-    minPesos: '20000',
-    newOnly: true,
-    isFlash: false,
-    startHour: '14',
-    endHour: '18',
-    stock: '10',
-    hours: '',
-  },
-];
 
 export function OfferCreator({
   typicalTicketMinor,
   commissionBps,
+  businessCategory,
 }: {
   typicalTicketMinor: number;
   commissionBps: number;
+  /** El tipo de negocio elige las plantillas: a una peluquería no se le sugiere "horneados". */
+  businessCategory: string;
 }) {
+  const templates = useMemo(() => offerTemplates(businessCategory), [businessCategory]);
   const [state, action, pending] = useActionState(createMerchantOffer, INITIAL);
-  const [selectedTpl, setSelectedTpl] = useState(TEMPLATES[0]!.id);
-  const [title, setTitle] = useState(TEMPLATES[0]!.title);
-  const [description, setDescription] = useState(TEMPLATES[0]!.description);
+  const [selectedTpl, setSelectedTpl] = useState(templates[0]!.id);
+  const [title, setTitle] = useState(templates[0]!.title);
+  const [description, setDescription] = useState(templates[0]!.description);
   const [discountKind, setDiscountKind] = useState<'percent' | 'fixed'>('percent');
   const [discountPercent, setDiscountPercent] = useState(10);
   const [discountFixed, setDiscountFixed] = useState('3000');
@@ -105,7 +43,7 @@ export function OfferCreator({
   const [durationDays, setDurationDays] = useState('30');
   const [activeHoursText, setActiveHoursText] = useState('');
 
-  function applyTemplate(tpl: (typeof TEMPLATES)[number]) {
+  function applyTemplate(tpl: OfferTemplate) {
     setSelectedTpl(tpl.id);
     setTitle(tpl.title);
     setDescription(tpl.description);
@@ -125,7 +63,7 @@ export function OfferCreator({
   const sampleGrossMinor = Math.max(typicalTicketMinor, parsePesosInput(minPurchase) ?? 0);
   const parsedCostMinor = parsePesosInput(unitCost);
   const appPctNum = appPct.trim() === '' ? null : Math.min(60, Math.max(0, Number(appPct.replace(',', '.')) || 0));
-  const commissionLabel = `${String(commissionBps / 100).replace('.', ',')} %`;
+  const commissionLabel = percentFromBps(commissionBps);
 
   const previewSplit = computeRedemptionSplit({
     grossAmountMinor: sampleGrossMinor,
@@ -174,7 +112,7 @@ export function OfferCreator({
           Paso 1 · Elige una plantilla o escríbela a tu gusto
         </p>
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          {TEMPLATES.map((tpl) => {
+          {templates.map((tpl) => {
             const active = selectedTpl === tpl.id;
             return (
               <button
