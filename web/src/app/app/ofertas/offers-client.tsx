@@ -157,15 +157,11 @@ export function OffersClient({
           <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-terra-light text-terra-dark">
             <Store size={20} aria-hidden="true" />
           </div>
-          <p className="text-[16px] font-semibold text-ink">Aún no hay campañas elegibles para ti hoy</p>
+          <p className="text-[16px] font-semibold text-ink">Todavía no hay ofertas en {zoneLabel}</p>
           <p className="text-[14px] leading-relaxed text-ink-muted">
-            Mostramos únicamente beneficios reales de comercios independientes cercanos y en rubros donde compras. Ajusta tu barrio en{' '}
+            Cuando un negocio de tu zona publique una, aparece aquí. Si vives o trabajas en otra parte, cambia tu zona en{' '}
             <Link href="/app/ajustes#zona" className="font-semibold text-primary-dark underline">
               Ajustes
-            </Link>{' '}
-            o, si tienes un negocio de barrio,{' '}
-            <Link href="/negocio/unirse" className="font-semibold text-terra-dark underline">
-              publica tu primera campaña sin pagar por adelantado
             </Link>
             .
           </p>

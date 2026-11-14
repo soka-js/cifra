@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, CheckCircle2, Sparkles, Tag, Zap } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Tag, Zap } from 'lucide-react';
 import { useActionState, useMemo, useState } from 'react';
 import { createMerchantOffer, type MerchantActionState } from '@/app/actions/merchant';
 import { MoneyInput } from '@/components/ui/money-input';
@@ -91,13 +91,8 @@ export function OfferCreator({
   return (
     <form action={action} className="surface-card space-y-6 p-5 sm:p-7">
       <div>
-        <span className="badge-terra">
-          <Sparkles size={12} aria-hidden="true" />
-          Creador guiado con protección de margen
-        </span>
-        <h2 className="mt-2 font-display text-[22px] font-bold text-ink">
-          Publica una oferta para clientes nuevos o una oferta por horas
-        </h2>
+        <h2 className="font-display text-[22px] font-bold text-ink">Publicar una oferta</h2>
+        <p className="mt-1 text-[14px] text-ink-muted">Para clientes nuevos o para las horas tranquilas.</p>
       </div>
 
       {state.status === 'error' && (

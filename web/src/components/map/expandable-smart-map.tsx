@@ -416,7 +416,7 @@ export function ExpandableSmartMap({
                     </div>
 
                     <p className="mt-1.5 rounded-xl bg-paper px-3 py-2 text-[12.5px] leading-snug text-ink-soft">
-                      <strong className="font-semibold text-ink">Cruce CIFRA:</strong> {item.whyThisMatches}
+                      <strong className="font-semibold text-ink">Por qué te la mostramos:</strong> {item.whyThisMatches}
                       {item.userAvgTicketMinor ? (
                         <span className="tnum text-ink-muted">
                           {' '}
