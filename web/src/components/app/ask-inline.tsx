@@ -7,6 +7,7 @@ import { track } from '@/lib/analytics/client';
 import { canISpend, type CifraResult, type SpendAnswer } from '@/lib/engine/cifra';
 import { shortDate } from '@/lib/engine/dates';
 import { cop, parsePesosInput } from '@/lib/format';
+import { ASKED_COOKIE, ASKED_EVENT, rememberCookie } from '@/lib/guide';
 
 /** Lo mínimo de la cifra que hace falta para contestar "¿puedo gastar?". */
 export type AskCifra = Pick<CifraResult, 'availableMinor' | 'dailyVariableMinor' | 'daysLeft' | 'nextIncomeOn'>;
@@ -32,6 +33,9 @@ export function AskInline({ cifra, where, moreHref }: { cifra: AskCifra; where: 
     const a = canISpend(cifra as CifraResult, amount);
     setAnswer(a);
     track('ask_spend', { verdict: a.verdict, where });
+    // La guía de primera vez marca este paso como hecho.
+    rememberCookie(ASKED_COOKIE);
+    window.dispatchEvent(new Event(ASKED_EVENT));
   }
 
   const tone =
@@ -85,7 +89,10 @@ export function AskInline({ cifra, where, moreHref }: { cifra: AskCifra; where: 
         </p>
       )}
       {answer && moreHref && (
-        <Link href={moreHref} className="mt-2.5 inline-block text-[13px] font-semibold text-primary-dark underline underline-offset-2">
+        <Link
+          href={`${moreHref}?monto=${Math.round(answer.amountMinor / 100)}`}
+          className="mt-2.5 inline-block text-[13px] font-semibold text-primary-dark underline underline-offset-2"
+        >
           Verlo con más detalle
         </Link>
       )}

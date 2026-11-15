@@ -20,7 +20,6 @@ import {
   updateMerchantBreakEvenTargetsAction,
   type V3ActionState,
 } from '@/app/actions/v3';
-import { BackButton } from '@/components/ui/back-button';
 import { MoneyInput } from '@/components/ui/money-input';
 import { cop, shortDate } from '@/lib/format';
 import type { MerchantBreakEvenPageData } from '@/lib/v3-data';
@@ -74,10 +73,6 @@ export function CuadreClient({
 
   return (
     <div className="space-y-6">
-      <div className="no-print">
-        <BackButton fallbackHref="/negocio" label="Volver al resumen" />
-      </div>
-
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">

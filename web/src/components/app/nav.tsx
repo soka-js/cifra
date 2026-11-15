@@ -1,38 +1,38 @@
 'use client';
 
-import {
-  Bell,
-  CalendarCheck2,
-  CircleHelp,
-  Database,
-  Home,
-  PieChart,
-  Repeat,
-  Settings,
-  Shield,
-  Store,
-  Tag,
-} from 'lucide-react';
+import { Bell, Database, Home, LayoutGrid, PieChart, Repeat, Settings, Shield, Store, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoMark } from '@/components/logo';
 
+/**
+ * El menú de la persona: cuatro pestañas. "Más" guarda lo que no se usa todos los días
+ * (cobros fijos, ajustes, avisos, tus datos).
+ */
+
+/** Pantallas que viven dentro de "Más". */
+const MORE_PREFIXES = ['/app/mas', '/app/cobros', '/app/ajustes', '/app/datos', '/app/avisos', '/app/cierre'];
+const startsWithAny = (pathname: string, prefixes: string[]) => prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
 const MOBILE_ITEMS = [
-  { href: '/app', label: 'Hoy', icon: Home, exact: true },
-  { href: '/app/gasto', label: '¿Puedo?', icon: CircleHelp },
-  { href: '/app/movimientos', label: 'Gastos', icon: PieChart },
-  { href: '/app/ofertas', label: 'Ofertas', icon: Tag },
-  { href: '/app/cobros', label: 'Cobros', icon: Repeat },
+  {
+    href: '/app',
+    label: 'Hoy',
+    icon: Home,
+    // "¿Puedo gastar?" se abre desde el Hoy y sigue siendo parte de él.
+    isActive: (p: string) => p === '/app' || startsWithAny(p, ['/app/gasto', '/app/bienvenida']),
+  },
+  { href: '/app/movimientos', label: 'Gastos', icon: PieChart, isActive: (p: string) => startsWithAny(p, ['/app/movimientos']) },
+  { href: '/app/ofertas', label: 'Ofertas', icon: Tag, isActive: (p: string) => startsWithAny(p, ['/app/ofertas']) },
+  { href: '/app/mas', label: 'Más', icon: LayoutGrid, isActive: (p: string) => startsWithAny(p, MORE_PREFIXES) },
 ];
 
 const SIDEBAR_ITEMS = [
-  { href: '/app', label: 'Hoy · Tu cifra', icon: Home, exact: true },
-  { href: '/app/gasto', label: '¿Puedo hacer este gasto?', icon: CircleHelp },
-  { href: '/app/movimientos', label: 'En qué se me va', icon: PieChart },
-  { href: '/app/cobros', label: 'Cobros recurrentes', icon: Repeat },
-  { href: '/app/ofertas', label: 'Ofertas cerca de ti', icon: Tag },
-  { href: '/app/cierre', label: 'Cierre de ciclo', icon: CalendarCheck2 },
-  { href: '/app/datos', label: 'Tus datos (Ley 1581)', icon: Database },
+  { href: '/app', label: 'Hoy', icon: Home, exact: true },
+  { href: '/app/movimientos', label: 'Gastos', icon: PieChart },
+  { href: '/app/ofertas', label: 'Ofertas', icon: Tag },
+  { href: '/app/cobros', label: 'Cobros fijos', icon: Repeat },
+  { href: '/app/datos', label: 'Tus datos', icon: Database },
 ];
 
 export function BottomNav() {
@@ -42,19 +42,21 @@ export function BottomNav() {
       aria-label="Secciones principales"
       className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-5">
-        {MOBILE_ITEMS.map(({ href, label, icon: Icon, exact }) => {
-          const active = exact ? pathname === href : pathname.startsWith(href);
+      <ul className="mx-auto grid max-w-lg grid-cols-4">
+        {MOBILE_ITEMS.map(({ href, label, icon: Icon, isActive }) => {
+          const active = isActive(pathname);
           return (
             <li key={href}>
               <Link
                 href={href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[11.5px] font-semibold transition-colors ${
+                className={`flex flex-col items-center gap-0.5 pb-2 pt-2 text-[12px] font-semibold transition-colors ${
                   active ? 'text-primary-dark' : 'text-ink-faint hover:text-ink'
                 }`}
               >
-                <Icon size={20} strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
+                <span className={`grid h-8 w-14 place-items-center rounded-full transition-colors ${active ? 'bg-primary-light' : ''}`}>
+                  <Icon size={21} strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
+                </span>
                 <span>{label}</span>
               </Link>
             </li>
@@ -158,7 +160,7 @@ export function DesktopSidebar({
               className="flex items-center gap-2.5 rounded-xl bg-terra-pale px-3.5 py-2.5 text-[13.5px] font-semibold text-terra-dark hover:bg-terra-light"
             >
               <Store size={17} aria-hidden="true" />
-              <span>Abrir mi negocio →</span>
+              <span>Abrir mi negocio</span>
             </Link>
           )}
           {isAdmin && (
@@ -167,7 +169,7 @@ export function DesktopSidebar({
               className="flex items-center gap-2.5 rounded-xl bg-paper px-3.5 py-2 text-[13px] font-semibold text-ink-muted hover:bg-paper-deep hover:text-ink"
             >
               <Shield size={16} aria-hidden="true" />
-              <span>Backoffice y métricas</span>
+              <span>Administración</span>
             </Link>
           )}
         </div>

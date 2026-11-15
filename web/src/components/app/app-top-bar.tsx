@@ -1,137 +1,129 @@
 'use client';
 
-import { ArrowLeft, Bell, ChevronRight, Play, Settings, Sparkles, Store, UserRound } from 'lucide-react';
+import { ArrowLeft, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { LogoMark } from '@/components/logo';
 
+/**
+ * La barra de arriba, como la de cualquier aplicación del celular: en las pantallas del menú de
+ * abajo dice en cuál estás; en las demás, una flecha para volver y el nombre de la pantalla.
+ * Es el único "volver" de la app: las páginas no traen el suyo.
+ */
+
+type Screen = {
+  title: string;
+  /** A dónde vuelve la flecha si la persona abrió esta pantalla directamente. Sin `parent`, es una pestaña. */
+  parent?: string;
+};
+
+const PERSONA: Array<[prefix: string, screen: Screen]> = [
+  ['/app/gasto', { title: '¿Puedo gastar?', parent: '/app' }],
+  ['/app/movimientos', { title: 'Gastos' }],
+  ['/app/ofertas', { title: 'Ofertas' }],
+  ['/app/mas', { title: 'Más' }],
+  ['/app/cobros', { title: 'Cobros fijos', parent: '/app/mas' }],
+  ['/app/ajustes', { title: 'Ajustes', parent: '/app/mas' }],
+  ['/app/datos/importar', { title: 'Subir extracto', parent: '/app/mas' }],
+  ['/app/datos', { title: 'Tus datos', parent: '/app/mas' }],
+  ['/app/avisos', { title: 'Avisos', parent: '/app/mas' }],
+  ['/app/cierre', { title: 'Cierre del ciclo', parent: '/app/mas' }],
+  ['/app/bienvenida', { title: 'Tu primera cifra' }],
+];
+
+const NEGOCIO: Array<[prefix: string, screen: Screen]> = [
+  ['/negocio/caja', { title: 'Caja' }],
+  ['/negocio/ofertas', { title: 'Ofertas' }],
+  ['/negocio/vitrina', { title: 'Afiche y vitrina', parent: '/negocio' }],
+  ['/negocio/cuenta', { title: 'Cuenta y pagos', parent: '/negocio' }],
+  ['/negocio/cuadre', { title: 'Cuadre del día', parent: '/negocio' }],
+  ['/negocio/informe', { title: 'Informe del mes', parent: '/negocio' }],
+  ['/negocio/perfil', { title: 'Datos del negocio', parent: '/negocio' }],
+];
+
+function screenFor(pathname: string, role: 'persona' | 'negocio'): Screen {
+  const table = role === 'persona' ? PERSONA : NEGOCIO;
+  const hit = table.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  if (hit) return hit[1];
+  return { title: role === 'persona' ? 'Hoy' : 'Mi negocio' };
+}
+
 export function AppTopBar({
-  userName,
   merchantName,
-  merchantSlug,
   unreadCount = 0,
   role = 'persona',
-  hasMerchant = false,
 }: {
-  userName?: string | null;
+  /** En el portal del negocio: el nombre del local, al lado del título. */
   merchantName?: string | null;
-  merchantSlug?: string | null;
   unreadCount?: number;
   role?: 'persona' | 'negocio';
-  /** La persona tiene un negocio registrado: se le muestra el acceso a él. */
-  hasMerchant?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const screen = screenFor(pathname, role);
 
-  const isPersonaRoot = pathname === '/app';
-  const isNegocioRoot = pathname === '/negocio';
-  const isRoot = role === 'persona' ? isPersonaRoot : isNegocioRoot;
+  // Cuántas pantallas ha abierto la persona dentro de la app desde que la cargó. Si ya navegó,
+  // la flecha vuelve a la pantalla anterior; si abrió esta directamente, va a su sección.
+  const moves = useRef(0);
+  const lastPath = useRef(pathname);
+  useEffect(() => {
+    if (lastPath.current !== pathname) {
+      moves.current += 1;
+      lastPath.current = pathname;
+    }
+  }, [pathname]);
 
-  function handleBack(e: React.MouseEvent) {
-    if (typeof window !== 'undefined' && window.history.length > 1) {
+  function back(e: React.MouseEvent) {
+    if (moves.current > 0) {
       e.preventDefault();
+      moves.current = Math.max(0, moves.current - 2); // volver también cuenta como un cambio de pantalla
       router.back();
     }
   }
 
-  // Título según la ruta actual para que el usuario siempre sepa dónde está
-  function getSectionTitle(): string {
-    if (pathname === '/app') return 'Tu cifra';
-    if (pathname.startsWith('/app/bienvenida')) return 'Configuración inicial';
-    if (pathname.startsWith('/app/gasto')) return '¿Puedo hacer este gasto?';
-    if (pathname.startsWith('/app/movimientos')) return 'En qué se me va';
-    if (pathname.startsWith('/app/ofertas')) return 'Ofertas cerca de ti';
-    if (pathname.startsWith('/app/cobros')) return 'Cobros fijos y suscripciones';
-    if (pathname.startsWith('/app/cierre')) return 'Cierre de ciclo';
-    if (pathname.startsWith('/app/datos/importar')) return 'Subir extracto';
-    if (pathname.startsWith('/app/datos')) return 'Tus datos';
-    if (pathname.startsWith('/app/avisos')) return 'Avisos y alertas';
-    if (pathname.startsWith('/app/ajustes')) return 'Ajustes';
-
-    if (pathname === '/negocio') return 'Inicio';
-    if (pathname.startsWith('/negocio/caja')) return 'Caja';
-    if (pathname.startsWith('/negocio/cuadre')) return 'Cuadre diario e insumos';
-    if (pathname.startsWith('/negocio/ofertas')) return 'Mis ofertas';
-    if (pathname.startsWith('/negocio/vitrina')) return 'Vitrina y afiche';
-    if (pathname.startsWith('/negocio/informe')) return 'Informe del mes';
-    if (pathname.startsWith('/negocio/cuenta')) return 'Tu cuenta';
-    if (pathname.startsWith('/negocio/perfil')) return 'Datos del negocio';
-
-    return 'CIFRA';
-  }
+  const home = role === 'persona' ? '/app' : '/negocio';
 
   return (
-    <header data-testid="app-top-bar" className="no-print border-b border-line/80 bg-white/90 px-3.5 py-2.5 backdrop-blur-md">
-      <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-        {/* Izquierda: Miga de pan contextual limpia (sin duplicar el BackButton de página) */}
-        <div className="flex min-w-0 items-center gap-2">
-          <Link
-            href={role === 'persona' ? '/app' : '/negocio'}
-            className="flex shrink-0 items-center gap-1.5 lg:hidden"
-          >
-            <LogoMark size={22} />
-          </Link>
-
-          <div className="flex min-w-0 items-center gap-1.5 text-[13px]">
+    <header data-testid="app-top-bar" className="no-print border-b border-line/80 bg-white/95 backdrop-blur-md">
+      <div className="mx-auto flex h-[52px] max-w-4xl items-center justify-between gap-3 px-2.5">
+        <div className="flex min-w-0 items-center gap-1">
+          {screen.parent ? (
             <Link
-              href={role === 'persona' ? '/app' : '/negocio'}
-              onClick={!isRoot ? handleBack : undefined}
-              className="shrink-0 font-semibold text-ink-muted transition hover:text-ink"
+              href={screen.parent}
+              onClick={back}
+              aria-label="Volver"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink transition active:bg-paper-deep hover:bg-paper"
             >
-              {role === 'persona' ? 'Hoy' : 'Negocio'}
+              <ArrowLeft size={21} aria-hidden="true" />
             </Link>
-            <ChevronRight size={14} className="shrink-0 text-ink-faint" aria-hidden="true" />
-            <span className="truncate font-bold text-ink">{getSectionTitle()}</span>
-          </div>
+          ) : (
+            <Link href={home} aria-label="CIFRA, inicio" className="grid h-11 w-10 shrink-0 place-items-center rounded-full lg:hidden">
+              <LogoMark size={24} />
+            </Link>
+          )}
+          <p className="min-w-0 truncate font-display text-[19px] font-bold tracking-[-0.02em] text-ink lg:pl-2">
+            {screen.title}
+            {role === 'negocio' && !screen.parent && merchantName && pathname !== '/negocio' && (
+              <span className="ml-2 font-sans text-[13px] font-medium tracking-normal text-ink-faint">{merchantName}</span>
+            )}
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Paso entre la cifra personal y el negocio, solo para quien tiene las dos cosas. */}
-          {role === 'persona' && hasMerchant && (
-            <Link
-              href="/negocio"
-              className="inline-flex items-center gap-1.5 rounded-full border border-terra/30 bg-terra-pale px-3 py-1.5 text-[12.5px] font-semibold text-terra-dark hover:bg-terra-light"
-            >
-              <Store size={14} aria-hidden="true" />
-              <span>Mi negocio</span>
-            </Link>
-          )}
-          {role === 'negocio' && (
-            <Link
-              href="/app"
-              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-3 py-1.5 text-[12.5px] font-semibold text-ink-muted hover:text-ink"
-            >
-              <UserRound size={14} aria-hidden="true" />
-              <span>Mi cifra</span>
-            </Link>
-          )}
-
-          {/* Avisos */}
-          {role === 'persona' && (
-            <Link
-              href="/app/avisos"
-              className="relative grid h-8 w-8 place-items-center rounded-full text-ink-muted transition hover:bg-paper hover:text-ink"
-              aria-label="Avisos"
-            >
-              <Bell size={17} aria-hidden="true" />
-              {unreadCount > 0 && (
-                <span className="absolute right-0.5 top-0.5 inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-terra px-1 text-[9.5px] font-bold text-white">
-                  {unreadCount}
-                </span>
-              )}
-            </Link>
-          )}
-
-          {/* Ajustes */}
+        {role === 'persona' && (
           <Link
-            href={role === 'persona' ? '/app/ajustes' : '/negocio/perfil'}
-            className="grid h-8 w-8 place-items-center rounded-full text-ink-muted transition hover:bg-paper hover:text-ink"
-            aria-label="Configuración"
+            href="/app/avisos"
+            className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-muted transition active:bg-paper-deep hover:bg-paper hover:text-ink"
+            aria-label={unreadCount > 0 ? `Avisos, ${unreadCount} sin leer` : 'Avisos'}
           >
-            <Settings size={17} aria-hidden="true" />
+            <Bell size={20} aria-hidden="true" />
+            {unreadCount > 0 && (
+              <span className="tnum absolute right-1.5 top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-terra px-1 text-[10px] font-bold text-white">
+                {unreadCount}
+              </span>
+            )}
           </Link>
-        </div>
+        )}
       </div>
     </header>
   );

@@ -87,13 +87,17 @@ export async function runDailyRetentionAndOpsJob(): Promise<DailyJobSummary> {
       }
     }
 
-    // Gatillo C: Cierre de ciclo la víspera del próximo ingreso
+    // Gatillo C: la víspera del próximo pago. Lleva al Hoy: al día siguiente la persona escribe su
+    // saldo nuevo y la cifra vuelve a empezar. (El "cierre de ciclo" está escondido desde el 15 nov.)
     if (cifra.daysLeft === 1) {
       candidates.push({
         kind: 'cierre_ciclo',
-        title: 'Mañana cierra tu ciclo · Revisa cómo te fue',
-        body: `Llegas al cierre con ${cop(cifra.availableMinor)} de margen. Guarda la foto de tu ciclo en 30 segundos.`,
-        actionUrl: '/app/cierre',
+        title: 'Mañana te pagan',
+        body:
+          cifra.availableMinor >= 0
+            ? `Hoy todavía puedes gastar ${cop(cifra.availableMinor)}. Mañana, cuando te llegue el pago, escribe tu saldo nuevo y verás tu cifra hasta el siguiente.`
+            : `Te faltan ${cop(Math.abs(cifra.availableMinor))} para llegar a mañana. Cuando te llegue el pago, escribe tu saldo nuevo y verás tu cifra hasta el siguiente.`,
+        actionUrl: '/app',
         dedupeKey: `cierre:${cifra.nextIncomeOn}`,
         emailAlso: true,
       });
@@ -127,7 +131,7 @@ export async function runDailyRetentionAndOpsJob(): Promise<DailyJobSummary> {
           const mail = renderCifraEmail({
             heading: item.title,
             bodyParagraphs: [item.body],
-            ctaLabel: 'Ver mi cierre de ciclo',
+            ctaLabel: 'Ver mi cifra',
             ctaUrl: `${site}${item.actionUrl}`,
           });
           await sendEmail({

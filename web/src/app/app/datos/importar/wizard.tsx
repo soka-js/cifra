@@ -299,7 +299,7 @@ export function ImportWizard({ preset, first, manual = [] }: { preset?: PresetAc
             Clasificando tus movimientos automáticamente
           </h1>
           <p className="mt-1.5 text-[14.5px] text-ink-muted">
-            El archivo no sale completo de tu dispositivo: limpiamos descripciones bancarias y agrupamos tus cobros por ti.
+            El archivo no sale de tu celular. Guardamos la fecha, la descripción y el valor de cada movimiento, y agrupamos tus cobros por ti.
           </p>
         </div>
         <ul className="space-y-2.5 text-[14.5px]">
@@ -366,7 +366,7 @@ export function ImportWizard({ preset, first, manual = [] }: { preset?: PresetAc
         <p className="mt-2 flex gap-2 text-[14.5px] leading-relaxed text-ink-muted">
           <ShieldCheck size={18} className="mt-0.5 shrink-0 text-primary" aria-hidden="true" />
           <span>
-            El archivo se lee aquí, en tu dispositivo. Solo guardamos fecha, descripción limpia y valor de cada movimiento; nunca contraseñas ni números completos de producto.
+            El archivo se lee en tu celular y no se sube. De cada movimiento guardamos solo la fecha, la descripción y el valor. No te pedimos claves del banco, y lo puedes borrar cuando quieras en «Tus datos».
           </span>
         </p>
       </div>
