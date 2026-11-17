@@ -231,7 +231,7 @@ export function VitrinaClient({
         </p>
 
         <p className="mt-3 text-[13.5px] leading-relaxed text-ink-soft">
-          Escanea con la cámara de tu celular, activa tu código en 5 segundos y muéstralo aquí en caja.{' '}
+          Escanea con la cámara de tu celular, saca tu código y muéstralo aquí en caja.{' '}
           <strong className="text-ink">Sin recargos de aplicaciones.</strong>
         </p>
 

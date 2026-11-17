@@ -58,7 +58,7 @@ export function QuickStart({
             {firstName ? `${firstName}, así cuidamos ` : 'Así cuidamos '}tu información en CIFRA
           </h1>
           <p className="mt-2.5 text-[15.5px] leading-relaxed text-ink-muted">
-            En menos de 3 minutos verás tu primera cifra. Antes, queremos dejarte claro qué toca CIFRA y qué nunca hace:
+            Con unas pocas preguntas verás tu primera cifra. Antes, queremos dejarte claro qué toca CIFRA y qué nunca hace:
           </p>
         </div>
 

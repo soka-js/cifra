@@ -140,7 +140,7 @@ export default async function MerchantHomePage({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <span className={cuadre.summary.reachedBreakEven ? 'badge-primary' : 'badge-terra'}>
-              Punto de equilibrio de hoy
+              {cuadre.summary.dailyBreakEvenMinor === null ? 'Vendido hoy' : 'Tu meta de hoy'}
             </span>
             <p className="tnum mt-2 font-display text-[26px] font-extrabold leading-none text-ink">
               {cop(cuadre.summary.todaySalesMinor)}{' '}
@@ -152,7 +152,7 @@ export default async function MerchantHomePage({
             </p>
             <p className="mt-1 text-[13px] text-ink-muted">
               {cuadre.summary.dailyBreakEvenMinor === null
-                ? 'Vendido hoy. En el cuadre puedes escribir cuánto necesitas vender al día y te decimos cuánto te falta.'
+                ? 'En el cuadre puedes escribir cuánto necesitas vender al día y te decimos cuánto te falta.'
                 : cuadre.summary.reachedBreakEven
                   ? 'Ya cubriste tu meta de hoy.'
                   : `Te faltan ${cop(cuadre.summary.gapToBreakEvenMinor)} hoy. Puedes anotar ventas de mostrador o prender una oferta por horas.`}

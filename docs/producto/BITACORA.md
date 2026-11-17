@@ -252,6 +252,26 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Entradas
 
+### 2026-11-16 21:50, cierre: revisión de todas las ramas y lo que pasa a `main` (rama `app-real-2-menu`)
+
+- Quién: Claude Code en la carpeta de SOKA. SOKA pidió (16 nov, por mensaje) "revisa todas las ramas y todo y cierra lo que quedó pendiente y ve trayendo todo a main y cerrando ramas, pero asegúrate de que todo lo mejor de lo mejor vaya quedando".
+- Las ramas:
+  - Ya están completas dentro de `main`: `producto-v1`, `etapa-5-admin`, `noche-13nov`, `feat/v3-valor-real`, `feat/fase-1` a `feat/fase-5` y `producto-real`.
+  - La pila sin mezclar es lineal y cada rama contiene a la anterior: `producto-v1` ← `etapa-4-un-formulario` (#7) ← `etapa-6-tendero` (#8) ← `app-real` (#9) ← `app-real-2-menu` (solo local hasta hoy). La punta trae 15 commits que `main` no tiene, y `git merge-tree` contra `main` no da conflictos. Lo único que `main` tiene y la pila no son los dos commits de merge (#3 y #6).
+- Lo que llega a producción con la pila:
+  - **Sin migraciones ni cambios de esquema**: `vercel-build` no tiene nada que aplicar.
+  - Una variable nueva y opcional, `WOMPI_INTEGRITY_SECRET`. Sin ella (y sin `NEXT_PUBLIC_WOMPI_PUBLIC_KEY`), la cuenta del tendero no ofrece pago en línea; no falla.
+  - `Permissions-Policy` pasa a `camera=(self)` y `geolocation=(self)`: la caja escanea el QR y el mapa puede usar la ubicación. Solo para CIFRA misma y el navegador igual le pregunta a la persona.
+- Qué cambió en esta pasada:
+  - **Next.js 16.4.3 → 16.4.6**, que corrige GHSA-mfr8-8qww-v76h (no nos tocaba, pero con la 16.4.3 la compilación se detenía para avisarlo). `npm audit` deja 4 avisos moderados, todos de `drizzle-kit` y `esbuild`, herramientas de desarrollo que no se despliegan; el "arreglo" sería bajar a `drizzle-kit` 0.18.
+  - **`/admin` sin la jerga que quedaba** (pendiente de la Etapa 5): "Operación y Data Room" → "Operación"; pestañas "Métricas", "Negocios" y "Pagos y reclamos"; "Tablero de Hipótesis Falsables y Economía Unitaria" y "documento PMC (Secciones H, J y K)" → "Cómo va CIFRA"; fuera "Hipótesis K", "H.1.1", "(G.10 · J.3 · J.4)", "GMV", "redenciones", "revisión bilateral", "CRM de calle", "Aliado B2B2C" y "job diario". El texto de comisiones decía "5 %" y "30 %" escritos a mano; ahora dice que cada negocio paga su porcentaje y el aliado recibe la parte pactada.
+  - **Fuera las promesas de tiempo que nadie ha medido con personas**: el afiche impreso decía "activa tu código en 5 segundos" (ahora "saca tu código y muéstralo aquí en caja"); el cuadre, "Anotar en 5 segundos"; la captura de gastos, "Actualiza tu día en 3 segundos"; el modo rápido, "En menos de 3 minutos verás tu primera cifra"; la activación del negocio, "hazlo gratis en 2 minutos" (ahora "son dos pasos", que es lo que tiene el registro). Se quedan los "30 minutos" y "60 minutos", porque son la vigencia real del código y de los enlaces.
+  - **Inicio del tendero**: la tarjeta decía "Punto de equilibrio de hoy" encima de lo vendido; ahora dice "Vendido hoy" sin meta y "Tu meta de hoy" con meta.
+  - **"Cobros fijos"** también en el título de la página, que decía "Cobros recurrentes".
+- Verificación local con todo lo anterior: `npm run typecheck` 0 errores; `npm test` 193 de 193; `npm run test:int` 278 de 278; `npm run build` sin errores ni avisos con 16.4.6; `npm run e2e`: guardar cifra 6 de 6, Hoy 10 de 10 (1,84 pantallas), prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31.
+- Lo que sigue abierto y no se cierra con código: medir a una persona de verdad (Etapa 4); probar el QR en dos celulares antes de la feria (7a, `FERIA.md`); canales reales de pago (decisión 6); negocios reales de Las Aguas (7b). En la vitrina, los precios de ejemplo de los productos salen en gris como "$ 14.500" sin el "Ej." que sí llevan los nombres.
+- Plan de mezcla: #7, #8 y #9 a `producto-v1`, en orden y con commit de merge cada una; luego `app-real-2-menu` a `producto-v1`; luego `producto-v1` a `main` cuando la vista previa de Vercel compile; después se borran las ramas ya mezcladas. `main` y `producto-v1` se quedan.
+
 ### 2026-11-16 19:50, "app real": el menú de cuatro y tres pestañas, verificado (rama `app-real-2-menu`)
 
 - Quién: Claude Code en la carpeta de SOKA (Windows 11, Node 22.20, Postgres 18.6 de `devdb/`). Rama `app-real-2-menu`, encima de `app-real`. Sin subir.
