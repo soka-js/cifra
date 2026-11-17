@@ -25,6 +25,16 @@ export const pesos = (n) => `$${Math.abs(Math.round(n)).toString().replace(/\B(?
 export const toNumber = (text) => Number(String(text).replace(/[^\d]/g, ''));
 
 /** Guarda una captura solo si se pidió con E2E_SHOTS_DIR. */
+/**
+ * Elige un día del mes en el calendario desplegable (DayPicker): abre el del campo `name`
+ * (el `nth`) y toca el día. Devuelve los toques, para los recorridos medidos.
+ */
+export async function pickDay(page, name, day, nth = 0) {
+  await page.locator(`button[data-day-picker="${name}"]`).nth(nth).click();
+  await page.locator(`[data-day-panel="${name}"] button[data-day="${day}"]`).click();
+  return 2;
+}
+
 export async function shot(page, name, opts = {}) {
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${name}.jpg`), type: 'jpeg', quality: 62, ...opts });
 }

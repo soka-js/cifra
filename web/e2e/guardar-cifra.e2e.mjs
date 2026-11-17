@@ -3,7 +3,7 @@
 // La corre `npm run e2e` (necesita la base local de pruebas).
 import assert from 'node:assert/strict';
 import postgres from 'postgres';
-import { BASE, PHONE, finalPath, launch, pesos, shot, stepper, toNumber } from './lib.mjs';
+import { BASE, PHONE, finalPath, launch, pesos, shot, stepper, toNumber, pickDay } from './lib.mjs';
 
 const DB = process.env.TEST_DATABASE_URL;
 assert.ok(DB && /@(127\.0\.0\.1|localhost)[:/].*_test$/.test(DB), 'Esta prueba se corre con `npm run e2e` contra la base local de pruebas.');
@@ -28,7 +28,7 @@ await step('calcula su cifra sin cuenta', async () => {
   await page.getByRole('button', { name: 'Arriendo' }).click();
   await page.locator('li:has(input[name="fixedName"]) input[inputmode="numeric"]').first().fill(String(IN.rent));
   tomorrow = await page.evaluate(() => new Date(Date.now() - 5 * 3_600_000 + 86_400_000).getUTCDate());
-  await page.locator('select[name="fixedDay"]').first().selectOption(String(tomorrow));
+  await pickDay(page, 'fixedDay', tomorrow);
   await page.click('#btn-probar-seguir');
   await page.fill('#pc-daily', String(IN.daily));
   await page.click('#btn-probar-ver');
