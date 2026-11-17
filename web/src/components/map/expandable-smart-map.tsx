@@ -106,7 +106,7 @@ export function ExpandableSmartMap({
         title: o.title,
         badgeText:
           o.discountKind === 'percent'
-            ? `${o.discountPercent}% OFF`
+            ? `-${o.discountPercent} %`
             : `-${cop(o.discountFixedMinor ?? 0)}`,
         neighborhood: o.neighborhood,
         isFlash: o.isFlash,

@@ -186,6 +186,7 @@ export default async function MerchantOffersPage({
       <OfferCreator
         typicalTicketMinor={access.merchant.typicalTicketMinor}
         commissionBps={access.merchant.commissionBps}
+        businessCategory={access.merchant.businessCategory}
       />
     </div>
   );

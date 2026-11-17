@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { Logo } from '@/components/logo';
 import { TryCifra } from '@/components/probar/try-cifra';
 import { getCurrentUser } from '@/lib/auth/session';
+import { DEFAULT_COMMISSION_LABEL } from '@/lib/commission';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +64,7 @@ export default async function HomePage() {
             <Store size={19} className="text-terra-dark" aria-hidden="true" /> ¿Tienes un negocio de barrio?
           </h2>
           <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-muted">
-            Publica una oferta, valida el código del cliente en tu caja y paga el 5 % solo de la venta que CIFRA te trae.
+            Publica una oferta, valida el código del cliente en tu caja y paga el {DEFAULT_COMMISSION_LABEL} solo de la venta que CIFRA te trae.
           </p>
           <Link href="/negocio/unirse" className="mt-3 inline-flex items-center gap-1.5 text-[15px] font-semibold text-terra-dark">
             Registrar mi negocio <ArrowRight size={16} aria-hidden="true" />

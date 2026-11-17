@@ -330,15 +330,29 @@ let code = '';
 await step('E1. un tendero sin cuenta abre /negocio y registra su negocio él solo', async () => {
   await s.goto(`${BASE}/negocio`, { waitUntil: 'networkidle' });
   assert.equal(finalPath(s), '/negocio/unirse');
+  // Paso 1: el negocio. No deja seguir sin la compra promedio.
   await s.fill('#businessName', shopName);
   await s.selectOption('#businessCategory', 'cafeteria');
-  await s.fill('#ownerName', 'Carlos Tendero');
-  await s.fill('#whatsapp', '3105550000');
   await s.selectOption('#zoneSlug', 'las-aguas');
   await s.fill('#address', 'Cra 3 # 18-45');
+  await s.click('#btn-negocio-seguir');
+  assert.match(await s.locator('form [role="alert"]').innerText(), /compra en promedio/i);
   await s.fill('#typicalTicket', '20000');
+  // "Seguir" cambia de paso sin intentar enviar el formulario: si lo intentara, el navegador
+  // marcaría los campos vacíos del paso 2 (evento "invalid") antes de que la persona los vea.
+  await s.evaluate(() => {
+    window.__invalidos = 0;
+    document.querySelector('form:has(#businessName)').addEventListener('invalid', () => window.__invalidos++, true);
+  });
+  await s.click('#btn-negocio-seguir');
+  await s.locator('#ownerName').waitFor({ state: 'visible' });
+  assert.equal(await s.evaluate(() => window.__invalidos), 0, 'tocar "Seguir" no debe intentar enviar el paso 2');
+  // Paso 2: quién lo atiende, su acceso y su autorización de datos.
+  await s.fill('#ownerName', 'Carlos Tendero');
+  await s.fill('#whatsapp', '3105550000');
   await s.fill('#email', shopEmail);
   await s.fill('#password', PASSWORD);
+  await s.check('#consent');
   await Promise.all([
     s.waitForURL((u) => u.pathname === '/negocio/ofertas', { timeout: 30_000 }),
     s.locator('form button[type="submit"]').last().click(),

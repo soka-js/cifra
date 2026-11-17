@@ -19,7 +19,10 @@ export default async function MerchantPosPage() {
         </p>
       </div>
 
-      <PosTerminal defaultTicketMinor={access.merchant.typicalTicketMinor} />
+      <PosTerminal
+        defaultTicketMinor={access.merchant.typicalTicketMinor}
+        commissionBps={access.merchant.commissionBps}
+      />
     </div>
   );
 }

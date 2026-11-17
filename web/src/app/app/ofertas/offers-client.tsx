@@ -77,7 +77,7 @@ export function OffersClient({
     title: item.offer.title,
     badgeText:
       item.offer.discountKind === 'percent'
-        ? `${item.offer.discountPercent}% OFF`
+        ? `-${item.offer.discountPercent} %`
         : `-${cop(item.offer.discountFixedMinor ?? 0)}`,
     neighborhood: item.offer.neighborhood,
   }));

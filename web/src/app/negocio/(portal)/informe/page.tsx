@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { BackButton } from '@/components/ui/back-button';
 import { LogoMark } from '@/components/logo';
 import { requireMerchantAccess } from '@/lib/auth/session';
-import { cop } from '@/lib/format';
+import { cop, percentFromBps } from '@/lib/format';
 import { currentPeriodMonth, formatPeriodMonth, loadMerchantDashboard } from '@/lib/merchant-data';
 import { ReportActions } from './report-actions';
 
@@ -108,7 +108,7 @@ export default async function MerchantOnePageReport({
               {cop(report.merchantNetKeptMinor)}
             </p>
             <p className="mt-1 text-[13px] text-ink-soft">
-              Después del descuento al vecino y del 5 % de comisión CIFRA.
+              Después del descuento al vecino y del {percentFromBps(access.merchant.commissionBps)} de comisión CIFRA.
             </p>
           </div>
 

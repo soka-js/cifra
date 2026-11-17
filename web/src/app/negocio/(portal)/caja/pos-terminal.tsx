@@ -18,12 +18,19 @@ import {
 } from '@/app/actions/merchant';
 import { MoneyInput } from '@/components/ui/money-input';
 import { computeRedemptionSplit } from '@/lib/engine/attribution';
-import { cop, parsePesosInput } from '@/lib/format';
+import { cop, parsePesosInput, percentFromBps } from '@/lib/format';
 
 const INITIAL_REDEEM: PosRedeemState = { status: 'idle' };
 const QUICK_AMOUNTS = [10_000, 15_000, 20_000, 30_000, 50_000];
 
-export function PosTerminal({ defaultTicketMinor }: { defaultTicketMinor: number }) {
+export function PosTerminal({
+  defaultTicketMinor,
+  commissionBps,
+}: {
+  defaultTicketMinor: number;
+  /** La comisión de este negocio; la de la oferta, si la trae el código, manda. */
+  commissionBps: number;
+}) {
   const [codeInput, setCodeInput] = useState('');
   const [lookup, setLookup] = useState<CodeLookupResponse | null>(null);
   const [lookupPending, startLookup] = useTransition();
@@ -180,7 +187,7 @@ export function PosTerminal({ defaultTicketMinor }: { defaultTicketMinor: number
           discountFixedMinor: lookup.discountFixedMinor,
           maxDiscountMinor: lookup.maxDiscountMinor,
           minPurchaseMinor: lookup.minPurchaseMinor,
-          commissionBps: lookup.commissionBps ?? 500,
+          commissionBps: lookup.commissionBps ?? commissionBps,
         })
       : null;
 
@@ -320,7 +327,8 @@ export function PosTerminal({ defaultTicketMinor }: { defaultTicketMinor: number
                   <div className="space-y-1 rounded-xl bg-paper-deep/60 px-3 py-2 text-[13px] text-ink-soft">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span>
-                        Comisión CIFRA (5 % al corte quincenal):{' '}
+                        Comisión CIFRA ({percentFromBps(lookup?.commissionBps ?? commissionBps)}, se paga en el corte
+                        quincenal):{' '}
                         <strong className="tnum text-ink">{cop(liveSplit.cifraCommissionMinor)}</strong>
                       </span>
                       <span>
