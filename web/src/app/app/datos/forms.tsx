@@ -34,7 +34,7 @@ export function DeleteSource({ sourceId, entity }: { sourceId: string; entity: s
   if (!confirm) {
     return (
       <button type="button" onClick={() => setConfirm(true)} className="text-[13.5px] font-semibold text-neg underline-offset-2 hover:underline">
-        Borrar esta fuente
+        Borrar esta cuenta y sus movimientos
       </button>
     );
   }

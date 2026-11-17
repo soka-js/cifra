@@ -318,7 +318,7 @@ export default async function AdminPage({
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Logo />
-            <span className="badge-primary">Operación y Data Room</span>
+            <span className="badge-primary">Operación</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -348,7 +348,7 @@ export default async function AdminPage({
               <form action={triggerDailyCronFromAdmin}>
                 <button type="submit" className="btn-sm bg-ink text-white" title="Ejecutar evaluación diaria de avisos y vencimientos">
                   <Play size={13} aria-hidden="true" />
-                  Correr job diario
+                  Correr los avisos del día
                 </button>
               </form>
             )}
@@ -358,11 +358,11 @@ export default async function AdminPage({
         {/* Pestañas principales */}
         <nav className="mt-6 flex flex-wrap gap-2 border-b border-line pb-3">
           {[
-            { id: 'dataroom', label: 'Datos e hipótesis', icon: LineChart },
-            { id: 'negocios', label: `CRM Negocios (${allMerchants.length})`, icon: Store },
+            { id: 'dataroom', label: 'Métricas', icon: LineChart },
+            { id: 'negocios', label: `Negocios (${allMerchants.length})`, icon: Store },
             {
               id: 'conciliacion',
-              label: `Conciliación y Disputas (${pendingPayments.filter((p) => p.payment.status === 'reportado').length + disputedRedemptions.length})`,
+              label: `Pagos y reclamos (${pendingPayments.filter((p) => p.payment.status === 'reportado').length + disputedRedemptions.length})`,
               icon: Receipt,
             },
             { id: 'aliados', label: `Aliados (${partnerLedger.length})`, icon: Building2 },
@@ -390,10 +390,10 @@ export default async function AdminPage({
             <section className="space-y-3">
               <div>
                 <h1 className="font-display text-[28px] font-bold tracking-[-0.025em] text-ink">
-                  Tablero de Hipótesis Falsables y Economía Unitaria
+                  Cómo va CIFRA
                 </h1>
                 <p className="text-[14.5px] text-ink-muted">
-                  Métricas auditables en vivo frente a los umbrales de validación del documento PMC (Secciones H, J y K).
+                  Cifras en vivo, sacadas de la base, frente a la meta que se fijó para cada una.
                 </p>
               </div>
 
@@ -401,7 +401,7 @@ export default async function AdminPage({
                 <div className="surface-card p-5">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] font-bold uppercase tracking-wider text-ink-muted">
-                      Hipótesis K · Retención Personas
+                      Personas que siguen
                     </span>
                     <span className={retentionRate >= 40 ? 'badge-primary' : 'badge-warn'}>
                       Meta ≥ 40 %
@@ -420,7 +420,7 @@ export default async function AdminPage({
                 <div className="surface-card p-5">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] font-bold uppercase tracking-wider text-ink-muted">
-                      Hipótesis K · Renovación Negocios
+                      Negocios que renuevan
                     </span>
                     <span className={renewalRate >= 50 ? 'badge-primary' : 'badge-warn'}>
                       Meta ≥ 50 %
@@ -437,7 +437,7 @@ export default async function AdminPage({
                 <div className="surface-card p-5">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] font-bold uppercase tracking-wider text-ink-muted">
-                      H.1.1 · Primera cifra &lt; 5 min
+                      Primera cifra en menos de 5 min
                     </span>
                     <span className={under5MinPct >= 75 ? 'badge-primary' : 'badge-neutral'}>
                       Tiempo al valor
@@ -477,20 +477,20 @@ export default async function AdminPage({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="font-display text-[20px] font-bold text-ink">
-                    Economía Unitaria y Flujo de Comisiones (G.10 · J.3 · J.4)
+                    Ventas y comisiones
                   </h2>
                   <p className="text-[13.5px] text-ink-muted">
-                    Comisión del 5 % sobre lo cobrado en caja. Cuando la persona llegó por un aliado, el aliado recibe el 30 % de esa comisión.
+                    Cada negocio paga su porcentaje sobre lo cobrado en caja. Cuando la persona llegó por un aliado, el aliado recibe la parte de esa comisión que se pactó con él.
                   </p>
                 </div>
                 <span className="badge-terra tnum">
-                  {num(kpi.redemptions_count)} redenciones válidas ({num(kpi.new_customer_redemptions)} clientes nuevos)
+                  {num(kpi.redemptions_count)} códigos cobrados ({num(kpi.new_customer_redemptions)} de clientes nuevos)
                 </span>
               </div>
 
               <div className="mt-5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
                 <div className="rounded-2xl bg-paper p-4">
-                  <p className="text-[12px] text-ink-muted">Venta bruta atribuida (GMV)</p>
+                  <p className="text-[12px] text-ink-muted">Venta que trajo CIFRA</p>
                   <p className="tnum mt-1 font-display text-[22px] font-bold text-ink">
                     {cop(num(kpi.gmv_minor))}
                   </p>
@@ -656,7 +656,7 @@ export default async function AdminPage({
             <section className="space-y-3">
               <div>
                 <h2 className="font-display text-[20px] font-bold text-ink">
-                  Diccionario Aprendido de Extractos Colombianos (H.5)
+                  Comercios que CIFRA reconoce en los extractos
                 </h2>
                 <p className="text-[13.5px] text-ink-muted">
                   Reglas aprendidas cuando las personas corrigen una categoría en 1 toque. Verificar las promueve al catálogo oficial.
@@ -718,7 +718,7 @@ export default async function AdminPage({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="font-display text-[22px] font-bold text-ink">
-                    Comprobantes Bre-B / Nequi pendientes de conciliación
+                    Comprobantes de pago por revisar
                   </h2>
                   <p className="text-[13.5px] text-ink-muted">
                     Verifica la transferencia recibida en la llave oficial de CIFRA y aprueba con un clic.
@@ -789,7 +789,7 @@ export default async function AdminPage({
             {/* Disputas bilaterales */}
             <section className="space-y-3">
               <h2 className="font-display text-[20px] font-bold text-ink">
-                Redenciones en revisión bilateral ({disputedRedemptions.length})
+                Códigos cobrados en revisión ({disputedRedemptions.length})
               </h2>
               {disputedRedemptions.length === 0 ? (
                 <p className="surface-card p-5 text-[14px] text-ink-muted">

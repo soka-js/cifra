@@ -8,7 +8,7 @@ import type { RecurringSeries } from '@/lib/engine/recurring';
 import { cop } from '@/lib/format';
 import { confirmRecurringCancelled, keepCommitment, markRecurring, removeCommitment } from '../actions';
 
-export const metadata = { title: 'Cobros recurrentes' };
+export const metadata = { title: 'Cobros fijos' };
 
 const CADENCE: Record<RecurringSeries['cadence'], string> = {
   semanal: 'cada semana',
@@ -59,7 +59,7 @@ export default async function CobrosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Cobros recurrentes</h1>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Cobros fijos</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
           Lo que se cobra solo cada mes, cuánto llevas pagado y cuáles ya no usas.
         </p>

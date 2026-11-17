@@ -219,6 +219,23 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 | Solicitud de cambio #5 (`etapa-5-admin` → `producto-v1`), de Claude en la nube | Limpia `/admin`. **No tocar `src/app/admin` hoy.** Claude en la nube la mezcla a las 4:10 p. m. y la pasa a `main`. |
 | Etapa 4 | Seguir en una rama nueva desde `producto-v1`: un solo formulario para la prueba sin cuenta y el modo rápido con cuenta (`try-cifra.tsx` y `bienvenida/quick-start.tsx`), con las mismas pruebas en verde. **Nada se mezcla a `producto-v1` antes de las 4:30 p. m. del 13 nov.** |
 
+15 de noviembre de 2026, en la sesión de Claude Code que dejó el commit `a6e616f`. La conversación no quedó en la bitácora: esto sale del mensaje de ese commit, que marca cada punto como "aprobado".
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| Menú de la persona | **Cuatro pestañas: Hoy, Gastos, Ofertas y Más.** "Más" reúne cobros fijos, ajustes, avisos, tus datos, mi negocio e instalar. |
+| Menú del tendero (y la pregunta del 13 nov sobre el cuadre) | **Tres pestañas: Mi negocio, Caja y Ofertas.** El inicio trae tres pasos hasta la primera venta y la lista de secciones; el cuadre se queda en el inicio. |
+| Hoy | Guía de primera vez en tres pasos, la frase "mira hacia adelante" y gastos por categoría cuando hay movimientos. **Fuera "Cierre del ciclo"** del Hoy. |
+| "¿Puedo gastar?" | **Un solo campo.** |
+| Ofertas de la persona | **Mapa plegado.** |
+| Tus datos | Qué se guarda del extracto, qué no y cómo se borra; fuera "Finanzas Abiertas"; el registro de acceso, plegado. |
+
+16 de noviembre de 2026, por el cuadro de preguntas de la sesión:
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| Postgres local colgado (escuchaba pero cortaba toda conexión) y detenido otra vez por memoria | **"Levántala y sigue"**, incluido cerrar los procesos que quedaron abiertos de sesiones anteriores. |
+
 ## Estado
 
 | Etapa | Qué | Estado | Solicitud de cambio |
@@ -234,6 +251,54 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 | 7b | Feria con negocios reales | Esperando negocios confirmados | |
 
 ## Entradas
+
+### 2026-11-16 21:50, cierre: revisión de todas las ramas y lo que pasa a `main` (rama `app-real-2-menu`)
+
+- Quién: Claude Code en la carpeta de SOKA. SOKA pidió (16 nov, por mensaje) "revisa todas las ramas y todo y cierra lo que quedó pendiente y ve trayendo todo a main y cerrando ramas, pero asegúrate de que todo lo mejor de lo mejor vaya quedando".
+- Las ramas:
+  - Ya están completas dentro de `main`: `producto-v1`, `etapa-5-admin`, `noche-13nov`, `feat/v3-valor-real`, `feat/fase-1` a `feat/fase-5` y `producto-real`.
+  - La pila sin mezclar es lineal y cada rama contiene a la anterior: `producto-v1` ← `etapa-4-un-formulario` (#7) ← `etapa-6-tendero` (#8) ← `app-real` (#9) ← `app-real-2-menu` (solo local hasta hoy). La punta trae 15 commits que `main` no tiene, y `git merge-tree` contra `main` no da conflictos. Lo único que `main` tiene y la pila no son los dos commits de merge (#3 y #6).
+- Lo que llega a producción con la pila:
+  - **Sin migraciones ni cambios de esquema**: `vercel-build` no tiene nada que aplicar.
+  - Una variable nueva y opcional, `WOMPI_INTEGRITY_SECRET`. Sin ella (y sin `NEXT_PUBLIC_WOMPI_PUBLIC_KEY`), la cuenta del tendero no ofrece pago en línea; no falla.
+  - `Permissions-Policy` pasa a `camera=(self)` y `geolocation=(self)`: la caja escanea el QR y el mapa puede usar la ubicación. Solo para CIFRA misma y el navegador igual le pregunta a la persona.
+- Qué cambió en esta pasada:
+  - **Next.js 16.4.3 → 16.4.6**, que corrige GHSA-mfr8-8qww-v76h (no nos tocaba, pero con la 16.4.3 la compilación se detenía para avisarlo). `npm audit` deja 4 avisos moderados, todos de `drizzle-kit` y `esbuild`, herramientas de desarrollo que no se despliegan; el "arreglo" sería bajar a `drizzle-kit` 0.18.
+  - **`/admin` sin la jerga que quedaba** (pendiente de la Etapa 5): "Operación y Data Room" → "Operación"; pestañas "Métricas", "Negocios" y "Pagos y reclamos"; "Tablero de Hipótesis Falsables y Economía Unitaria" y "documento PMC (Secciones H, J y K)" → "Cómo va CIFRA"; fuera "Hipótesis K", "H.1.1", "(G.10 · J.3 · J.4)", "GMV", "redenciones", "revisión bilateral", "CRM de calle", "Aliado B2B2C" y "job diario". El texto de comisiones decía "5 %" y "30 %" escritos a mano; ahora dice que cada negocio paga su porcentaje y el aliado recibe la parte pactada.
+  - **Fuera las promesas de tiempo que nadie ha medido con personas**: el afiche impreso decía "activa tu código en 5 segundos" (ahora "saca tu código y muéstralo aquí en caja"); el cuadre, "Anotar en 5 segundos"; la captura de gastos, "Actualiza tu día en 3 segundos"; el modo rápido, "En menos de 3 minutos verás tu primera cifra"; la activación del negocio, "hazlo gratis en 2 minutos" (ahora "son dos pasos", que es lo que tiene el registro). Se quedan los "30 minutos" y "60 minutos", porque son la vigencia real del código y de los enlaces.
+  - **Inicio del tendero**: la tarjeta decía "Punto de equilibrio de hoy" encima de lo vendido; ahora dice "Vendido hoy" sin meta y "Tu meta de hoy" con meta.
+  - **"Cobros fijos"** también en el título de la página, que decía "Cobros recurrentes".
+- Verificación local con todo lo anterior: `npm run typecheck` 0 errores; `npm test` 193 de 193; `npm run test:int` 278 de 278; `npm run build` sin errores ni avisos con 16.4.6; `npm run e2e`: guardar cifra 6 de 6, Hoy 10 de 10 (1,84 pantallas), prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31.
+- Lo que sigue abierto y no se cierra con código: medir a una persona de verdad (Etapa 4); probar el QR en dos celulares antes de la feria (7a, `FERIA.md`); canales reales de pago (decisión 6); negocios reales de Las Aguas (7b). En la vitrina, los precios de ejemplo de los productos salen en gris como "$ 14.500" sin el "Ej." que sí llevan los nombres.
+- Plan de mezcla: #7, #8 y #9 a `producto-v1`, en orden y con commit de merge cada una; luego `app-real-2-menu` a `producto-v1`; luego `producto-v1` a `main` cuando la vista previa de Vercel compile; después se borran las ramas ya mezcladas. `main` y `producto-v1` se quedan.
+
+### 2026-11-16 19:50, "app real": el menú de cuatro y tres pestañas, verificado (rama `app-real-2-menu`)
+
+- Quién: Claude Code en la carpeta de SOKA (Windows 11, Node 22.20, Postgres 18.6 de `devdb/`). Rama `app-real-2-menu`, encima de `app-real`. Sin subir.
+- Qué cambió (commit `a6e616f`, que había quedado sin verificar; el detalle está en su mensaje):
+  - **Una sola barra arriba**: el título de la pestaña o la flecha de volver. Fuera la miga de pan y los botones "Volver" de cada página.
+  - **Persona: Hoy, Gastos, Ofertas y Más.** "Más" es una lista de renglones (cobros fijos, ingreso y día a día, subir extracto, avisos, tus datos, mi negocio o "tengo un negocio", instalar y cerrar sesión), sin ningún monto.
+  - **Tendero: Mi negocio, Caja y Ofertas.** El inicio trae "Tres pasos para tu primera venta", "Cobrar un código", sus ofertas, el cuadre y la lista de secciones.
+  - **Hoy**: guía de primera vez en tres pasos, que deja de salir cuando están hechos o al cerrarla con la X; la frase "Tu cifra mira hacia adelante"; "En qué se te va" por categoría cuando hay movimientos. "¿Puedo gastar?" con un solo campo; llega del Hoy con el monto ya escrito.
+  - **Instalable**: el manifiesto abre en `/`, trae atajos y un botón para poner CIFRA en la pantalla de inicio. El aviso de la víspera del pago lleva al Hoy y ya no al cierre.
+- Lo que encontré al verificar y arreglé en esta pasada:
+  - **"Más" no pasaba por `requireUser()`.** Sí mandaba a entrar sin sesión (usaba `getSessionContext()`), pero se saltaba la puerta común, y la prueba "cada página privada verifica la sesión por su cuenta" fallaba. Ahora pasa por `requireUser()`; el contexto se sigue leyendo solo para saber si quien entró es admin real (va en `cache()`, no es otra consulta).
+  - **Los renglones de "Más" y de "Mi negocio" cortaban su explicación con "…"** en un celular de 390 px ("Arriendo, servicios, suscripciones y cu…", "Lo vendido con CIFRA y la comisión d…"). Ahora la línea de ayuda pasa a un segundo renglón.
+  - **`recorridos.e2e.mjs` no medía "Más"**, aunque ya es una pestaña. Ahora la mide.
+- Medido con `recorridos.e2e.mjs` (celular de 390 × 844), contra lo anotado el 13 nov: ¿Puedo? 64 a 32 palabras; Ofertas 90 a 80; Hoy 1,86 a 1,84 pantallas; inicio del tendero 177 a 225 palabras (2,1 a 2,3 pantallas: suma los tres pasos y la lista de secciones); Tus datos 209 a 257 (2,1 a 2,4: suma qué se guarda, qué no y cómo se borra). "Más" mide 1,3 pantallas, 9 cosas para tocar y 113 palabras. Las mismas 18 pantallas de antes suman 2.637 palabras (antes 2.528); crecieron el inicio del tendero y Tus datos, con lo que pidió SOKA. Los cuatro caminos no cambiaron: 5, 2, 4 y 5 pantallas.
+- Revisión a ojo de las capturas en celular: Hoy, ¿Puedo?, Más, Ofertas, Cobros fijos (con flecha de volver), Tus datos, Mi negocio y Caja. Una captura mostraba "Mi negocio" y "Caja" resaltadas a la vez; era la transición del color, porque al abrir Caja directo solo se resalta Caja.
+- Verificación local, con el código final:
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, 193 de 193. La primera corrida de la sesión, con 1,3 GB de memoria libre, dio 2 fallas: una era la de "Más" y la otra no se repitió en ninguna de las cuatro corridas siguientes. No alcancé a ver cuál era.
+  - `npm run test:int`: 8 archivos, 278 de 278.
+  - `npm run build`: sin errores. Ver el aviso de Next.js abajo.
+  - `npm run e2e`: guardar cifra 6 de 6, Hoy 10 de 10 (1,84 pantallas), prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31.
+- Base local: el Postgres de `devdb/` llevaba desde el 13 nov a las 3:44 p. m. escuchando en 54329 pero cortaba toda conexión (`ECONNRESET`), y el sistema volvió a detener su lanzador por memoria. Con el OK de SOKA lo apagué con `npm run stop`, cerré cinco lanzadores viejos de `devdb` y un `next start -p 3100` del 13 nov, y lo levanté sin borrar datos. La memoria libre pasó de 1,3 GB a 3,4 GB.
+- Aviso de Next.js 16.4.3: el primer `next build` de la tanda se detuvo con código 1 solo para mostrar un aviso de seguridad, y al repetirlo compiló. Es GHSA-mfr8-8qww-v76h, de gravedad moderada: fuga de información entre parámetros raíz cuando una función `'use cache'` se llama con `unstable_cache()`. Afecta de la 16.3.0 a la 16.4.4. CIFRA no usa `'use cache'`, `unstable_cache` ni `cacheComponents`. No sé si esa parada también pasa en la compilación de Vercel.
+- Lo que vi y no toqué:
+  - En "Mi negocio", sin meta escrita, la tarjeta dice "Punto de equilibrio de hoy" pero el número es lo vendido hoy. Venía de antes de esta rama.
+  - "Cobros fijos" se llama así en la barra de arriba, en "Más" y en el Hoy, pero el título de la página sigue diciendo "Cobros recurrentes".
+- Qué revisar cuando se suba: entrar como persona y como tendero (desde la demo de `/admin`), recorrer las pestañas, abrir cada renglón de "Más" y volver con la flecha, y en el Hoy hacer los tres pasos de la guía.
+- Decisiones que necesito de SOKA: si subo `app-real-2-menu` y abro su solicitud de cambio; si actualizo Next.js por el aviso de arriba, en una rama aparte; y si cambio los dos textos de "Lo que vi y no toqué".
 
 ### 2026-11-13 22:20, "app real": segunda pasada, las pantallas largas (rama `app-real`)
 

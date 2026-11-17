@@ -38,8 +38,8 @@ El negocio no ve tu nombre completo, tu correo ni tus movimientos: en la caja so
 
       <ExpandableSmartMap
         bundle={smartMap}
-        defaultExpanded={true}
-        compactTitle="Mapa de ofertas"
+        defaultExpanded={false}
+        compactTitle="Ver en el mapa"
         compactSubtitle="Filtra por hora o usa tu ubicación para ver qué tan cerca está cada negocio."
       />
 

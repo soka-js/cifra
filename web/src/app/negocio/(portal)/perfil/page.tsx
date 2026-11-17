@@ -1,4 +1,3 @@
-import { BackButton } from '@/components/ui/back-button';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { MerchantProfileForm } from './profile-form';
 
@@ -9,7 +8,6 @@ export default async function MerchantProfilePage() {
 
   return (
     <div className="space-y-5">
-      <BackButton href="/negocio" label="Volver al resumen" className="mb-2" />
       <div>
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
           Datos de {access.merchant.name}

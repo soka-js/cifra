@@ -370,6 +370,27 @@ export interface EnrichedMovement {
   isInternal: boolean;
 }
 
+/**
+ * En qué se le fue la plata a la persona en los últimos 30 días, por categoría, para el resumen
+ * del Hoy. Sale solo de sus movimientos: sin movimientos, no hay filas.
+ */
+export async function loadSpendByCategory(user: User): Promise<CycleBreakdown> {
+  const today = todayInBogota();
+  const [rows, overrides] = await Promise.all([
+    db
+      .select({
+        accountId: transactions.accountId,
+        postedOn: transactions.postedOn,
+        description: transactions.description,
+        amountMinor: transactions.amountMinor,
+      })
+      .from(transactions)
+      .where(and(eq(transactions.userId, user.id), gte(transactions.postedOn, addDays(today, -60)), eq(transactions.excluded, false))),
+    loadCategoryOverrides(user.id),
+  ]);
+  return computeCategoryComparison(rows, today, 30, overrides);
+}
+
 export interface MovimientosInsightsData {
   breakdown: CycleBreakdown;
   antExpenses: AntExpenseCluster[];

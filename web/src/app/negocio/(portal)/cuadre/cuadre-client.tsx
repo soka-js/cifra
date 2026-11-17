@@ -20,7 +20,6 @@ import {
   updateMerchantBreakEvenTargetsAction,
   type V3ActionState,
 } from '@/app/actions/v3';
-import { BackButton } from '@/components/ui/back-button';
 import { MoneyInput } from '@/components/ui/money-input';
 import { cop, shortDate } from '@/lib/format';
 import type { MerchantBreakEvenPageData } from '@/lib/v3-data';
@@ -74,10 +73,6 @@ export function CuadreClient({
 
   return (
     <div className="space-y-6">
-      <div className="no-print">
-        <BackButton fallbackHref="/negocio" label="Volver al resumen" />
-      </div>
-
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
@@ -383,12 +378,12 @@ export function CuadreClient({
         </section>
       )}
 
-      {/* Formulario rápido de 5 segundos: anotar venta del día o compra a proveedor */}
+      {/* Formulario rápido: anotar venta del día o compra a proveedor */}
       <div className="grid gap-5 lg:grid-cols-5">
         <form action={ledgerAction} className="surface-card space-y-4 p-5 lg:col-span-3">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-[19px] font-bold text-ink">
-              Anotar en 5 segundos
+              Anotar una venta o una compra
             </h2>
             <span className="text-[12px] text-ink-faint">Las ventas con código CIFRA entran solas</span>
           </div>

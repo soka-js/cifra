@@ -1,17 +1,20 @@
-import { AlertTriangle, CalendarCheck2, ChevronRight, ListChecks, PencilLine, Plus, Repeat, Tag, TrendingUp, Upload } from 'lucide-react';
+import { AlertTriangle, CalendarCheck2, ChevronRight, PencilLine, Plus, Repeat, Tag, TrendingUp, Upload } from 'lucide-react';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { AskInline } from '@/components/app/ask-inline';
 import { BalancePrompt, BalanceRow } from '@/components/app/balance-editor';
 import { CifraHero } from '@/components/app/cifra-hero';
+import { FirstSteps } from '@/components/app/first-steps';
 import { GaOnce } from '@/components/app/ga-once';
 import { PendingCharges } from '@/components/app/pending-charges';
 import { QuickCaptureModal } from '@/components/app/quick-capture-modal';
 import { TrackView } from '@/components/app/track-view';
 import { requireUser } from '@/lib/auth/session';
-import { loadCifra, loadMarksDetailed, loadRankedOffersForUser, loadSpendDeviation } from '@/lib/data';
+import { loadCifra, loadMarksDetailed, loadRankedOffersForUser, loadSpendByCategory, loadSpendDeviation } from '@/lib/data';
 import { STALE_BALANCE_WARNING } from '@/lib/engine/cifra';
 import { shortDate, todayInBogota } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
+import { ASKED_COOKIE, GUIDE_COOKIE, GUIDE_DAYS } from '@/lib/guide';
 import { currentBogotaHour, loadCycleExtras } from '@/lib/v3-data';
 
 /**
@@ -99,11 +102,21 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
     );
   }
 
-  const [deviation, extras, offers] = await Promise.all([
+  const [deviation, extras, offers, byCategory, jar] = await Promise.all([
     loadSpendDeviation(user, c),
     loadCycleExtras(user, c),
     loadRankedOffersForUser(user, 4),
+    // Sin movimientos no hay nada que resumir: no se consulta.
+    c.historyDays > 0 ? loadSpendByCategory(user) : null,
+    cookies(),
   ]);
+
+  // La guía de primera vez: solo en cuentas nuevas, hasta que la persona la cierra o hace los tres pasos.
+  const isNewAccount = Date.now() - user.createdAt.getTime() < GUIDE_DAYS * 86_400_000;
+  const asked = jar.has(ASKED_COOKIE);
+  const hasExpenses = c.historyDays > 0;
+  const showGuide = !user.isDemo && isNewAccount && !jar.has(GUIDE_COOKIE) && !(asked && hasExpenses);
+  const topCategories = byCategory ? byCategory.rows.filter((r) => r.currentMinor > 0).slice(0, 3) : [];
 
   const askBalance = editable.length > 0 && (c.balanceAgeDays ?? 0) >= 1;
   const warnings = askBalance ? c.warnings.filter((w) => !w.startsWith(STALE_BALANCE_WARNING)) : c.warnings;
@@ -121,18 +134,13 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
     <div className="space-y-4">
       <TrackView name="view_cifra" props={{ status: c.status, ready: c.ready, daily: c.dailySource }} />
       {sp.listo === 'rapido' && <GaOnce name="quick_start" />}
-      {sp.listo === 'rapido' && (
-        <section aria-label="Bienvenida" data-testid="bienvenida-hoy" className="rounded-2xl border border-primary/25 bg-primary-pale/70 px-5 py-4">
-          <p className="text-[15.5px] font-semibold text-ink">Listo. Esta es tu cifra.</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-snug text-ink-soft">
-            <li>Es lo que puedes gastar hasta tu próximo pago. Debajo ves de dónde sale.</li>
-            <li>Antes de comprar, escribe el valor en "¿Puedo gastar?".</li>
-            <li>En el menú de abajo están tus gastos, las ofertas cerca y tus cobros.</li>
-          </ul>
-          <Link href="/app" className="mt-2.5 inline-block text-[14px] font-semibold text-primary-dark underline underline-offset-2">
-            Entendido
-          </Link>
-        </section>
+      {showGuide && (
+        <FirstSteps
+          firstName={user.name ? user.name.split(' ')[0]! : null}
+          untilLabel={shortDate(c.nextIncomeOn)}
+          asked={asked}
+          hasExpenses={hasExpenses}
+        />
       )}
 
       <CifraHero
@@ -198,6 +206,9 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
               <span>{cop(Math.abs(c.availableMinor))}</span>
             </div>
           </div>
+          <p data-testid="hacia-adelante" className="mt-3 text-[12.5px] leading-snug text-ink-faint">
+            Tu cifra mira hacia adelante: va de hoy a tu próximo pago y cambia cuando gastas o actualizas tu saldo.
+          </p>
         </div>
       </CifraHero>
 
@@ -270,6 +281,36 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
         </ul>
       )}
 
+      {/* En qué se le va la plata: solo con movimientos reales de la persona. */}
+      {topCategories.length > 0 && byCategory && (
+        <section aria-labelledby="en-que" data-testid="hoy-categorias" className="surface-card px-5 py-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="en-que" className="text-[15px] font-semibold text-ink">En qué se te va</h2>
+            <Link href="/app/movimientos" className="text-[13.5px] font-semibold text-primary-dark">
+              Ver todo
+            </Link>
+          </div>
+          <p className="tnum text-[13px] text-ink-muted">
+            {cop(byCategory.currentTotalMinor)} en los últimos {byCategory.windowDays} días
+          </p>
+          <ul className="tnum mt-3 space-y-2.5">
+            {topCategories.map((row) => (
+              <li key={row.category}>
+                <Link href={`/app/movimientos?cat=${row.category}`} className="block">
+                  <span className="flex items-baseline justify-between gap-3 text-[14.5px]">
+                    <span className="truncate font-medium text-ink">{row.label}</span>
+                    <span className="shrink-0 font-semibold text-ink">{cop(row.currentMinor)}</span>
+                  </span>
+                  <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-paper-deep" aria-hidden="true">
+                    <span className="block h-full rounded-full bg-primary" style={{ width: `${Math.max(4, row.sharePercent)}%` }} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="divide-y divide-line rounded-2xl border border-line bg-white shadow-card">
         {c.dailySource === 'declarado' && (
           <Link href="/app/datos/importar" className="flex items-center gap-3 px-5 py-4 hover:bg-paper/60">
@@ -316,15 +357,6 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
             <ChevronRight size={18} className="text-ink-faint" aria-hidden="true" />
           </Link>
         )}
-
-        <Link href="/app/cierre" className="flex items-center gap-3 px-5 py-4 hover:bg-paper/60">
-          <ListChecks size={19} className="shrink-0 text-ink-muted" aria-hidden="true" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold">Cierre del ciclo</span>
-            <span className="block text-[13.5px] text-ink-muted">Mira cómo te fue y deja un ajuste para el próximo pago.</span>
-          </span>
-          <ChevronRight size={18} className="text-ink-faint" aria-hidden="true" />
-        </Link>
 
         <Link href="/app/ajustes#ingreso" className="flex items-center gap-3 px-5 py-4 hover:bg-paper/60">
           <CalendarCheck2 size={19} className="shrink-0 text-ink-muted" aria-hidden="true" />

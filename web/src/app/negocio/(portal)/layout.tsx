@@ -25,7 +25,7 @@ export default async function MerchantPortalLayout({
       <div className="lg:pl-64 print:pl-0">
         <StickyHeader>
           {ctx?.demoView && <DemoBar viewing="tendero" />}
-          <AppTopBar merchantName={access.merchant.name} merchantSlug={access.merchant.slug} role="negocio" />
+          <AppTopBar merchantName={access.merchant.name} role="negocio" />
         </StickyHeader>
 
         <main className="mx-auto max-w-3xl px-4 pb-28 pt-4 sm:px-6 lg:pb-14 lg:pt-8 print:max-w-none print:p-0">

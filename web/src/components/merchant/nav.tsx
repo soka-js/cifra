@@ -19,16 +19,19 @@ import { logout } from '@/app/actions/auth';
 import { switchActiveMerchant } from '@/app/actions/merchant';
 import { LogoMark } from '@/components/logo';
 
+/** Pantallas que se abren desde "Mi negocio". */
+const HOME_PREFIXES = ['/negocio/vitrina', '/negocio/cuenta', '/negocio/cuadre', '/negocio/informe', '/negocio/perfil'];
+const startsWithAny = (pathname: string, prefixes: string[]) => prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+/** El menú del tendero: tres pestañas. Lo demás (afiche, cuenta, cuadre, informe, datos) se abre desde "Mi negocio". */
 const MOBILE_ITEMS = [
-  { href: '/negocio', label: 'Inicio', icon: Home, exact: true },
-  { href: '/negocio/caja', label: 'Caja', icon: QrCode },
-  { href: '/negocio/ofertas', label: 'Ofertas', icon: Tag },
-  { href: '/negocio/cuenta', label: 'Cuenta', icon: Receipt },
-  { href: '/negocio/vitrina', label: 'Vitrina', icon: Share2 },
+  { href: '/negocio', label: 'Mi negocio', icon: Store, isActive: (p: string) => p === '/negocio' || startsWithAny(p, HOME_PREFIXES) },
+  { href: '/negocio/caja', label: 'Caja', icon: QrCode, isActive: (p: string) => startsWithAny(p, ['/negocio/caja']) },
+  { href: '/negocio/ofertas', label: 'Ofertas', icon: Tag, isActive: (p: string) => startsWithAny(p, ['/negocio/ofertas']) },
 ];
 
 const SIDEBAR_ITEMS = [
-  { href: '/negocio', label: 'Inicio', icon: Home, exact: true },
+  { href: '/negocio', label: 'Mi negocio', icon: Home, exact: true },
   { href: '/negocio/caja', label: 'Caja', icon: QrCode },
   { href: '/negocio/ofertas', label: 'Mis ofertas', icon: Tag },
   { href: '/negocio/cuenta', label: 'Cuenta y pagos', icon: Receipt },
@@ -45,19 +48,21 @@ export function MerchantBottomNav() {
       aria-label="Secciones de tu negocio"
       className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-5">
-        {MOBILE_ITEMS.map(({ href, label, icon: Icon, exact }) => {
-          const active = exact ? pathname === href : pathname.startsWith(href);
+      <ul className="mx-auto grid max-w-lg grid-cols-3">
+        {MOBILE_ITEMS.map(({ href, label, icon: Icon, isActive }) => {
+          const active = isActive(pathname);
           return (
             <li key={href}>
               <Link
                 href={href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[11.5px] font-semibold transition-colors ${
+                className={`flex flex-col items-center gap-0.5 pb-2 pt-2 text-[12px] font-semibold transition-colors ${
                   active ? 'text-terra-dark' : 'text-ink-faint hover:text-ink'
                 }`}
               >
-                <Icon size={20} strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
+                <span className={`grid h-8 w-14 place-items-center rounded-full transition-colors ${active ? 'bg-terra-light' : ''}`}>
+                  <Icon size={21} strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
+                </span>
                 <span>{label}</span>
               </Link>
             </li>
@@ -154,7 +159,7 @@ export function MerchantSidebar({
           className="flex items-center gap-2.5 rounded-xl bg-primary-pale px-3.5 py-2 text-[13px] font-semibold text-primary-dark hover:bg-primary-light"
         >
           <UserRound size={16} aria-hidden="true" />
-          <span>Ir a mi vista personal →</span>
+          <span>Mi cifra personal</span>
         </Link>
         {isAdmin && (
           <Link
@@ -162,7 +167,7 @@ export function MerchantSidebar({
             className="flex items-center gap-2.5 rounded-xl bg-paper px-3.5 py-2 text-[13px] font-semibold text-ink-muted hover:bg-paper-deep hover:text-ink"
           >
             <Shield size={16} aria-hidden="true" />
-            <span>Backoffice y Data Room</span>
+            <span>Administración</span>
           </Link>
         )}
         <form action={logout}>
