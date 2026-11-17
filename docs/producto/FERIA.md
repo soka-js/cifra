@@ -1,10 +1,13 @@
-# Lista de revisión de la feria (Semana de la Innovación, jueves 19 de noviembre)
+# Lista de revisión de la feria (Semana de la Innovación, miércoles 18 de noviembre)
+
+Corrección del 17 nov: según el anuncio del profesor en Bloque Neón (13 nov), la Muestra es el **miércoles 18 de noviembre**, jornada de la tarde, **de 1:00 a 4:30 p. m.**, **stand 8**. El jueves 19 no hay clase. El martes 17 el profesor manda a cada equipo un QR de evaluación de los jurados para imprimir y poner visible en el stand. El póster va pegado solo con cinta de enmascarar.
 
 Parte de la Etapa 7a: lo que no depende de negocios reales. Cada punto se marca cuando alguien lo comprobó, con fecha y quién.
 
-## Antes del miércoles 18 en la noche
+## Antes del miércoles 18 a la 1:00 p. m.
 
-- [ ] Producción tiene `producto-v1` (etapas 1 a 4) desplegada y revisada con `DESPLIEGUE.md`.
+- [x] Producción tiene `producto-v1` (etapas 1 a 6 y app real) desplegada (17 nov, #11 y #12).
+- [ ] Imprimir el QR de evaluación de los jurados que manda el profesor el martes 17.
 - [ ] Variables en Vercel, proyecto `cifra`: `RESEND_API_KEY` y `EMAIL_FROM` (Production y Preview), `CRON_SECRET` (Production).
 - [ ] El QR del afiche y de la diapositiva de cierre abre `micifra.vercel.app`. Con la rama desplegada, esa dirección cae en la prueba sin cuenta. Escanearlo con dos celulares distintos (uno Android, uno iPhone) sin sesión: debe aparecer "¿Cuánto puedes gastar hasta tu próximo pago?".
 - [ ] Hacer la prueba completa desde el QR en un celular: cuatro respuestas, la cifra, "¿Puedo gastar?" y "Guardar mi cifra". Anotar cuánto tardó una persona que no es del equipo (el guion de prueba no mide personas).

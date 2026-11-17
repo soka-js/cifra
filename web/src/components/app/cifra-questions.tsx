@@ -4,6 +4,7 @@ import { Lock, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { IncomeFields } from '@/components/app/income-fields';
+import { DayPicker } from '@/components/ui/day-picker';
 import { MoneyInput } from '@/components/ui/money-input';
 import type { IncomeFrequency } from '@/lib/engine/types';
 import { cop, parsePesosInput, toDailyMinor, type SpendPeriod } from '@/lib/format';
@@ -24,7 +25,6 @@ import { parseQuickForm, type QuickFormValues } from '@/lib/quick-form';
 
 const STEPS = 4;
 const SUGGESTED = ['Arriendo', 'Servicios', 'Celular', 'Internet', 'Suscripciones', 'Gimnasio', 'Cuota de crédito'];
-const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 const PERIODS: Array<[SpendPeriod, string]> = [
   ['dia', 'Al día'],
   ['semana', 'A la semana'],
@@ -331,16 +331,14 @@ export function CifraQuestions(props: PruebaProps | CuentaProps) {
                     <label htmlFor={`${ids.prefix}-fd-${r.id}`} className="sr-only">
                       Día del mes de {r.name || `cobro ${i + 1}`}
                     </label>
-                    <select id={`${ids.prefix}-fd-${r.id}`} name="fixedDay" defaultValue="" className="field py-2.5">
-                      <option value="" disabled>
-                        Día
-                      </option>
-                      {DAYS.map((d) => (
-                        <option key={d} value={d}>
-                          Día {d}
-                        </option>
-                      ))}
-                    </select>
+                    <DayPicker
+                      id={`${ids.prefix}-fd-${r.id}`}
+                      name="fixedDay"
+                      placeholder="Día"
+                      align="right"
+                      compact
+                      ariaLabel={`Día del mes de ${r.name || `cobro ${i + 1}`}`}
+                    />
                   </div>
                 </div>
               </li>
