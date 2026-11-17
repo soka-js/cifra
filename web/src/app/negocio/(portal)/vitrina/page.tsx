@@ -3,14 +3,16 @@ import QRCode from 'qrcode';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { db } from '@/lib/db';
 import { offers } from '@/lib/db/schema';
+import { siteUrl } from '@/lib/site';
 import { VitrinaClient } from './vitrina-client';
 
 export const metadata = { title: 'Mi vitrina y afiche QR · Negocio CIFRA' };
 
 export default async function MerchantVitrinaPage() {
   const access = await requireMerchantAccess();
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cifra-inky.vercel.app';
-  const publicUrl = `${baseUrl.replace(/\/$/, '')}/b/${access.merchant.slug}`;
+  // El QR del afiche, "Copiar enlace" y WhatsApp salen de aquí: misma dirección que el correo y la
+  // presentación (NEXT_PUBLIC_SITE_URL en producción, la de la rama en una vista previa).
+  const publicUrl = `${siteUrl()}/b/${access.merchant.slug}`;
 
   const [activeOffers, posterQrDataUrl] = await Promise.all([
     db

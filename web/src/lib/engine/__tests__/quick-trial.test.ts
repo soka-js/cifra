@@ -32,6 +32,18 @@ describe('prueba sin cuenta: el caso del brief', () => {
     expect(c.warnings).toEqual([]);
   });
 
+  it('el monto por día va en pesos enteros y redondeado hacia abajo: nunca promete más de la cifra', () => {
+    // 17 nov, pago el 30: 13 días. $875.000 / 13 = $67.307,69. Mostrar $67.308 sumaría $875.004.
+    const parsed = parseQuickForm(form(BRIEF));
+    if (!parsed.ok) throw new Error(parsed.message);
+    const c = computeQuickCifra({ today: '2026-11-17', ...parsed.values });
+    expect(c.daysLeft).toBe(13);
+    expect(c.availableMinor).toBe(875_000_00);
+    expect(c.perDayMinor).toBe(67_307_00);
+    expect(c.perDayMinor % 100).toBe(0);
+    expect(c.perDayMinor * c.daysLeft).toBeLessThanOrEqual(c.availableMinor);
+  });
+
   it('la resta que se muestra cierra exacta: saldo − fijos − día a día = cifra', () => {
     const parsed = parseQuickForm(
       form({ ...BRIEF, fixedName: ['Arriendo', 'Celular'], fixedAmount: ['650.000', '45.000'], fixedDay: ['13', '20'] }),

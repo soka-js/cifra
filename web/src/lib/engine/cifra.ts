@@ -305,7 +305,9 @@ export function computeCifra(input: CifraInput): CifraResult {
   const projectionDays = Math.max(daysLeft, daysBetween(anchor, nextIncomeOn));
   const projectedVariableMinor = daily * projectionDays;
   const availableMinor = balanceMinor - pendingMinor - projectedVariableMinor - input.bufferMinor;
-  const perDayMinor = Math.max(0, Math.floor(availableMinor / daysLeft));
+  // En pesos enteros y hacia abajo: cop() redondea al peso y, con centavos, $67.307,69 se vería
+  // como $67.308, que por los días que faltan suma más que la cifra.
+  const perDayMinor = Math.max(0, Math.floor(availableMinor / daysLeft / 100) * 100);
   const status: CifraResult['status'] =
     availableMinor < 0 ? 'en_rojo' : availableMinor < daily * Math.min(7, daysLeft) ? 'justo' : 'holgado';
 
