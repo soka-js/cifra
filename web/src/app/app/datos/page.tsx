@@ -1,15 +1,14 @@
-import { Building2, Download, FileSpreadsheet, Link2, Plus, ShieldCheck } from 'lucide-react';
+import { Building2, Check, Download, FileSpreadsheet, Link2, Plus, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
-import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { bogotaDate, loadAccessLog, loadSources } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
 import { toggleAccount } from '../actions';
-import { DeleteAccountForm, ZoneForm } from '../ajustes/forms';
+import { DeleteAccountForm } from '../ajustes/forms';
 import { BalanceForm, DeleteSource, ManualAccountForm } from './forms';
 
-export const metadata = { title: 'Tus datos (Ley 1581)' };
+export const metadata = { title: 'Tus datos' };
 
 const KIND = {
   entidad_aliada: { label: 'Tu entidad comparte estos datos bajo tu autorización', icon: Building2 },
@@ -37,48 +36,79 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="space-y-6">
-      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div>
-        <span className="badge-primary">
-          <ShieldCheck size={13} aria-hidden="true" /> Ley 1581 de 2012 · Habeas Data
-        </span>
-        <h1 className="mt-2.5 font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Tus datos</h1>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Tus datos</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
-          Aquí ves cada fuente que alimenta tu cifra. Puedes descargar una copia completa o borrar cualquier cuenta cuando quieras.
+          Son tuyos: puedes verlos, descargarlos o borrarlos cuando quieras (Ley 1581 de 2012).
         </p>
         {sp.borrada && (
           <p role="status" className="mt-3 rounded-xl bg-primary-light px-4 py-3 text-[14px] font-medium text-primary-dark">
-            Borramos la fuente y todos sus movimientos asociados.
+            Listo, borramos esa cuenta y sus movimientos.
           </p>
         )}
       </div>
 
-      {user.consentAt && (
-        <p className="rounded-xl bg-paper-deep px-4 py-3 text-[13.5px] leading-relaxed text-ink-muted">
-          Autorizaste el tratamiento de tus datos el {shortDate(bogotaDate(user.consentAt))}, al crear tu cuenta. Puedes
-          retirarla borrando tu cuenta al final de esta página.
-        </p>
-      )}
+      {/* Lo que más preguntan: qué queda guardado de un extracto, qué no, y cómo se borra. */}
+      <section aria-labelledby="que-guardamos" data-testid="que-guardamos" className="surface-card divide-y divide-line">
+        <div className="flex gap-3.5 p-5">
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-light text-primary-dark">
+            <Check size={17} strokeWidth={2.6} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 id="que-guardamos" className="text-[15.5px] font-semibold text-ink">Qué guardamos</h2>
+            <p className="mt-1 text-[14px] leading-relaxed text-ink-muted">
+              Lo que tú escribes: tu saldo, tus cobros fijos y tu gasto del día a día. Si subes un extracto, de cada movimiento
+              guardamos tres cosas: la fecha, la descripción y el valor.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-3.5 p-5">
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-paper-deep text-ink-muted">
+            <X size={17} strokeWidth={2.6} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-[15.5px] font-semibold text-ink">Qué no guardamos</h2>
+            <p className="mt-1 text-[14px] leading-relaxed text-ink-muted">
+              El archivo del extracto: se lee en tu celular y no se sube. Tampoco claves del banco, que nunca te pedimos, ni el
+              número completo de tu cuenta (solo los últimos 4 dígitos, si los escribes). Los negocios con ofertas no ven nada
+              de esto: en la caja solo ven un código de 6 letras.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-3.5 p-5">
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neg-light text-neg">
+            <Trash2 size={16} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-[15.5px] font-semibold text-ink">Cómo se borra</h2>
+            <p className="mt-1 text-[14px] leading-relaxed text-ink-muted">
+              Cada cuenta de abajo tiene su botón para borrarla con todos sus movimientos. Y con{' '}
+              <a href="#borrar-cuenta" className="font-semibold text-ink underline underline-offset-2">
+                Borrar mi cuenta
+              </a>{' '}
+              se borra todo de inmediato.
+              {user.consentAt && <> Autorizaste el tratamiento de tus datos el {shortDate(bogotaDate(user.consentAt))}, al crear tu cuenta.</>}
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* Portabilidad en un clic (JSON completo + CSV de movimientos) */}
       <section className="surface-card p-5">
         <h2 className="font-display text-[17px] font-bold text-ink">Descargar una copia de tus datos</h2>
-        <p className="mt-1 text-[13.5px] text-ink-muted">
-          Llévate tus movimientos clasificados, tus reglas personales y tu historial cuando quieras.
-        </p>
         <div className="mt-3.5 flex flex-wrap gap-2.5">
           <a id="btn-export-csv" href="/api/export?format=csv" className="btn-sm border border-line bg-white text-ink hover:bg-paper-warm">
-            <Download size={15} aria-hidden="true" /> Movimientos en CSV (Excel)
+            <Download size={15} aria-hidden="true" /> Movimientos, para Excel
           </a>
           <a id="btn-export-json" href="/api/export?format=json" className="btn-sm border border-line bg-white text-ink hover:bg-paper-warm">
-            <Download size={15} aria-hidden="true" /> Expediente completo en JSON
+            <Download size={15} aria-hidden="true" /> Todo lo que guardamos de ti
           </a>
         </div>
       </section>
 
       {sources.length === 0 && (
         <div className="surface-card p-5 text-[15px] text-ink-muted">
-          Todavía no hay fuentes conectadas. Sube un extracto o escribe tu saldo a mano para empezar.
+          Todavía no hay cuentas. Sube un extracto o escribe tu saldo para empezar.
         </div>
       )}
 
@@ -188,25 +218,14 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
         <ManualAccountForm />
       </div>
 
-      {/* Control de ubicación aproximada */}
-      <section className="surface-card p-5">
-        <h2 className="font-display text-[18px] font-bold text-ink">Zona para beneficios cercanos</h2>
-        <div className="mt-3">
-          <ZoneForm currentZone={user.zoneSlug ?? null} />
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-line bg-paper-warm px-5 py-4 text-[13.5px] leading-relaxed text-ink-muted">
-        <h2 className="text-[14.5px] font-semibold text-ink">Sobre Finanzas Abiertas en Colombia</h2>
-        <p className="mt-1">
-          Cuando una cooperativa, billetera o banco activa el canal aliado de CIFRA o el estándar de finanzas abiertas (Decreto 1297 de 2022), la autorización ocurre siempre en la app de tu entidad y aparece aquí con botón de revocación inmediata.
-        </p>
-      </section>
-
       {log.length > 0 && (
-        <section>
-          <h2 className="font-display text-[17px] font-bold text-ink">Bitácora de acceso a tus datos</h2>
-          <ul className="mt-2.5 divide-y divide-line rounded-2xl border border-line bg-white text-[13.5px] shadow-card">
+        <details className="group rounded-2xl border border-line bg-white shadow-card">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-[15px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+            <span>Quién ha visto o cambiado tus datos</span>
+            <span className="text-[13px] font-medium text-ink-muted group-open:hidden">Ver</span>
+            <span className="hidden text-[13px] font-medium text-ink-muted group-open:inline">Cerrar</span>
+          </summary>
+          <ul className="divide-y divide-line border-t border-line text-[13.5px]">
             {log.map((l) => (
               <li key={l.id} className="flex justify-between gap-3 px-5 py-2.5">
                 <span>
@@ -217,11 +236,11 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
               </li>
             ))}
           </ul>
-        </section>
+        </details>
       )}
 
-      <section className="surface-card p-5">
-        <h2 className="font-display text-[18px] font-bold text-neg">Revocar todo y borrar mi cuenta</h2>
+      <section id="borrar-cuenta" className="surface-card scroll-mt-20 p-5">
+        <h2 className="font-display text-[18px] font-bold text-neg">Borrar mi cuenta</h2>
         <div className="mt-3">
           <DeleteAccountForm />
         </div>

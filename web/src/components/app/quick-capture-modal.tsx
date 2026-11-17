@@ -98,7 +98,7 @@ export function QuickCaptureModal({
                   id="quick-capture-title"
                   className="mt-2 font-display text-[23px] font-bold leading-tight text-ink"
                 >
-                  Actualiza tu día en 3 segundos
+                  Anota lo que gastaste
                 </h2>
                 <p className="mt-1 text-[13.5px] text-ink-muted">
                   Escribe como hablas o pega la notificación de Bancolombia, Nequi, Bre-B, Daviplata o Nu.

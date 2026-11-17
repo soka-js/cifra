@@ -306,16 +306,33 @@ describe('actions/merchant.ts#redeemMerchantInvite', () => {
   it('sin sesión crea la cuenta de quien abre el enlace y no toma una cuenta existente', async () => {
     const token = await invite(w.victimMerchant.id);
     const taken = await run(() =>
-      merchantActions.redeemMerchantInvite(idle, fd({ token, email: 'victima@prueba.local', password: PASSWORD })),
+      merchantActions.redeemMerchantInvite(idle, fd({ token, email: 'victima@prueba.local', password: PASSWORD, consent: 'on' })),
     );
     expect((taken.result as { status: string }).status).toBe('error');
     expect(await getCurrentUser()).toBeNull();
 
     const outcome = await run(() =>
-      merchantActions.redeemMerchantInvite(idle, fd({ token, email: 'tendera@prueba.local', password: PASSWORD })),
+      merchantActions.redeemMerchantInvite(idle, fd({ token, email: 'tendera@prueba.local', password: PASSWORD, consent: 'on' })),
     );
     expect(outcome.redirect).toBe('/negocio?activado=1');
     expect((await getCurrentUser())?.email).toBe('tendera@prueba.local');
+  });
+
+  it('sin la autorización de datos, o con una clave corta, no crea la cuenta ni usa el enlace', async () => {
+    const token = await invite(w.victimMerchant.id);
+    const usersBefore = await count('users');
+    const noConsent = await run(() =>
+      merchantActions.redeemMerchantInvite(idle, fd({ token, email: 'tendera@prueba.local', password: PASSWORD })),
+    );
+    expect(noConsent.result).toMatchObject({ status: 'error', message: expect.stringMatching(/autorización/) });
+    const shortKey = await run(() =>
+      merchantActions.redeemMerchantInvite(idle, fd({ token, email: 'tendera@prueba.local', password: 'corta-123', consent: 'on' })),
+    );
+    expect(shortKey.result).toMatchObject({ status: 'error', message: expect.stringMatching(/10 caracteres/) });
+    expect(await count('users')).toBe(usersBefore);
+    expect(await getCurrentUser()).toBeNull();
+    const [inv] = await db.select().from(merchantInvites).where(eq(merchantInvites.tokenHash, sha256(token)));
+    expect(inv!.usedAt).toBeNull();
   });
 
   it('desde la demo no se puede quedar de dueño de un negocio real', async () => {
@@ -350,7 +367,7 @@ describe('actions/merchant.ts#selfRegisterMerchant', () => {
   it('un tendero sin sesión crea su cuenta y SU negocio, y no toca ningún negocio ajeno', async () => {
     const before = await victimSnapshot(w);
     const outcome = await run(() =>
-      merchantActions.selfRegisterMerchant(idle, form({ email: 'carlos@prueba.local', password: PASSWORD })),
+      merchantActions.selfRegisterMerchant(idle, form({ email: 'carlos@prueba.local', password: PASSWORD, consent: 'on' })),
     );
     expect(outcome.redirect).toBe('/negocio/ofertas?bienvenida=1');
     const me = await getCurrentUser();
@@ -360,6 +377,24 @@ describe('actions/merchant.ts#selfRegisterMerchant', () => {
     expect(access?.merchant.isDemo).toBe(false);
     expect(access?.allMerchants).toHaveLength(1);
     expect(await victimSnapshot(w)).toBe(before);
+  });
+
+  it('sin la autorización de datos no crea la cuenta ni el negocio', async () => {
+    const [usersBefore, merchantsBefore] = [await count('users'), await count('merchants')];
+    const outcome = await run(() =>
+      merchantActions.selfRegisterMerchant(idle, form({ email: 'carlos@prueba.local', password: PASSWORD })),
+    );
+    expect(outcome.result).toMatchObject({ status: 'error', message: expect.stringMatching(/autorización/) });
+    expect(await count('users')).toBe(usersBefore);
+    expect(await count('merchants')).toBe(merchantsBefore);
+    expect(await getCurrentUser()).toBeNull();
+  });
+
+  it('no inventa un horario: si el tendero no lo escribe, queda vacío', async () => {
+    await loginAs(w.plain);
+    await run(() => merchantActions.selfRegisterMerchant(idle, form()));
+    const [created] = await db.select().from(merchants).where(eq(merchants.name, 'Café de Prueba'));
+    expect(created!.hoursText).toBeNull();
   });
 
   it('con sesión, el negocio queda a nombre de quien está en sesión', async () => {
@@ -373,9 +408,9 @@ describe('actions/merchant.ts#selfRegisterMerchant', () => {
   it('sin sesión no deja usar el correo de una cuenta existente', async () => {
     const before = await count('merchants');
     const outcome = await run(() =>
-      merchantActions.selfRegisterMerchant(idle, form({ email: 'victima@prueba.local', password: PASSWORD })),
+      merchantActions.selfRegisterMerchant(idle, form({ email: 'victima@prueba.local', password: PASSWORD, consent: 'on' })),
     );
-    expect((outcome.result as { status: string }).status).toBe('error');
+    expect(outcome.result).toMatchObject({ status: 'error', message: expect.stringMatching(/ya tiene cuenta/) });
     expect(await count('merchants')).toBe(before);
     expect(await getCurrentUser()).toBeNull();
   });

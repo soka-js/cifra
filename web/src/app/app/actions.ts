@@ -25,6 +25,7 @@ import { EDITABLE_CATEGORIES, type Category } from '@/lib/engine/merchant';
 import { parseBalanceInput, parsePesosInput, toDailyMinor } from '@/lib/format';
 import { setBalance } from '@/lib/ingest';
 import { createManualAccount, listManualAccounts } from '@/lib/manual';
+import { parseQuickForm } from '@/lib/quick-form';
 import { recordEvent } from '@/lib/analytics/server';
 import { getZoneBySlug } from '@/lib/zones';
 
@@ -447,35 +448,12 @@ function readDailySpend(form: FormData): number | null {
 export async function saveQuickStart(_prev: QuickState, form: FormData): Promise<QuickState> {
   const user = await requireUser();
 
-  const income = formIncome(form);
-  if (!income.success) return quickError(0, 'Elige cada cuánto te pagan.');
-  const days = incomeDaysFrom(income.data);
-  if (income.data.frequency !== 'irregular' && !days) return quickError(0, 'Elige el día o los días en que te pagan.');
-
-  const balance = parseBalanceInput(String(form.get('balance') ?? ''));
-  if (balance === null) return quickError(1, 'Escribe cuánto tienes hoy, por ejemplo 1.250.000. Si no tienes nada, escribe 0.');
+  // La misma lectura que hace la prueba sin cuenta en el navegador: lo que la persona vio como su
+  // cifra antes de crear la cuenta es exactamente lo que se guarda.
+  const parsed = parseQuickForm(form);
+  if (!parsed.ok) return quickError(parsed.step, parsed.message);
+  const { frequency, days, balanceMinor: balance, fixed, dailyMinor } = parsed.values;
   const where = String(form.get('where') ?? '').trim().slice(0, 60);
-
-  const names = form.getAll('fixedName').map((v) => String(v).trim().slice(0, 60));
-  const amounts = form.getAll('fixedAmount').map((v) => String(v).trim());
-  const dayValues = form.getAll('fixedDay').map((v) => String(v).trim());
-  const fixed: Array<{ name: string; amountMinor: number; dayOfMonth: number }> = [];
-  for (let i = 0; i < names.length; i++) {
-    const name = names[i] ?? '';
-    const amountRaw = amounts[i] ?? '';
-    const dayRaw = dayValues[i] ?? '';
-    if (!name && !amountRaw) continue;
-    const amountMinor = parsePesosInput(amountRaw);
-    const day = Number(dayRaw);
-    if (!name || amountMinor === null || !Number.isInteger(day) || day < 1 || day > 31) {
-      return quickError(2, `Revisa "${name || `el cobro ${i + 1}`}": necesita nombre, monto y día del mes.`);
-    }
-    fixed.push({ name, amountMinor, dayOfMonth: day });
-  }
-  if (fixed.length > 15) return quickError(2, 'Escribe hasta 15 cobros fijos. Los demás los agregas después en Ajustes.');
-
-  const dailyMinor = readDailySpend(form);
-  if (dailyMinor === null) return quickError(3, 'Escribe cuánto gastas en el día a día, por ejemplo 30.000 al día.');
 
   const zoneRaw = String(form.get('zoneSlug') ?? '').trim();
   const zone = zoneRaw && zoneRaw !== 'otra' ? getZoneBySlug(zoneRaw) : null;
@@ -483,7 +461,7 @@ export async function saveQuickStart(_prev: QuickState, form: FormData): Promise
   await db
     .update(users)
     .set({
-      incomeFrequency: income.data.frequency,
+      incomeFrequency: frequency,
       incomeDays: days,
       dailySpendMinor: dailyMinor,
       ...(zone ? { zoneSlug: zone.slug, lat: zone.lat, lng: zone.lng } : {}),

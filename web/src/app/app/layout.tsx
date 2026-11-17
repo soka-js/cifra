@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <StickyHeader>
         {ctx.demoView && <DemoBar viewing="persona" />}
-        <AppTopBar userName={user.name} unreadCount={unreadCount} role="persona" hasMerchant={Boolean(merchantAccess)} />
+        <AppTopBar unreadCount={unreadCount} role="persona" />
       </StickyHeader>
 
       <main className="mx-auto max-w-2xl px-4 pt-4 sm:px-6 lg:px-8 lg:pt-8">{children}</main>

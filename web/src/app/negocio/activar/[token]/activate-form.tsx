@@ -3,6 +3,7 @@
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { redeemMerchantInvite, type MerchantActionState } from '@/app/actions/merchant';
+import { MerchantConsent } from '@/components/negocio/merchant-consent';
 
 const INITIAL: MerchantActionState = { status: 'idle' };
 
@@ -66,18 +67,20 @@ export function ActivateMerchantForm({
 
           <div>
             <label htmlFor="password" className="label">
-              Crea una clave fácil de recordar (mínimo 8 caracteres)
+              Crea una clave fácil de recordar (mínimo 10 caracteres)
             </label>
             <input
               id="password"
               name="password"
               type="password"
               required
-              minLength={8}
-              placeholder="Al menos 8 caracteres"
+              minLength={10}
+              placeholder="Al menos 10 caracteres"
               className="field"
             />
           </div>
+
+          <MerchantConsent />
         </>
       )}
 

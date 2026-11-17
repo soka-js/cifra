@@ -20,7 +20,6 @@ import {
   updateMerchantBreakEvenTargetsAction,
   type V3ActionState,
 } from '@/app/actions/v3';
-import { BackButton } from '@/components/ui/back-button';
 import { MoneyInput } from '@/components/ui/money-input';
 import { cop, shortDate } from '@/lib/format';
 import type { MerchantBreakEvenPageData } from '@/lib/v3-data';
@@ -36,11 +35,11 @@ const SUPPLY_CATEGORIES = [
 ];
 
 function defaultFlashTitle(cat: string): string {
-  if (cat === 'panaderia') return '25 % OFF en horneados de la tarde, antes del cierre';
-  if (cat === 'cafeteria') return '20 % OFF en café + pastelería de media tarde';
-  if (cat === 'fruver') return '25 % OFF en canasta fresca del día antes del cierre';
-  if (cat === 'restaurante') return '20 % OFF en almuerzo ejecutivo de 2:00 a 4:00 p. m.';
-  return '20 % OFF hoy en mostrador';
+  if (cat === 'panaderia') return '25 % de descuento en horneados de la tarde, antes del cierre';
+  if (cat === 'cafeteria') return '20 % de descuento en café y pastelería de media tarde';
+  if (cat === 'fruver') return '25 % de descuento en la canasta fresca del día, antes del cierre';
+  if (cat === 'restaurante') return '20 % de descuento en el almuerzo de 2:00 a 4:00 p. m.';
+  return '20 % de descuento hoy en el mostrador';
 }
 
 export function CuadreClient({
@@ -74,10 +73,6 @@ export function CuadreClient({
 
   return (
     <div className="space-y-6">
-      <div className="no-print">
-        <BackButton fallbackHref="/negocio" label="Volver al resumen" />
-      </div>
-
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
@@ -149,7 +144,7 @@ export function CuadreClient({
                 <Flame size={12} aria-hidden="true" />
                 {summary.reachedBreakEven
                   ? '¡Punto de equilibrio del día superado!'
-                  : 'Termómetro de ventas de hoy'}
+                  : 'Ventas de hoy'}
               </span>
               {activeFlashCount > 0 && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-900">
@@ -383,12 +378,12 @@ export function CuadreClient({
         </section>
       )}
 
-      {/* Formulario rápido de 5 segundos: anotar venta del día o compra a proveedor */}
+      {/* Formulario rápido: anotar venta del día o compra a proveedor */}
       <div className="grid gap-5 lg:grid-cols-5">
         <form action={ledgerAction} className="surface-card space-y-4 p-5 lg:col-span-3">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-[19px] font-bold text-ink">
-              Anotar en 5 segundos
+              Anotar una venta o una compra
             </h2>
             <span className="text-[12px] text-ink-faint">Las ventas con código CIFRA entran solas</span>
           </div>

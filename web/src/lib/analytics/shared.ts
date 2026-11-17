@@ -28,6 +28,9 @@ export const EVENT_NAMES = [
   'try_cifra_start',
   'try_cifra_done',
   'try_cifra_save',
+  // Instalar la app en la pantalla de inicio del celular.
+  'app_install_prompt',
+  'app_installed',
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

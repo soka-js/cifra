@@ -1,30 +1,35 @@
 import Link from 'next/link';
-import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { loadCifra, loadRankedOffersForUser } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
-import { loadSmartMapBundle } from '@/lib/v3-data';
 import { Ask } from './ask';
 
-export const metadata = { title: '¿Puedo hacer este gasto?' };
+export const metadata = { title: '¿Puedo gastar?' };
 
-export default async function GastoPage() {
+/** La misma pregunta del Hoy, con más detalle. Se abre desde ahí, con el monto ya escrito. */
+export default async function GastoPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
-  const [c, offers, smartMap] = await Promise.all([
-    loadCifra(user),
-    loadRankedOffersForUser(user, 3),
-    loadSmartMapBundle(user),
-  ]);
+  const [c, offers, sp] = await Promise.all([loadCifra(user), loadRankedOffersForUser(user, 3), searchParams]);
+  const asked = sp.monto && /^\d{1,12}$/.test(sp.monto) ? Number(sp.monto) * 100 : null;
   return (
     <div className="space-y-5">
-      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div>
-        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">¿Puedo hacer este gasto?</h1>
+        <h1 className="sr-only">¿Puedo gastar?</h1>
         {c.ready && (
-          <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
-            Lo cruzamos al instante con tus <span className="tnum font-semibold text-ink">{cop(c.availableMinor)}</span> libres hasta el{' '}
-            {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'}), calculamos el costo real si lo difieres a cuotas y te mostramos alternativas más baratas en tu cuadra.
+          <p className="text-[16px] leading-relaxed text-ink-muted">
+            {c.availableMinor >= 0 ? (
+              <>
+                Puedes gastar <span className="tnum font-semibold text-ink">{cop(c.availableMinor)}</span> hasta el {shortDate(c.nextIncomeOn)} (
+                {c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'}).
+              </>
+            ) : (
+              <>
+                Te faltan <span className="tnum font-semibold text-ink">{cop(Math.abs(c.availableMinor))}</span> para llegar al{' '}
+                {shortDate(c.nextIncomeOn)}.
+              </>
+            )}{' '}
+            Escribe cuánto cuesta lo que quieres comprar y te decimos si te alcanza.
           </p>
         )}
       </div>
@@ -45,7 +50,7 @@ export default async function GastoPage() {
             neighborhood: o.offer.neighborhood,
             estimatedSavingsMinor: o.estimatedSavingsMinor,
           }))}
-          smartMapBundle={smartMap}
+          initialAmountMinor={asked && asked > 0 ? asked : null}
         />
       ) : (
         <div className="surface-card p-6">

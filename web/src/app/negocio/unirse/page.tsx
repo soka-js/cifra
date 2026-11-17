@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { BackButton } from '@/components/ui/back-button';
 import { LogoMark } from '@/components/logo';
 import { getCurrentUser, getMerchantAccess } from '@/lib/auth/session';
+import { DEFAULT_COMMISSION_LABEL } from '@/lib/commission';
 import { RegisterMerchantForm } from './register-merchant-form';
 
 export const metadata = { title: 'Únete como negocio de barrio · CIFRA' };
@@ -41,7 +42,7 @@ export default async function UnirseNegocioPage() {
             Trae clientes nuevos de tu cuadra y paga solo después de vender
           </h1>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
-            Sin volantes que terminan en la caneca ni anuncios en redes que cobran por clic sin vender. Publica una oferta para vecinos que sí compran en tu categoría y solo pagas 5 % sobre lo cobrado en tu caja.
+            Sin volantes que terminan en la caneca ni anuncios en redes que cobran por clic sin vender. Publica una oferta para vecinos que sí compran en tu categoría y solo pagas {DEFAULT_COMMISSION_LABEL} sobre lo cobrado en tu caja.
           </p>
 
           <ul className="mt-5 grid gap-3 rounded-2xl bg-paper p-4 text-[13.5px] text-ink-soft sm:grid-cols-3">

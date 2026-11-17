@@ -1,19 +1,17 @@
 'use client';
 
-import { BookmarkPlus, CheckCircle2, Clock, CreditCard, PlusCircle, Sparkles, Tag, TriangleAlert } from 'lucide-react';
+import { BookmarkPlus, CheckCircle2, Clock, CreditCard, PlusCircle, Tag, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { executeEvaluatedSpendAction } from '@/app/actions/v3';
-import { ExpandableSmartMap } from '@/components/map/expandable-smart-map';
 import { MoneyInput } from '@/components/ui/money-input';
 import { track } from '@/lib/analytics/client';
 import { canISpend, comfortableSpendMinor, spendReserveMinor, type CifraResult } from '@/lib/engine/cifra';
 import { simulateCreditInstallments } from '@/lib/engine/daily-value';
 import { shortDate } from '@/lib/engine/dates';
-import { parseNaturalSpendQuery } from '@/lib/engine/insights';
 import { cop, parsePesosInput } from '@/lib/format';
-import type { SmartMapBundle } from '@/lib/v3-data';
+import { ASKED_COOKIE, rememberCookie } from '@/lib/guide';
 
 type Slim = Pick<CifraResult, 'availableMinor' | 'perDayMinor' | 'dailyVariableMinor' | 'daysLeft' | 'nextIncomeOn'>;
 
@@ -28,39 +26,38 @@ interface NearbyOfferHint {
 /** Tasas de ejemplo para el simulador de cuotas. Se rotulan como ejemplo en pantalla; no son la tasa de nadie. */
 const EXAMPLE_EA_RATES = [26.5, 30.8, 33.9];
 
-const QUICK_EXAMPLES = [
-  '¿Puedo pedir domicilio de 38 mil hoy?',
-  '120 mil salida del viernes',
-  '280 mil unos tenis a cuotas',
-];
-
+/**
+ * "¿Puedo gastar?" con detalle: un solo campo, el monto, y la respuesta. Es la misma pregunta del
+ * Hoy; aquí además se ve cómo queda el margen por día y se puede anotar el gasto.
+ */
 export function Ask({
   cifra,
   nearbyOffers = [],
-  smartMapBundle,
+  initialAmountMinor = null,
 }: {
   cifra: Slim;
   nearbyOffers?: NearbyOfferHint[];
-  smartMapBundle?: SmartMapBundle;
+  /** Si llega desde el Hoy con un monto ya escrito, se contesta sin volver a pedirlo. */
+  initialAmountMinor?: number | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [naturalText, setNaturalText] = useState('');
-  const [raw, setRaw] = useState('');
-  const [what, setWhat] = useState('');
+  const [raw, setRaw] = useState(initialAmountMinor ? String(Math.round(initialAmountMinor / 100)) : '');
   const [eaRate, setEaRate] = useState<number>(EXAMPLE_EA_RATES[1]!);
-  const [answer, setAnswer] = useState<ReturnType<typeof canISpend> | null>(null);
+  const [answer, setAnswer] = useState<ReturnType<typeof canISpend> | null>(() =>
+    initialAmountMinor ? canISpend(cifra as CifraResult, initialAmountMinor) : null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [executedMessage, setExecutedMessage] = useState<string | null>(null);
 
-  function evaluate(amountMinor: number, concept: string) {
+  function evaluate(amountMinor: number) {
     setError(null);
     setExecutedMessage(null);
     const a = canISpend(cifra as CifraResult, amountMinor);
-    setWhat(concept);
     setRaw(String(Math.round(amountMinor / 100)));
     setAnswer(a);
     track('ask_spend', { where: 'app', verdict: a.verdict });
+    rememberCookie(ASKED_COOKIE);
   }
 
   function handleExecuteSpend(mode: 'registrar_gasto' | 'apartar_ciclo') {
@@ -68,7 +65,7 @@ export function Ask({
     startTransition(async () => {
       const res = await executeEvaluatedSpendAction({
         amountMinor: answer.amountMinor,
-        concept: what || naturalText || 'Gasto evaluado en ¿Puedo?',
+        concept: 'Gasto que consultaste en ¿Puedo gastar?',
         mode,
       });
       if (res.ok) {
@@ -78,16 +75,6 @@ export function Ask({
         setError(res.message);
       }
     });
-  }
-
-  function handleNaturalSubmit(text: string) {
-    const parsed = parseNaturalSpendQuery(text);
-    if (parsed.amountMinor === null) {
-      setError('Incluye el monto en tu pregunta, por ejemplo: «¿puedo gastar 90 mil en cena el viernes?»');
-      setAnswer(null);
-      return;
-    }
-    evaluate(parsed.amountMinor, parsed.concept);
   }
 
   // El gasto más grande que todavía recibe un "sí": la cifra menos tres días de tu día a día.
@@ -105,55 +92,8 @@ export function Ask({
     [answer, eaRate],
   );
 
-  const isLocalConsumption = useMemo(() => {
-    const combined = `${what} ${naturalText}`.toLowerCase();
-    return /(almuerzo|cena|comida|domicilio|rappi|didi|cafe|pan|onces|mercado|fruver|postre|salida)/i.test(combined);
-  }, [what, naturalText]);
-
   return (
     <div className="space-y-5">
-      {/* Modo lenguaje natural (H.1.2) */}
-      <section className="surface-card p-5">
-        <label htmlFor="natural-ask" className="label flex items-center gap-1.5">
-          <Sparkles size={15} className="text-primary" aria-hidden="true" />
-          <span>Pregúntalo en tus palabras</span>
-        </label>
-        <form
-          className="mt-1 flex flex-col gap-2.5 sm:flex-row"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleNaturalSubmit(naturalText);
-          }}
-        >
-          <input
-            id="natural-ask"
-            value={naturalText}
-            onChange={(e) => setNaturalText(e.target.value)}
-            placeholder="Ej. ¿puedo gastar 180 mil el viernes con amigos?"
-            className="field flex-1"
-          />
-          <button id="btn-ask-natural" type="submit" className="btn-ink shrink-0">
-            Evaluar gasto
-          </button>
-        </form>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {QUICK_EXAMPLES.map((ex) => (
-            <button
-              key={ex}
-              type="button"
-              onClick={() => {
-                setNaturalText(ex);
-                handleNaturalSubmit(ex);
-              }}
-              className="rounded-full border border-line bg-paper px-3 py-1 text-[12.5px] font-medium text-ink-muted hover:border-line-strong hover:bg-white hover:text-ink"
-            >
-              {ex}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Modo directo por monto */}
       <form
         className="surface-card space-y-4 p-5"
         onSubmit={(e) => {
@@ -164,19 +104,19 @@ export function Ask({
             setAnswer(null);
             return;
           }
-          evaluate(amount, what);
+          evaluate(amount);
         }}
       >
         <div>
           <label htmlFor="amount" className="label">
-            O escribe el valor directo
+            ¿Cuánto cuesta?
           </label>
           <MoneyInput
             id="amount"
             name="amount"
             value={raw}
             onChangeValue={(minor) => {
-              setRaw(String(Math.round(minor / 100)));
+              setRaw(minor ? String(Math.round(minor / 100)) : '');
               if (error) setError(null);
             }}
             placeholder="85.000"
@@ -184,30 +124,17 @@ export function Ask({
             className="py-3 pl-9 font-display text-[26px] font-bold"
           />
           {error && (
-            <p id="amount-err" className="mt-1.5 text-sm text-neg">
+            <p id="amount-err" role="alert" className="mt-1.5 text-sm text-neg">
               {error}
             </p>
           )}
         </div>
-        <div>
-          <label htmlFor="what" className="label">
-            ¿En qué sería? <span className="font-normal text-ink-faint">(opcional)</span>
-          </label>
-          <input
-            id="what"
-            value={what}
-            onChange={(e) => setWhat(e.target.value)}
-            placeholder="Unos tenis, domicilio cena, regalo..."
-            className="field"
-            maxLength={60}
-          />
-        </div>
         <button id="btn-ask-direct" type="submit" className="btn-primary w-full">
-          Calcular impacto en mi cifra
+          Preguntar
         </button>
       </form>
 
-      {/* Respuesta empática con impacto diario y alternativas accionables */}
+      {/* La respuesta, con cómo queda el margen por día y qué opciones hay. */}
       {answer && (
         <section
           aria-live="polite"
@@ -240,19 +167,19 @@ export function Ask({
                 }`}
               >
                 {answer.verdict === 'no'
-                  ? 'Hoy te descuadraría antes de tu pago'
+                  ? 'No te alcanza'
                   : answer.verdict === 'justo'
-                    ? 'Te alcanza, pero quedas con poco margen'
-                    : 'Sí puedes hacerlo con tranquilidad'}
+                    ? 'Te alcanza, pero quedas justo'
+                    : 'Sí, te alcanza'}
               </h2>
               <p className="mt-2 text-[15.5px] leading-relaxed text-ink">
                 {answer.verdict === 'no'
-                  ? `Gastar ${cop(answer.amountMinor)}${what ? ` en ${what}` : ''} supera tu disponible seguro y te dejaría corto por ${cop(
+                  ? `${cop(answer.amountMinor)} es más de lo que puedes gastar: te faltarían ${cop(
                       answer.shortfallMinor,
-                    )} antes del ${shortDate(answer.nextIncomeOn)}.`
-                  : `Después de gastar ${cop(answer.amountMinor)}${what ? ` en ${what}` : ''}, aún te quedan ${cop(
+                    )} para llegar al ${shortDate(answer.nextIncomeOn)}.`
+                  : `Después de gastar ${cop(answer.amountMinor)} te quedarían ${cop(
                       answer.remainingMinor,
-                    )} libres hasta el ${shortDate(answer.nextIncomeOn)}.`}
+                    )} hasta el ${shortDate(answer.nextIncomeOn)}.`}
               </p>
             </div>
           </div>
@@ -260,7 +187,7 @@ export function Ask({
           {/* Comparativo antes / después en margen diario */}
           <div className="mt-4 rounded-2xl bg-white/90 p-4">
             <div className="flex items-baseline justify-between text-[13px] font-semibold text-ink-muted">
-              <span>Tu margen libre diario</span>
+              <span>Lo que te queda por día</span>
               <span className="tnum">
                 {cop(cifra.perDayMinor)}/día →{' '}
                 <strong className={answer.verdict === 'no' ? 'text-neg' : 'text-primary-dark'}>
@@ -278,25 +205,25 @@ export function Ask({
             </div>
             <p className="mt-1.5 text-[12.5px] text-ink-faint">
               {answer.verdict === 'no'
-                ? 'Ocupa el 100 % de tu disponible libre y toca plata reservada para cobros fijos o comida.'
-                : `Este gasto toma el ${usedSharePct} % de lo que tenías libre para los próximos ${cifra.daysLeft} días.`}
+                ? 'Se lleva toda tu cifra y toca la plata de tus cobros fijos o de tu día a día.'
+                : `Este gasto se lleva el ${usedSharePct} % de tu cifra.`}
             </p>
           </div>
 
           {/* Alternativas concretas y sin regaño cuando No o Justo */}
           {answer.verdict !== 'si' && (
             <div className="mt-4 space-y-2.5 rounded-2xl bg-white/90 p-4 text-[14px]">
-              <p className="font-semibold text-ink">Opciones concretas para decidir tranquilo:</p>
+              <p className="font-semibold text-ink">Lo que puedes hacer:</p>
               <ul className="space-y-2 text-ink-soft">
                 {comfortableMinor > 0 && comfortableMinor < answer.amountMinor && (
                   <li className="flex items-start gap-2">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     <span>
-                      <strong>Con margen, hasta</strong>{' '}
+                      <strong>Gastar hasta</strong>{' '}
                       <button
                         id="btn-ask-comfortable"
                         type="button"
-                        onClick={() => evaluate(comfortableMinor, what)}
+                        onClick={() => evaluate(comfortableMinor)}
                         className="tnum font-semibold text-primary-dark underline underline-offset-2"
                       >
                         {cop(comfortableMinor)}
@@ -309,7 +236,7 @@ export function Ask({
                 <li className="flex items-start gap-2">
                   <Clock size={15} className="mt-0.5 shrink-0 text-ink-muted" aria-hidden="true" />
                   <span>
-                    <strong>Esperar {cifra.daysLeft} {cifra.daysLeft === 1 ? 'día' : 'días'}:</strong> tu próximo ingreso entra el{' '}
+                    <strong>Esperar {cifra.daysLeft} {cifra.daysLeft === 1 ? 'día' : 'días'}:</strong> tu próximo pago llega el{' '}
                     <strong>{shortDate(answer.nextIncomeOn)}</strong>.
                   </span>
                 </li>
@@ -317,10 +244,10 @@ export function Ask({
                   <li className="flex items-start gap-2">
                     <Tag size={15} className="mt-0.5 shrink-0 text-terra" aria-hidden="true" />
                     <span>
-                      <strong>Alternativa con beneficio cerca:</strong> {nearbyOffers[0].merchantName} ({nearbyOffers[0].neighborhood}) tiene{' '}
+                      <strong>Una oferta cerca:</strong> {nearbyOffers[0].merchantName} ({nearbyOffers[0].neighborhood}) tiene{' '}
                       <em>{nearbyOffers[0].title}</em>.{' '}
                       <Link href={`/app/ofertas?destacada=${nearbyOffers[0].id}`} className="font-semibold text-terra-dark underline">
-                        Ver oferta →
+                        Ver oferta
                       </Link>
                     </span>
                   </li>
@@ -329,11 +256,9 @@ export function Ask({
             </div>
           )}
 
-          {/* Ejecución real en PostgreSQL: Registrar gasto o apartarlo en el ciclo */}
+          {/* Si decide hacerlo: anotar el gasto o apartar la plata. */}
           <div className="mt-4 rounded-2xl border border-line bg-white/95 p-4">
-            <p className="text-[12.5px] font-bold uppercase tracking-wider text-ink-muted">
-              ¿Decidiste hacerlo? Ejecútalo en tu cifra real:
-            </p>
+            <p className="text-[14px] font-semibold text-ink">¿Lo vas a hacer?</p>
             {executedMessage ? (
               <p role="status" className="mt-2 flex items-center gap-2 rounded-xl bg-primary-pale px-3.5 py-2.5 text-[13.5px] font-semibold text-primary-dark">
                 <CheckCircle2 size={16} aria-hidden="true" />
@@ -349,7 +274,7 @@ export function Ask({
                   className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-bold text-white shadow-xs transition hover:bg-primary-dark"
                 >
                   <PlusCircle size={15} aria-hidden="true" />
-                  <span>{isPending ? 'Guardando...' : `Registrar gasto (${cop(answer.amountMinor)})`}</span>
+                  <span>{isPending ? 'Guardando…' : `Anotar este gasto (${cop(answer.amountMinor)})`}</span>
                 </button>
                 <button
                   id="btn-reserve-evaluated-spend"
@@ -359,7 +284,7 @@ export function Ask({
                   className="inline-flex items-center gap-1.5 rounded-xl border border-line-strong bg-white px-4 py-2 text-[13px] font-bold text-ink transition hover:bg-paper"
                 >
                   <BookmarkPlus size={15} aria-hidden="true" />
-                  <span>Apartar como compromiso de este ciclo</span>
+                  <span>Apartar esa plata hasta mi pago</span>
                 </button>
               </div>
             )}
@@ -367,16 +292,18 @@ export function Ask({
         </section>
       )}
 
-      {/* Simulador colombiano de Tarjeta de Crédito: Contado / 1 cuota vs 3, 6 y 12 cuotas */}
+      {/* Cuotas con tarjeta, con una tasa de ejemplo rotulada como ejemplo. Plegado: no es la pregunta principal. */}
       {creditSim && answer && answer.amountMinor >= 20_000_00 && (
-        <section className="surface-card p-5 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+        <details className="surface-card group p-5 sm:p-6">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-2">
               <CreditCard size={19} className="text-terra-dark" aria-hidden="true" />
-              <h3 className="font-display text-[19px] font-bold text-ink">
-                ¿Y si lo pasas con tarjeta a cuotas?
-              </h3>
-            </div>
+              <span className="font-display text-[18px] font-bold text-ink">¿Y si lo pagas a cuotas?</span>
+            </span>
+            <span className="text-[13px] font-medium text-ink-muted group-open:hidden">Ver</span>
+            <span className="hidden text-[13px] font-medium text-ink-muted group-open:inline">Cerrar</span>
+          </summary>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <label className="flex items-center gap-1.5 text-[12.5px] text-ink-muted">
               <span>Tasa de ejemplo:</span>
               <select
@@ -433,22 +360,7 @@ export function Ask({
           <p className="mt-3 rounded-xl bg-paper px-3.5 py-2.5 text-[13px] text-ink-soft">
             {creditSim.plainAdvice}
           </p>
-        </section>
-      )}
-
-      {/* Puente directo al barrio cuando consulta comida, domicilio, café o mercado */}
-      {smartMapBundle && smartMapBundle.offers.length > 0 && (
-        <ExpandableSmartMap
-          bundle={smartMapBundle}
-          defaultExpanded={Boolean(answer && isLocalConsumption)}
-          initialCategoryFilter={isLocalConsumption ? 'comida' : null}
-          compactTitle={
-            isLocalConsumption
-              ? 'En vez de pagar recargos de app: locales a minutos de ti con descuento activo'
-              : '¿Prefieres resolverlo caminando en tu barrio y ahorrando?'
-          }
-          compactSubtitle="Compara cuánto te cuesta a pie en comercios independientes de tu barrio frente a pedir por aplicación."
-        />
+        </details>
       )}
     </div>
   );

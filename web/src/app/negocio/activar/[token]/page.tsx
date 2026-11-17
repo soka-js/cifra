@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { sha256 } from '@/lib/crypto';
 import { db } from '@/lib/db';
 import { merchantInvites, merchants } from '@/lib/db/schema';
+import { percentFromBps } from '@/lib/format';
 import { ActivateMerchantForm } from './activate-form';
 
 export const metadata = { title: 'Activar mi negocio en CIFRA' };
@@ -49,7 +50,7 @@ export default async function ActivateMerchantPage({
               Este enlace ya fue usado o venció
             </h1>
             <p className="text-[14.5px] leading-relaxed text-ink-muted">
-              Si ya activaste tu negocio antes, puedes entrar directamente con tu correo y clave. Si aún no lo has registrado, hazlo gratis en 2 minutos.
+              Si ya activaste tu negocio antes, puedes entrar directamente con tu correo y clave. Si aún no lo has registrado, hazlo gratis: son dos pasos.
             </p>
             <div className="flex flex-col gap-2.5 pt-1">
               <Link href="/entrar?next=/negocio" className="btn-primary w-full">
@@ -81,7 +82,9 @@ export default async function ActivateMerchantPage({
                 Regla clara de CIFRA:
               </p>
               <p className="mt-1">
-                No pagas inscripción ni mensualidad fija. Solo pagas una comisión del <strong>5 %</strong> sobre las ventas reales cobradas en tu caja que provengan de un código o QR de CIFRA.
+                No pagas inscripción ni mensualidad fija. Solo pagas una comisión del{' '}
+                <strong>{percentFromBps(inv.merchant.commissionBps)}</strong> sobre las ventas reales cobradas en tu caja que
+                provengan de un código o QR de CIFRA.
               </p>
             </div>
 

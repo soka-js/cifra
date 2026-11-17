@@ -208,21 +208,391 @@ No toqué ni voy a tocar producción. Lo que propongo, a decisión de SOKA:
 
 Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
+13 de noviembre de 2026, por mensaje:
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| Merge del turno de noche y de `producto-v1` | **Hecho por SOKA a las 9:53 del 13 nov, con su OK**: la solicitud de cambio #4 (`noche-13nov` → `producto-v1`) y la #3 (`producto-v1` → `main`). |
+| Despliegue a producción | Producción desplegó `bd01f17`. SOKA revisó el log: `ep-square-brook` y "Migraciones aplicadas". Sin sesión, `/app` y `/admin` llevan a `/entrar`, `/api/export` responde 401 y `/api/demo/session` responde 404. |
+| Lo que sigue del despliegue | SOKA agrega las variables y cambia la clave de la base; después sigo con `DESPLIEGUE.md` desde el paso 4. |
+| Vista previa de `producto-v1` | **No tocarla hasta las 4:00 p. m. del 13 nov**: SOKA tiene otra demo a las 3:00. Subir a `producto-v1` la reconstruye, así que hasta esa hora no se sube nada. |
+| Solicitud de cambio #5 (`etapa-5-admin` → `producto-v1`), de Claude en la nube | Limpia `/admin`. **No tocar `src/app/admin` hoy.** Claude en la nube la mezcla a las 4:10 p. m. y la pasa a `main`. |
+| Etapa 4 | Seguir en una rama nueva desde `producto-v1`: un solo formulario para la prueba sin cuenta y el modo rápido con cuenta (`try-cifra.tsx` y `bienvenida/quick-start.tsx`), con las mismas pruebas en verde. **Nada se mezcla a `producto-v1` antes de las 4:30 p. m. del 13 nov.** |
+
+15 de noviembre de 2026, en la sesión de Claude Code que dejó el commit `a6e616f`. La conversación no quedó en la bitácora: esto sale del mensaje de ese commit, que marca cada punto como "aprobado".
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| Menú de la persona | **Cuatro pestañas: Hoy, Gastos, Ofertas y Más.** "Más" reúne cobros fijos, ajustes, avisos, tus datos, mi negocio e instalar. |
+| Menú del tendero (y la pregunta del 13 nov sobre el cuadre) | **Tres pestañas: Mi negocio, Caja y Ofertas.** El inicio trae tres pasos hasta la primera venta y la lista de secciones; el cuadre se queda en el inicio. |
+| Hoy | Guía de primera vez en tres pasos, la frase "mira hacia adelante" y gastos por categoría cuando hay movimientos. **Fuera "Cierre del ciclo"** del Hoy. |
+| "¿Puedo gastar?" | **Un solo campo.** |
+| Ofertas de la persona | **Mapa plegado.** |
+| Tus datos | Qué se guarda del extracto, qué no y cómo se borra; fuera "Finanzas Abiertas"; el registro de acceso, plegado. |
+
+16 de noviembre de 2026, por el cuadro de preguntas de la sesión:
+
+| Decisión | Respuesta de SOKA |
+| --- | --- |
+| Postgres local colgado (escuchaba pero cortaba toda conexión) y detenido otra vez por memoria | **"Levántala y sigue"**, incluido cerrar los procesos que quedaron abiertos de sesiones anteriores. |
+
 ## Estado
 
 | Etapa | Qué | Estado | Solicitud de cambio |
 | --- | --- | --- | --- |
-| 0 | Base de trabajo y plan | Hecha, commit local en `producto-v1` | Sin subir (ver decisión 3) |
-| 1 | Cerrar la puerta (seguridad) | **Cerrada en local.** 162 unitarias, 257 de integración y 38 pasos en navegador, todo en verde | Sin subir (falta confirmar la base de Preview) |
-| 2 | Cada número con recibo | **Cerrada en local.** Sin factores ni montos inventados en ¿Puedo?, la gráfica, "Lo que se repite", el cierre y el negocio; jerga fuera de lo que ve una persona o un tendero. 167 unitarias, 257 de integración y 55 pasos en navegador, todo en verde | Sin subir |
-| 3 | Hoy en dos pantallas | **Cerrada en local.** Mide 1,58 pantallas con usuario nuevo (antes 4,1). 161 unitarias, 257 de integración y 54 pasos en navegador, todo en verde | Sin subir |
-| 4 | Del QR a la cifra sin cuenta | Hecho lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy, comprobado en navegador (17 pasos). Falta unificar los dos formularios y medir a una persona. Meta: 15 nov | Sin subir |
-| 5 | Demo desde `/admin` | Pendiente. Meta: 16 nov. Para las demos del 13 nov hay guion sin `/admin` en `docs/producto/DEMO.md` | |
-| 7a | Feria sin negocios reales | Ofertas sin grupo de control: hecho en local (migración `0009`). Falta el QR a `/`, el embudo de la feria en `/admin` y la lista de revisión. Meta: 17 nov | |
-| 6 | El tendero se registra solo | Pendiente. Meta: 26 nov | |
+| 0 | Base de trabajo y plan | Hecha | #3, en producción desde el 13 nov |
+| 1 | Cerrar la puerta (seguridad) | **En producción** (`bd01f17`, 13 nov). SOKA comprobó sin sesión `/app`, `/admin`, `/api/export` y `/api/demo/session` | #3 |
+| 2 | Cada número con recibo | **En producción** (`bd01f17`) | #3 |
+| 3 | Hoy en dos pantallas | **En producción** (`bd01f17`). Mide 1,58 pantallas con usuario nuevo (antes 4,1) | #3 |
+| 4 | Del QR a la cifra sin cuenta | **En producción** lo principal: prueba sin cuenta en `/` y "Guardar mi cifra" hasta el Hoy. **Un solo formulario** para la prueba y el modo rápido con cuenta, en la rama `etapa-4-un-formulario` (sin mezclar). Falta medir a una persona. Meta: 15 nov | #3; la rama nueva, después de las 4:30 p. m. del 13 nov |
+| 5 | Demo desde `/admin` | Avance en producción: la franja de demo ya no tapa la barra y `/admin/presentacion` quedó rehecha sin testimonios inventados. Falta el resto del tablero de `/admin`, que sigue con textos viejos ("Aliados B2B2C", "Hipótesis K", el embudo de la landing vieja). Meta: 16 nov | #4 y #3 |
+| 7a | Feria sin negocios reales | En producción: ofertas sin grupo de control (`0009`), embudo "Feria: del QR a la cifra guardada" en `/admin` y la lista `docs/producto/FERIA.md`. Falta lo que esa lista marca para antes del 18, como probar el QR en dos celulares. Meta: 17 nov | #4 y #3 |
+| 6 | El tendero se registra solo | **En curso** en la rama `etapa-6-tendero` (encima de `etapa-4-un-formulario`, sin subir): registro en dos pasos con autorización de datos, cámara de la caja y ubicación habilitadas, pago en línea con el monto firmado y cuenta sin porcentajes escritos a mano. El recorrido E de `seguridad.e2e.mjs` va de `/negocio` sin sesión a validar un código en caja. Plantillas de oferta según el tipo de negocio. Falta revisar el afiche y la vitrina en celular. Meta: 26 nov | Después de la de la Etapa 4 |
 | 7b | Feria con negocios reales | Esperando negocios confirmados | |
 
 ## Entradas
+
+### 2026-11-16 21:50, cierre: revisión de todas las ramas y lo que pasa a `main` (rama `app-real-2-menu`)
+
+- Quién: Claude Code en la carpeta de SOKA. SOKA pidió (16 nov, por mensaje) "revisa todas las ramas y todo y cierra lo que quedó pendiente y ve trayendo todo a main y cerrando ramas, pero asegúrate de que todo lo mejor de lo mejor vaya quedando".
+- Las ramas:
+  - Ya están completas dentro de `main`: `producto-v1`, `etapa-5-admin`, `noche-13nov`, `feat/v3-valor-real`, `feat/fase-1` a `feat/fase-5` y `producto-real`.
+  - La pila sin mezclar es lineal y cada rama contiene a la anterior: `producto-v1` ← `etapa-4-un-formulario` (#7) ← `etapa-6-tendero` (#8) ← `app-real` (#9) ← `app-real-2-menu` (solo local hasta hoy). La punta trae 15 commits que `main` no tiene, y `git merge-tree` contra `main` no da conflictos. Lo único que `main` tiene y la pila no son los dos commits de merge (#3 y #6).
+- Lo que llega a producción con la pila:
+  - **Sin migraciones ni cambios de esquema**: `vercel-build` no tiene nada que aplicar.
+  - Una variable nueva y opcional, `WOMPI_INTEGRITY_SECRET`. Sin ella (y sin `NEXT_PUBLIC_WOMPI_PUBLIC_KEY`), la cuenta del tendero no ofrece pago en línea; no falla.
+  - `Permissions-Policy` pasa a `camera=(self)` y `geolocation=(self)`: la caja escanea el QR y el mapa puede usar la ubicación. Solo para CIFRA misma y el navegador igual le pregunta a la persona.
+- Qué cambió en esta pasada:
+  - **Next.js 16.4.3 → 16.4.6**, que corrige GHSA-mfr8-8qww-v76h (no nos tocaba, pero con la 16.4.3 la compilación se detenía para avisarlo). `npm audit` deja 4 avisos moderados, todos de `drizzle-kit` y `esbuild`, herramientas de desarrollo que no se despliegan; el "arreglo" sería bajar a `drizzle-kit` 0.18.
+  - **`/admin` sin la jerga que quedaba** (pendiente de la Etapa 5): "Operación y Data Room" → "Operación"; pestañas "Métricas", "Negocios" y "Pagos y reclamos"; "Tablero de Hipótesis Falsables y Economía Unitaria" y "documento PMC (Secciones H, J y K)" → "Cómo va CIFRA"; fuera "Hipótesis K", "H.1.1", "(G.10 · J.3 · J.4)", "GMV", "redenciones", "revisión bilateral", "CRM de calle", "Aliado B2B2C" y "job diario". El texto de comisiones decía "5 %" y "30 %" escritos a mano; ahora dice que cada negocio paga su porcentaje y el aliado recibe la parte pactada.
+  - **Fuera las promesas de tiempo que nadie ha medido con personas**: el afiche impreso decía "activa tu código en 5 segundos" (ahora "saca tu código y muéstralo aquí en caja"); el cuadre, "Anotar en 5 segundos"; la captura de gastos, "Actualiza tu día en 3 segundos"; el modo rápido, "En menos de 3 minutos verás tu primera cifra"; la activación del negocio, "hazlo gratis en 2 minutos" (ahora "son dos pasos", que es lo que tiene el registro). Se quedan los "30 minutos" y "60 minutos", porque son la vigencia real del código y de los enlaces.
+  - **Inicio del tendero**: la tarjeta decía "Punto de equilibrio de hoy" encima de lo vendido; ahora dice "Vendido hoy" sin meta y "Tu meta de hoy" con meta.
+  - **"Cobros fijos"** también en el título de la página, que decía "Cobros recurrentes".
+- Verificación local con todo lo anterior: `npm run typecheck` 0 errores; `npm test` 193 de 193; `npm run test:int` 278 de 278; `npm run build` sin errores ni avisos con 16.4.6; `npm run e2e`: guardar cifra 6 de 6, Hoy 10 de 10 (1,84 pantallas), prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31.
+- Lo que sigue abierto y no se cierra con código: medir a una persona de verdad (Etapa 4); probar el QR en dos celulares antes de la feria (7a, `FERIA.md`); canales reales de pago (decisión 6); negocios reales de Las Aguas (7b). En la vitrina, los precios de ejemplo de los productos salen en gris como "$ 14.500" sin el "Ej." que sí llevan los nombres.
+- Plan de mezcla: #7, #8 y #9 a `producto-v1`, en orden y con commit de merge cada una; luego `app-real-2-menu` a `producto-v1`; luego `producto-v1` a `main` cuando la vista previa de Vercel compile; después se borran las ramas ya mezcladas. `main` y `producto-v1` se quedan.
+
+### 2026-11-16 19:50, "app real": el menú de cuatro y tres pestañas, verificado (rama `app-real-2-menu`)
+
+- Quién: Claude Code en la carpeta de SOKA (Windows 11, Node 22.20, Postgres 18.6 de `devdb/`). Rama `app-real-2-menu`, encima de `app-real`. Sin subir.
+- Qué cambió (commit `a6e616f`, que había quedado sin verificar; el detalle está en su mensaje):
+  - **Una sola barra arriba**: el título de la pestaña o la flecha de volver. Fuera la miga de pan y los botones "Volver" de cada página.
+  - **Persona: Hoy, Gastos, Ofertas y Más.** "Más" es una lista de renglones (cobros fijos, ingreso y día a día, subir extracto, avisos, tus datos, mi negocio o "tengo un negocio", instalar y cerrar sesión), sin ningún monto.
+  - **Tendero: Mi negocio, Caja y Ofertas.** El inicio trae "Tres pasos para tu primera venta", "Cobrar un código", sus ofertas, el cuadre y la lista de secciones.
+  - **Hoy**: guía de primera vez en tres pasos, que deja de salir cuando están hechos o al cerrarla con la X; la frase "Tu cifra mira hacia adelante"; "En qué se te va" por categoría cuando hay movimientos. "¿Puedo gastar?" con un solo campo; llega del Hoy con el monto ya escrito.
+  - **Instalable**: el manifiesto abre en `/`, trae atajos y un botón para poner CIFRA en la pantalla de inicio. El aviso de la víspera del pago lleva al Hoy y ya no al cierre.
+- Lo que encontré al verificar y arreglé en esta pasada:
+  - **"Más" no pasaba por `requireUser()`.** Sí mandaba a entrar sin sesión (usaba `getSessionContext()`), pero se saltaba la puerta común, y la prueba "cada página privada verifica la sesión por su cuenta" fallaba. Ahora pasa por `requireUser()`; el contexto se sigue leyendo solo para saber si quien entró es admin real (va en `cache()`, no es otra consulta).
+  - **Los renglones de "Más" y de "Mi negocio" cortaban su explicación con "…"** en un celular de 390 px ("Arriendo, servicios, suscripciones y cu…", "Lo vendido con CIFRA y la comisión d…"). Ahora la línea de ayuda pasa a un segundo renglón.
+  - **`recorridos.e2e.mjs` no medía "Más"**, aunque ya es una pestaña. Ahora la mide.
+- Medido con `recorridos.e2e.mjs` (celular de 390 × 844), contra lo anotado el 13 nov: ¿Puedo? 64 a 32 palabras; Ofertas 90 a 80; Hoy 1,86 a 1,84 pantallas; inicio del tendero 177 a 225 palabras (2,1 a 2,3 pantallas: suma los tres pasos y la lista de secciones); Tus datos 209 a 257 (2,1 a 2,4: suma qué se guarda, qué no y cómo se borra). "Más" mide 1,3 pantallas, 9 cosas para tocar y 113 palabras. Las mismas 18 pantallas de antes suman 2.637 palabras (antes 2.528); crecieron el inicio del tendero y Tus datos, con lo que pidió SOKA. Los cuatro caminos no cambiaron: 5, 2, 4 y 5 pantallas.
+- Revisión a ojo de las capturas en celular: Hoy, ¿Puedo?, Más, Ofertas, Cobros fijos (con flecha de volver), Tus datos, Mi negocio y Caja. Una captura mostraba "Mi negocio" y "Caja" resaltadas a la vez; era la transición del color, porque al abrir Caja directo solo se resalta Caja.
+- Verificación local, con el código final:
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, 193 de 193. La primera corrida de la sesión, con 1,3 GB de memoria libre, dio 2 fallas: una era la de "Más" y la otra no se repitió en ninguna de las cuatro corridas siguientes. No alcancé a ver cuál era.
+  - `npm run test:int`: 8 archivos, 278 de 278.
+  - `npm run build`: sin errores. Ver el aviso de Next.js abajo.
+  - `npm run e2e`: guardar cifra 6 de 6, Hoy 10 de 10 (1,84 pantallas), prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31.
+- Base local: el Postgres de `devdb/` llevaba desde el 13 nov a las 3:44 p. m. escuchando en 54329 pero cortaba toda conexión (`ECONNRESET`), y el sistema volvió a detener su lanzador por memoria. Con el OK de SOKA lo apagué con `npm run stop`, cerré cinco lanzadores viejos de `devdb` y un `next start -p 3100` del 13 nov, y lo levanté sin borrar datos. La memoria libre pasó de 1,3 GB a 3,4 GB.
+- Aviso de Next.js 16.4.3: el primer `next build` de la tanda se detuvo con código 1 solo para mostrar un aviso de seguridad, y al repetirlo compiló. Es GHSA-mfr8-8qww-v76h, de gravedad moderada: fuga de información entre parámetros raíz cuando una función `'use cache'` se llama con `unstable_cache()`. Afecta de la 16.3.0 a la 16.4.4. CIFRA no usa `'use cache'`, `unstable_cache` ni `cacheComponents`. No sé si esa parada también pasa en la compilación de Vercel.
+- Lo que vi y no toqué:
+  - En "Mi negocio", sin meta escrita, la tarjeta dice "Punto de equilibrio de hoy" pero el número es lo vendido hoy. Venía de antes de esta rama.
+  - "Cobros fijos" se llama así en la barra de arriba, en "Más" y en el Hoy, pero el título de la página sigue diciendo "Cobros recurrentes".
+- Qué revisar cuando se suba: entrar como persona y como tendero (desde la demo de `/admin`), recorrer las pestañas, abrir cada renglón de "Más" y volver con la flecha, y en el Hoy hacer los tres pasos de la guía.
+- Decisiones que necesito de SOKA: si subo `app-real-2-menu` y abro su solicitud de cambio; si actualizo Next.js por el aviso de arriba, en una rama aparte; y si cambio los dos textos de "Lo que vi y no toqué".
+
+### 2026-11-13 22:20, "app real": segunda pasada, las pantallas largas (rama `app-real`)
+
+- Quién: Claude en la sesión de la nube de SOKA ("Continua"). Rama `app-real`, encima de la entrada de abajo. Sin mezclar.
+- Qué cambió:
+  - **Creador de ofertas del tendero:** quedan a la vista la idea, el título, el descuento, la compra mínima y cuánto le queda. Lo demás (oferta por horas, detalle, cupos, vigencia, tope, horario, solo clientes nuevos, costo de insumos y comisión de su app) va en "Más opciones", con los valores de la plantilla. Si la plantilla es por horas, se abre sola. Los campos siguen en el formulario aunque estén ocultos: la acción del servidor recibe lo mismo que antes.
+  - **Cuenta del tendero:** la quincena se lee como una resta, igual que el Hoy de la persona: ventas con código, descuentos, cobrado en caja, comisión y "= Lo que te queda". Reemplaza cuatro tarjetas y una franja. El aviso de "al día" queda en una línea. Sin "pagar por Bre-B / Nequi" en el aviso de corte por pagar, porque todavía no hay canal publicado.
+  - **Tus datos:** fuera la insignia "Ley 1581 de 2012 · Habeas Data" (la ley se nombra en el texto), fuera la zona repetida (está en Ajustes) y textos más cortos. "Bitácora de acceso a tus datos" pasa a "Quién ha visto tus datos".
+  - **Ajustes:** solo títulos más cortos. Sigue midiendo 3,4 pantallas; es una pantalla de configuración y no la partí.
+- Medido con `recorridos.e2e.mjs`, contra la línea base del 13 nov: ofertas del tendero 3,9 a 2,5 pantallas (352 a 227 palabras, 25 a 16 cosas para tocar); cuenta del tendero 2,8 a 1,8 (329 a 236); Tus datos 2,6 a 2,1 (311 a 209). Total de las 18 pantallas: 3.008 a 2.528 palabras.
+- Verificación (nube): `npm run typecheck` 0 errores; `npm test` 192 de 192; `npm run build` sin errores; `npm run e2e`: 6 de 6, 10 de 10 (Hoy 1,86 pantallas), prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31 (E2 publica la oferta con las opciones cerradas; E5 sigue cobrando $18.000 con $900 de comisión). `npm run test:int` no se repitió: no cambió ninguna acción del servidor.
+- Pendiente: el texto de la política de cobro de la cuenta (`COMMISSION_POLICY`) sigue largo y nombra Bre-B y Nequi; el cuadre (2,2), la vitrina (2,8), el perfil (2,4) y el informe (2,3) del tendero.
+- Decisiones que necesito de SOKA: ninguna nueva.
+
+### 2026-11-13 21:40, "que se sienta como una app real": primera pasada (rama `app-real`)
+
+- Quién: Claude en la sesión de la nube de SOKA, con su OK ("revisa y avanza con lo que ha avanzado Claude Code"). Rama `app-real`, encima de `etapa-6-tendero` (#8). Sin mezclar.
+- Por qué: en la llamada del 13 nov, Financiera Comultrasan dijo que la app se ve muy de demo y que al entrar uno queda perdido.
+- Antes de tocar nada:
+  - Traje de la carpeta de SOKA las ramas `etapa-4-un-formulario` y `etapa-6-tendero`, sin cambios, y abrí #7 y #8. La entrada de las 12:22 había quedado sin verificar; en la nube pasó todo (abajo).
+  - `web/e2e/recorridos.e2e.mjs` lo dejó Claude Code sin commit. Va en esta rama como línea base. Corriendo antes de `seguridad.e2e.mjs`, su negocio quedaba en Las Aguas y E4 tocaba el primer "Generar código" de la zona; E4 ahora toca el de su propio negocio.
+- Qué cambió:
+  - **Sin frases de propaganda dentro de la app:** "Cruce inteligente: gastos × distancia × franja horaria", "Control total de tus campañas", "Creador guiado con protección de margen", "Herramienta gratuita de mostrador y WhatsApp", "Precios directos sin sobreprecio de apps", "Termómetro de ventas de hoy", "Cuentas claras... sin enredos técnicos", "Cruce CIFRA:" y el número de cada cifra del mes ("1.", "2."...). Los textos de entrada de ¿Puedo?, Ofertas y Cobros quedaron en una o dos líneas.
+  - **Sin el botón "Volver" en las pantallas que ya están en el menú de abajo** (persona: ¿Puedo?, Gastos, Ofertas, Cobros; tendero: Caja, Ofertas, Cuenta, Vitrina). Las demás lo conservan.
+  - **Ofertas de la persona:** fuera el enlace "¿Tienes un negocio? Portal tendero" y, sin ofertas, ya no le pide a la persona "publicar su primera campaña".
+  - **Inicio del tendero:** arriba "Hola, Carlos" y el nombre del negocio; primero "Cobrar un código", luego sus ofertas y después el cuadre. El menú de abajo queda Inicio, Caja, Ofertas, Cuenta y Vitrina; el cuadre y el informe se abren desde el inicio y desde el menú lateral.
+  - **La comisión del inicio del tendero decía "(5 %)" escrito a mano;** ahora sale de `commissionBps` con `percentFromBps`, como el resto del portal desde la Etapa 6.
+  - **Bienvenida en el Hoy** al llegar de la prueba o del modo rápido (`?listo=rapido`): tres renglones que dicen qué es la cifra, dónde preguntar y qué hay en el menú. No guarda nada; desaparece con "Entendido" o al volver a entrar.
+- Medido con `recorridos.e2e.mjs`, antes y después (palabras en pantalla): ¿Puedo? 82 a 64, Ofertas 119 a 90, Cobros 66 a 54, inicio del tendero 226 a 177 (2,4 a 2,1 pantallas), Caja 42 a 36. Total de las 18 pantallas medidas: 3.008 a 2.852. El Hoy con la bienvenida mide 1,86 pantallas (la meta de la Etapa 3 es 2 o menos).
+- Verificación (nube, Linux, Node 22, Postgres 16 local), con la rama completa:
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, 192 de 192.
+  - `npm run test:int`: 8 archivos, 278 de 278 (en `etapa-6-tendero`; esta rama no toca acciones del servidor).
+  - `npm run build`: sin errores.
+  - `npm run e2e`: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31.
+- Qué revisar en la vista previa de `app-real`: entrar como persona y como tendero desde la demo de `/admin`, recorrer el menú de abajo y decir qué todavía suena a demo.
+- Pendiente para la siguiente pasada: el creador de ofertas (3,7 pantallas), la cuenta del tendero (2,6), Ajustes (3,4) y Tus datos (2,6).
+- Decisiones que necesito de SOKA: si el cuadre puede salir del menú de abajo del tendero (hoy queda en el inicio y en el menú lateral).
+
+### 2026-11-13 12:22, Etapa 6: revisión a ojo del tendero en celular, y lo que encontró
+
+- Rama: `etapa-6-tendero`. Sin subir ni mezclar.
+- Cómo lo revisé: la app compilada, local, contra `cifra_dev`. Un guion de Playwright a 390x844 registró una peluquería de prueba y sacó capturas del registro, la primera oferta, la cuenta, la caja y la vitrina. Las capturas quedaron fuera del repositorio. Primero lo intenté con Chrome, pero esa ventana no baja de 1280 px de ancho.
+- Lo que encontré y arreglé:
+  - **Al tocar "Seguir" en el registro, el navegador intentaba enviar el paso 2 vacío** y mostraba "Completa este campo" sobre "Tu nombre" apenas aparecía.
+    - Causa: React reusaba el mismo botón y le cambiaba el tipo a "submit" en medio del toque.
+    - Arreglo: cada botón tiene su propia `key`. El de las cuatro preguntas de la Etapa 4 ya la tenía.
+    - Prueba: el paso E1 de `seguridad.e2e.mjs` cuenta los eventos `invalid` del formulario al tocar "Seguir" y exige cero. Quería correrla primero contra el build anterior, para ver que falla con el error, pero esa corrida se detuvo (ver Verificación).
+  - **El porcentaje se partía en dos renglones** ("5" al final de una línea y "%" en la siguiente). `percentFromBps` usa ahora un espacio de no separación.
+  - En la cuenta, el título "Garantía operativa: cero cobros micro por venta individual" pasó a "Un solo cobro por quincena, no uno por venta".
+- Lo que se ve bien: los dos pasos del registro y el aviso de la compra promedio; sin marcar la autorización el navegador no deja registrar; la peluquería ve tres plantillas (primera visita, tarde tranquila y monto fijo) y ninguna de "horneados"; la cuenta dice la comisión del negocio, "Lo que te queda" y no muestra ningún canal de pago inventado.
+- Pendiente: el creador de ofertas es largo en el celular (tres pasos en una sola página, de unas tres pantallas y media de alto). Lo dejo anotado para después del pitch.
+- Verificación, **incompleta**:
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, **192 de 192**.
+  - **Sin correr** `npm run build`, `npm run e2e` ni `npm run test:int`. A las 12:25 el sistema detuvo, por falta de memoria, la base local (`devdb`) y la corrida de punta a punta contra el build anterior. No los volví a levantar por mi cuenta.
+  - Tampoco está comprobado que el control nuevo de E1 falle con el error y pase con el arreglo. Es lo primero que hay que correr cuando vuelva la base.
+- Decisiones que necesito de SOKA: si puedo volver a levantar la base local (`cd devdb && npm start`) para terminar esta verificación.
+
+### 2026-11-13 12:12, Etapa 6: el tendero puede borrar su horario y su presentación
+
+- Rama: `etapa-6-tendero`. Sin subir ni mezclar.
+- Qué cambió: `saveMerchantFeaturedItemsAction` (`web/src/app/actions/v3.ts`), que guarda la vitrina.
+  - Antes, un horario o una presentación vacíos conservaban el valor anterior: el tendero no podía quitarlos, y la vitrina pública seguía mostrando un horario que ya no era cierto. Era el pendiente "el perfil no permite borrar el horario".
+  - Ahora, si la pantalla manda el campo vacío, queda vacío y la vitrina no lo muestra. Si no lo manda, no se toca.
+  - El horario se corta en 80 caracteres, igual que en Perfil (antes 90).
+  - Importa más ahora que el registro ya no inventa un horario.
+- Prueba nueva: `web/test/integration/vitrina.itest.ts` (3). Campos vacíos dejan la vitrina sin horario ni presentación; con texto, guarda lo escrito; sin los campos, no los toca. La acción sigue en la matriz de permisos como antes.
+- Verificación (este equipo, `devdb` local), con toda la rama:
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, **192 de 192**.
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos** (6 + 10 + 11 + 31; la prueba sin cuenta en 588 ms).
+  - `npm run test:int`: 8 archivos, **276 de 276**, 272 s.
+- Decisiones que necesito de SOKA: ninguna.
+
+### 2026-11-13 12:05, Etapa 6: la comisión que se ve es la del negocio, no un "5 %" escrito a mano
+
+- Rama: `etapa-6-tendero`. Sin subir ni mezclar.
+- Qué cambió:
+  - **Dentro del portal del tendero se muestra la comisión guardada en el negocio** (`merchant.commissionBps`), con `percentFromBps`.
+    - La caja decía "5 % al corte quincenal" y, si el código no traía la comisión, calculaba con 500 escrito a mano. Ahora usa la del negocio.
+    - El informe del mes decía "del 5 % de comisión CIFRA".
+    - La activación por enlace decía "una comisión del 5 %".
+  - **Las páginas públicas** (portada, `/negocio/unirse` y `/negocio/registro`) muestran la comisión de un negocio nuevo desde una sola fuente: `DEFAULT_COMMISSION_BPS` en `web/src/lib/commission.ts` (nuevo), que sale de la regla de cobro del motor.
+- Prueba nueva: `web/src/lib/__tests__/comision.test.ts` (2). Comprueba que esa comisión anunciada es la misma que la base pone por defecto a un negocio y a cada venta (`commission_bps = 500`). Si alguien cambia una sin la otra, la prueba falla.
+- Lo que no toqué: `/admin` (pedido de SOKA para hoy) y el ejemplo de `/desarrolladores`, que está rotulado como ejemplo.
+- Verificación (este equipo, `devdb` local):
+  - `npm run typecheck`: 0 errores. `npm test`: 20 archivos, **192 de 192**.
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos** (6 + 10 + 11 + 31). E5 sigue cobrando $18.000 con comisión de $900 en la caja.
+  - `npm run test:int`: 7 archivos, **273 de 273**, 270 s.
+- Decisiones que necesito de SOKA: ninguna.
+
+### 2026-11-13 11:59, Etapa 6: plantillas de oferta según el tipo de negocio, y fuera el "OFF"
+
+- Rama: `etapa-6-tendero`, encima de la entrada de abajo. Sin subir ni mezclar.
+- Qué cambió:
+  - **Las plantillas de la primera oferta dependen del tipo de negocio** (`web/src/lib/offer-templates.ts`, nuevo; las usa `web/src/app/negocio/(portal)/ofertas/offer-creator.tsx`).
+    - Antes, toda tienda veía "25 % OFF en horneados y productos frescos de la tarde", aunque fuera una peluquería o una droguería.
+    - Ahora la plantilla "antes del cierre" solo sale donde hay producto del día que se pierde, y nombra lo de ese negocio: pan y horneados en una panadería, onces y postres en una cafetería, el menú del día en un restaurante, frutas y verduras en un fruver, productos frescos del día en una tienda.
+    - En papelería, droguería, peluquería, servicios y "otro" no sale esa plantilla.
+    - El título de la plantilla de monto fijo se arma con los mismos montos que llena en el formulario.
+  - **Sin "OFF" en pantalla**, en las insignias del mapa y de la lista de ofertas de la persona:
+    - un porcentaje se ve "-10 %", igual que un monto fijo ya se veía "-$3.000";
+    - los títulos que sugiere el cuadre del tendero y el de la oferta de ejemplo de la demo dicen "de descuento".
+  - Los textos de las plantillas quedaron sin emojis ("⚡").
+  - La comisión en el creador de ofertas también sale de `percentFromBps`.
+- Prueba nueva: `web/src/lib/__tests__/plantillas-oferta.test.ts` (5), que comprueba:
+  - todo tipo de negocio tiene plantillas;
+  - "antes del cierre" solo donde corresponde, y sin "horneados" en una peluquería;
+  - un tipo desconocido no hereda nada;
+  - nada de "OFF" ni emojis;
+  - los montos del título son los del formulario.
+- Verificación (este equipo, `devdb` local):
+  - `npm run typecheck`: 0 errores. `npm test`: 19 archivos, **190 de 190**.
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos** (6 + 10 + 11 + 31). E2 publica la primera oferta de una cafetería con la plantilla nueva.
+  - `npm run test:int`: 7 archivos, **273 de 273**, 193 s.
+- Decisiones que necesito de SOKA: ninguna.
+
+### 2026-11-13 11:57, Etapa 6: el tendero se registra solo, la caja abre la cámara y el pago en línea no se puede rebajar
+
+- Rama: `etapa-6-tendero`, creada encima de `etapa-4-un-formulario` (`4b3ef85`). Va en una solicitud de cambio aparte, después de la de la Etapa 4. Sin subir ni mezclar: mismas razones que la Etapa 4. No toqué `src/app/admin`.
+- Nota de git: `git switch` no pudo reescribir `.git/HEAD` porque otro programa del equipo lo tenía abierto (parece ser VS Code). No cerré nada. Hice los commits de esta rama con `git commit-tree` y `git update-ref`, que no tocan `HEAD`, y comprobé que cada commit fuera idéntico a la carpeta de trabajo. A las 12:20 el archivo se liberó: la carpeta quedó en `etapa-6-tendero`, sin cambios pendientes.
+- Qué cambió:
+  - **Registro del negocio en dos pasos** (`web/src/app/negocio/unirse/register-merchant-form.tsx`):
+    - Paso "Tu negocio": nombre, tipo, zona, dirección y compra promedio.
+    - Paso "Tus datos": nombre, WhatsApp y, sin sesión, correo, clave y la autorización.
+    - Salieron del registro el mapa, el barrio, el horario y la llave de pago; se agregan después en Perfil. El punto del mapa arranca en el centro de la zona.
+    - **El horario ya no se inventa:** antes se guardaba "Lun a Sáb 7:00 a. m. – 8:00 p. m." si el tendero no escribía ninguno. Ahora queda vacío y no se muestra.
+  - **Autorización de datos del tendero** (Ley 1581), en `web/src/components/negocio/merchant-consent.tsx`.
+    - La piden el registro y la activación por enlace (`/negocio/activar/[token]`) cuando crean una cuenta nueva.
+    - El servidor (`selfRegisterMerchant` y `redeemMerchantInvite` en `web/src/app/actions/merchant.ts`) no crea la cuenta sin ella.
+    - **Antes, las dos acciones guardaban la fecha y la versión de la autorización (`consentAt`, `consentVersion`) sin haberla pedido nunca.** Ahora esa fecha corresponde a una casilla que el tendero marcó.
+    - La activación por enlace pide ahora una clave de 10 caracteres, como el resto (antes 8).
+  - **Cámara de la caja y "usar mi ubicación"** (`web/next.config.ts`).
+    - La cabecera `Permissions-Policy` decía `camera=()` y `geolocation=()`. Con eso el navegador bloquea la cámara y la ubicación incluso para CIFRA: el botón "Escanear QR" de la caja y "usar mi ubicación" del mapa nunca podían funcionar. Era el hallazgo de gravedad 3 del plan.
+    - Ahora es `camera=(self), geolocation=(self)`: solo CIFRA puede pedirlas, nunca un sitio que la meta en un marco, y el navegador igual le pregunta a la persona. El micrófono sigue cerrado.
+    - Va en todo el sitio porque la app cambia de pantalla sin recargar: el permiso lo fija la primera página que se abrió.
+  - **Pago de la comisión por Wompi** (`web/src/lib/payments/wompi.ts`, nuevo, y `web/src/app/api/webhooks/wompi/route.ts`). Hoy está apagado en producción, porque no están las llaves de Wompi; lo dejé seguro para cuando se prenda. Antes:
+    - el enlace de pago se armaba en el navegador con el monto en la dirección y sin firma, así que un negocio podía cambiar `amount-in-cents` y pagar $1 con la referencia de su corte;
+    - el aviso de Wompi marcaba el corte como pagado sin mirar cuánto llegó;
+    - cada aviso repetido registraba otro pago;
+    - y la firma se comparaba sin tiempo constante.
+  - Ahora:
+    - El enlace se arma en el servidor con la firma de integridad de Wompi (`WOMPI_INTEGRITY_SECRET`, que ya estaba en `.env.example` sin usarse). Sin esa llave no se muestra el botón de pago en línea.
+    - El aviso exige que la firma cubra el id, el estado y el monto, y la compara en tiempo constante.
+    - El corte se marca pagado solo si el pago es en pesos y lo cubre completo. Si no, el pago queda "reportado" con una nota de cuánto falta, el corte pasa a "en verificación" y el equipo lo revisa.
+    - Un aviso repetido se registra una sola vez.
+  - **La cuenta del tendero** (`/negocio/cuenta`):
+    - El porcentaje de comisión sale del negocio (`commissionBps`) con `percentFromBps` (nuevo, en `web/src/lib/format.ts`). Antes decía "5 %" y "95 %" escrito a mano en cinco lugares.
+    - Se quitó "($900 cada vez)", un monto escrito a mano.
+    - Se quitó el botón "Autocompletar referencia de hoy", que inventaba un comprobante de pago ("BREB-…") en la cuenta de un negocio real.
+- Arreglo encontrado por la prueba de punta a punta:
+  - El paso 1 del registro nunca dejaba seguir: leía la compra promedio con `form.elements.namedItem('typicalTicket')`. Ese nombre lo tienen dos elementos, la caja visible (por su `id`) y el campo oculto con el valor limpio (por su `name`), y con dos resultados la lectura daba vacío.
+  - Ahora lee con `FormData`, que solo mira los `name`.
+- Pruebas nuevas:
+  - `web/src/lib/__tests__/encabezados.test.ts` (2): cámara y ubicación solo para CIFRA, micrófono para nadie, y ninguna ruta lo vuelve a cerrar.
+  - `web/src/lib/__tests__/wompi.test.ts` (11): la firma del enlace amarra el monto y el secreto no va en la dirección; un aviso con otro secreto, con el monto cambiado después de firmar o con una firma que no cubre el monto se rechaza; un pago corto, en otra moneda o sobre un corte ya pagado queda para revisar.
+  - `web/test/integration/wompi.itest.ts` (5, contra la base): sin secreto, 503; con otra firma, 401 y nada cambia; un pago de $1 no marca el corte pagado; el pago completo sí, y repetido registra un solo pago; otros avisos no cambian nada.
+  - `web/test/integration/acciones-publicas.itest.ts`: sin la autorización no se crea la cuenta ni el negocio (registro y activación); con una clave corta tampoco; sin horario, el negocio queda sin horario.
+  - `web/e2e/seguridad.e2e.mjs`, paso E1: recorre los dos pasos, comprueba que sin compra promedio no deja seguir y marca la autorización.
+- Verificación (este equipo, `devdb` local), con esta rama completa (Etapa 4 debajo):
+  - `npm run typecheck`: 0 errores. `npm test`: 18 archivos, **185 de 185**.
+  - `npm run test:int`: 7 archivos, **273 de 273**, 214 s.
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos**: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta 11 de 11 (379 ms) y seguridad 31 de 31. Ahí está el recorrido E completo: registro en dos pasos, primera oferta, la persona genera su código, la caja cobra $18.000 con comisión de $900 y le quedan $17.100, el código no sirve dos veces y llega el aviso del ahorro.
+  - La corrida anterior falló en E1 por el error de la compra promedio. Después del arreglo pasó todo.
+- Qué revisar en la vista previa de esta rama, cuando se suba:
+  1. Sin sesión, `/negocio` lleva al registro. Sin compra promedio no deja seguir. En el paso 2, sin marcar la autorización no deja registrar.
+  2. Con el negocio creado, la caja: "Escanear QR" pide permiso de cámara en Android con Chrome. En iPhone no hay lector de QR en el navegador y la caja pide escribir las 6 letras.
+  3. `/negocio/cuenta`: la comisión dice el porcentaje del negocio y no hay botón de autocompletar.
+- Decisiones que necesito de SOKA:
+  1. Cuando se prenda Wompi: agregar en Vercel `NEXT_PUBLIC_WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET` y `WOMPI_EVENTS_SECRET`, y apuntar los eventos de Wompi a `/api/webhooks/wompi`. Sin la llave de integridad no aparece el botón de pago en línea. Nada de esto es urgente.
+- Pendientes y riesgos:
+  - Las plantillas de oferta hablan de "horneados" aunque el negocio sea una peluquería. Hay que ajustarlas al tipo de negocio. (Resuelto en la entrada de las 11:59.)
+  - Un aviso repetido se registra una sola vez porque el corte se bloquea mientras se revisa el pago. Un índice único sobre `wompi_transaction_id` lo haría más firme, pero pide una migración; queda para cuando se prenda Wompi.
+
+### 2026-11-13 11:51, Etapa 4: el servidor lee el formulario con la misma función que la prueba
+
+- Rama: `etapa-4-un-formulario`, encima de la entrada de abajo. Sin subir ni mezclar (mismas razones).
+- Qué cambió:
+  - **`saveQuickStart` (`web/src/app/app/actions.ts`) lee el formulario con `parseQuickForm` (`web/src/lib/quick-form.ts`)**, la misma función que usa la prueba sin cuenta en el navegador. Antes tenía su propia copia de esa lectura. Era el pendiente de la entrada de abajo.
+  - Lo que la persona vio como su cifra en la prueba es exactamente lo que se guarda al crear la cuenta: mismos límites (el día del mes entre 1 y 31, hasta 15 cobros fijos) y mismos mensajes de error, en el mismo paso.
+  - Un solo texto cambia en pantalla: con más de 15 cobros fijos, el aviso ahora es "Escribe hasta 15 cobros fijos. Los demás los puedes agregar después." Antes decía "…en Ajustes" con cuenta y no decía nada más en la prueba.
+- Prueba nueva: `web/test/integration/modo-rapido.itest.ts` (2 casos).
+  - Los mismos datos dan lo mismo en el navegador y en la base: frecuencia, días de pago, saldo, cobros fijos y gasto diario.
+  - Un error del formulario devuelve el mismo paso y el mismo mensaje que la prueba sin cuenta, y no escribe nada.
+- Verificación (este equipo, `devdb` local), con este cambio y antes de empezar el alta del tendero:
+  - `npm run test:int`: 6 archivos, **265 de 265** (incluye la prueba nueva).
+  - `npm run build`: sin errores.
+  - `npm run e2e`: **58 de 58 pasos** (6 + 10 + 11 + 31).
+  - Typecheck y unitarias, en verde otra vez con la Etapa 6 encima (entrada siguiente).
+- Decisiones que necesito de SOKA: ninguna nueva.
+
+### 2026-11-13 11:15, Etapa 4: un solo formulario para la prueba y el modo rápido
+
+- Rama y commits: `etapa-4-un-formulario`, creada desde `producto-v1` en `69a3ef3`. Lleva también el commit de la bitácora del turno de noche (entrada de abajo). Sin mezclar: SOKA pidió no mezclar nada a `producto-v1` antes de las 4:30 p. m. del 13 nov, porque a las 3:00 hace una demo sobre esa vista previa y a las 4:10 Claude en la nube mezcla #5. No toqué `src/app/admin`.
+- Qué cambió:
+  - **`web/src/components/app/cifra-questions.tsx` (nuevo): las cuatro preguntas, una sola vez.** Cada cuánto te pagan, cuánto tienes hoy, qué pagas fijo y cuánto se te va en el día a día. Lo usan los dos lugares que antes tenían cada uno su copia:
+    - `mode="prueba"` en la página pública (`web/src/components/probar/try-cifra.tsx`): lee y valida los datos en el navegador con `parseQuickForm` y no envía nada. Trae el campo opcional "¿cuánto crees que puedes gastar?".
+    - `mode="cuenta"` en la bienvenida de una cuenta nueva (`web/src/app/app/bienvenida/quick-start.tsx`): envía el formulario a `saveQuickStart`. Trae el campo opcional "¿Dónde está esa plata?" y el enlace para subir el extracto.
+  - `try-cifra.tsx` se queda con el resultado, el guardado en el dispositivo y la analítica. `quick-start.tsx` se queda con la pantalla de confianza y la zona. Pasaron de 926 a 793 líneas entre los tres archivos.
+  - **Lo que cambia en pantalla, solo en el modo rápido con cuenta:** ahora usa los textos de la prueba pública, que es la que se ve en la feria:
+    - "Tienes hoy" en vez de "Saldo de hoy", y "¿Cuánto tienes hoy?" sin "disponible";
+    - las mismas explicaciones cortas en cada paso;
+    - los mismos atajos de monto (sin los de cada cobro fijo, ni el de $80.000 al día);
+    - "Ver mi cifra" en vez de "Ver mi cifra ahora".
+  - **Lo que cambia en pantalla, en los dos:** el contador dice "Paso N de 4". En la prueba, al tocar un cobro sugerido, el cursor salta a su monto, como ya pasaba con cuenta.
+  - Sin cambios: los nombres de los campos, lo que lee el servidor, los identificadores que usan las pruebas (`#pc-*` y `#btn-probar-*` en la prueba, `#qs-*` y `#btn-qs-*` con cuenta) y el foco del lector de pantalla al cambiar de paso.
+- Por qué: es lo que faltaba para cerrar la Etapa 4. Dos copias del mismo formulario ya se habían separado en textos y atajos, y cualquier arreglo había que hacerlo dos veces.
+- Verificación (este equipo, `devdb` local), sin cambiar ninguna prueba:
+  - `npm run typecheck`: 0 errores. `npm test`: 16 archivos, **171 de 171**.
+  - `npm run build`: compilado sin errores.
+  - `npm run e2e`: 4 archivos, **58 de 58 pasos**: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta 11 de 11 (ningún monto sale del navegador; las cuatro respuestas en 328 ms) y seguridad 31 de 31.
+  - `npm run test:int`: 5 archivos, **263 de 263**, 203 s. Corrió antes del último ajuste: un estado en vez de un `ref` en `quick-start.tsx`, que es de pantalla y no lo usan estas pruebas. Typecheck, unitarias, build y e2e se repitieron después, con los números de arriba.
+- Qué revisar en la vista previa de esta rama, cuando se suba:
+  1. En `/`, la prueba completa y "Cambiar mis datos".
+  2. Con una cuenta nueva, la bienvenida: "Calcular mi cifra en 1 minuto", las cuatro preguntas con los textos de la prueba, "Atrás" desde la primera pregunta vuelve a la pantalla de confianza, y "Ver mi cifra" lleva al Hoy.
+- Decisiones que necesito de SOKA: ninguna nueva.
+- Pendientes y riesgos:
+  - Falta medir a una persona que no sea del equipo (de abrir `/` a ver su cifra). Está en `FERIA.md`.
+  - `saveQuickStart` (servidor) sigue leyendo el formulario con su propio código, igual que antes. `parseQuickForm` hace lo mismo en el navegador. Unir esas dos lecturas queda pendiente, con prueba.
+  - Al mezclar después de #5: borrar `NOCHE_13NOV.md` y pasar a esta bitácora la sección que #5 le agrega.
+
+### 2026-11-13 10:15, turno de noche (#4) y despliegue a producción
+
+Esta entrada reemplaza `docs/producto/NOCHE_13NOV.md`, que escribió otra sesión de Claude, en la nube, entre la noche del 12 nov y la madrugada del 13, con autorización de SOKA del 12 nov a las 22:45.
+
+Por ahora el archivo se queda. La solicitud de cambio #5 (`etapa-5-admin`, de la misma sesión en la nube) todavía le agrega una sección, y borrarlo antes haría chocar los dos cambios. Se borra después de que #5 entre a `producto-v1` (a las 4:10 p. m. del 13 nov), y su sección nueva pasa a esta bitácora.
+
+- Rama y commits:
+  - `noche-13nov`, creada desde `producto-v1` en `7d240f9`. Commits `9838c16`, `6bdeafa`, `3eb2bff`, `208140b`, `5e87426` y `74a2672`.
+  - SOKA hizo los dos merges el 13 nov a las 9:53: #4 a `producto-v1` (`69a3ef3`) y #3 a `main` (`bd01f17`).
+  - Producción corre `bd01f17`. Esta entrada va en un commit local de `producto-v1`, sin subir hasta las 4:00 p. m. (ver "Qué aprobó SOKA").
+- Qué cambió en el turno de noche:
+  - **La franja de demo ya no tapa la barra superior** (Etapa 5):
+    - `DemoBar` y `AppTopBar` van ahora dentro de `StickyHeader` (`web/src/components/app/sticky-header.tsx`, nuevo), que es lo único pegado arriba. Quedan una debajo de la otra.
+    - Toca `web/src/app/app/layout.tsx`, `web/src/app/negocio/(portal)/layout.tsx`, `demo-bar.tsx` y `app-top-bar.tsx`.
+    - En el portal del negocio, la franja va dentro de la columna de contenido.
+    - Paso nuevo **D3b** en `web/e2e/seguridad.e2e.mjs`: después de desplazar 900 px, la franja queda en y = 0 y la barra empieza donde termina la franja.
+  - **Embudo de la feria en `/admin`** (Etapa 7a):
+    - `web/src/lib/analytics/fair-funnel.ts` (nuevo) cuenta visitantes distintos por día de Bogotá: abrieron `/`, empezaron la prueba, vieron su cifra, tocaron "Guardar mi cifra" y crearon cuenta.
+    - También cuenta cuántos creían poder gastar más, con solo la dirección y nunca el monto, y la mediana de segundos de la primera prueba del día.
+    - Lo muestra la sección "Feria: del QR a la cifra guardada" (`web/src/app/admin/fair-funnel-section.tsx`): cuatro cifras de hoy y una tabla de 7 días, con cada porcentaje sobre el paso anterior.
+    - Prueba nueva `web/test/integration/feria.itest.ts` (4 casos) y paso **D2b** en la e2e.
+  - **`/admin/presentacion` rehecha** (Etapa 5):
+    - Quitó testimonios inventados presentados como reales, métricas mal descritas, funciones que ya no existen, el grupo de control, una lista de bancos sin comprobar, "B2B2C" y el formulario comercial.
+    - Ahora muestra:
+      - la demo como persona o tendero;
+      - el problema y lo probado con gente, cada cifra con su fuente;
+      - la conversación con Karol Benavides y sus tres cambios;
+      - qué hace hoy el producto y el modelo de cobro;
+      - un ejemplo de caja rotulado, calculado con `computeRedemptionSplit`;
+      - "lo que todavía no sabemos".
+    - Se borró `web/src/components/landing/` completo, porque solo lo usaba esa página. En `recibos.test.ts`, la entrada de `receipt.tsx` cambió por la de la presentación.
+  - **`/desarrolladores`** (la página de la API para cooperativas), revisada antes de la llamada con Financiera Comultrasan:
+    - Los ejemplos usan `siteUrl()` en vez de `https://cifra.co`, un dominio que la app no usa.
+    - Quitó "wallet de retail (como Starbucks)".
+    - La calculadora dice que abre con valores de ejemplo.
+    - Paso nuevo **A8** en la e2e.
+  - **`docs/producto/FERIA.md`** (nuevo): lista de revisión de la feria sin negocios reales, para antes del 18, en el stand y después.
+- Por qué: pendientes de las Etapas 5 y 7a. La presentación la abre SOKA frente a profesores o inversores, y la página de la API podía salir en la llamada con Comultrasan.
+- Verificación:
+  - **Turno de noche**, en la nube (Linux, Node 22, Postgres 16 local):
+    - typecheck sin errores;
+    - **171 de 171** unitarias;
+    - **263 de 263** de integración (259 más 4 de `feria.itest.ts`);
+    - build limpio;
+    - e2e: guardar cifra 6 de 6, Hoy 10 de 10, prueba sin cuenta 11 de 11 y seguridad **31 de 31** (28 más A8, D2b y D3b).
+  - **Turno de noche, revisión visual en local:**
+    - la franja y la barra quedan una debajo de la otra al desplazar;
+    - con eventos de ejemplo insertados solo en la base local y borrados después, el embudo mostró lo que se había insertado;
+    - la presentación ya no contiene "Mariana V.", "B2B2C", "Next Best", "vampiro", "grupo de control" ni "Testimonio".
+  - **Turno de noche, vistas previas:**
+    - La de `noche-13nov` compiló contra su propia rama de Neon (`ep-steep-credit-b8opyfaw`) y aplicó las migraciones; no había nuevas.
+    - En la de `producto-v1`, revisada a las 2:00 a. m., la prueba sin cuenta con los datos de `DEMO.md` dio **$700.000**, y "¿Puedo gastar?" con $120.000 respondió "Sí. Te quedarían $580.000 hasta el 15 nov.". No creó cuentas.
+  - **Esta sesión, en este equipo, sobre `69a3ef3`** (el mismo contenido que `main`):
+    - `npm run typecheck`: 0 errores. `npm test`: 16 archivos, **171 de 171**.
+    - `src/components/landing/` ya no existe.
+    - En `/admin/presentacion` y `/desarrolladores`, "B2B2C" solo queda en el nombre interno de un componente (`B2B2CSimulator`), no en pantalla.
+    - No corrí integración ni e2e: el sistema apagó `devdb` por falta de memoria y no lo volví a levantar.
+  - **Revisé el código de `fair-funnel.ts`:**
+    - No mezcla datos de demostración: lo que mide sale de la página pública `/`, y la demo vive en `/app`.
+    - Dos detalles menores. "Crearon cuenta" exige que la persona haya tocado Guardar y creado su cuenta el mismo día, pero no que lo haya hecho en ese orden.
+    - Y los pasos no exigen el anterior: quien empieza la prueba sin que se registre su visita a `/` cuenta en "empezaron". Un porcentaje podría pasar del 100 %.
+    - Ninguno de los dos cambia lo que se lee en la feria.
+  - **Producción**, según SOKA: `bd01f17`, log con `ep-square-brook` y "Migraciones aplicadas". Sin sesión, `/app` y `/admin` llevan a `/entrar`, `/api/export` responde 401 y `/api/demo/session` responde 404. Son los pasos 3 y parte del 5 de `DESPLIEGUE.md`.
+- Qué revisar en producción, después de que SOKA agregue las variables y cambie la clave: `DESPLIEGUE.md` desde el paso 4 (entrar a `/admin`).
+- Decisiones que necesito de SOKA:
+  1. `submitLead` (`web/src/app/actions/leads.ts`) quedó sin uso al borrar el formulario comercial, pero sigue siendo un endpoint público, registrado en la matriz de permisos. ¿Se borra?
+  2. Canales de pago (decisión 6), sigue abierta.
+- Pendientes y riesgos:
+  - **La clave de la base se cambia después del despliegue, no antes como decía el plan.** Al cambiarla, el despliegue de producción que corre (`bd01f17`) se queda con la vieja y pierde la base hasta que se vuelva a desplegar. Las variables nuevas (`RESEND_API_KEY`, `EMAIL_FROM`, `CRON_SECRET`) tampoco llegan sin un despliegue nuevo. Por eso, después de las dos cosas, hay que redesplegar producción una vez: Deployments > `bd01f17` > Redeploy.
+  - La rama de Neon de `noche-13nov` es otra copia de los datos de producción. Se suma a la limpieza que decida SOKA después de la feria.
+  - El resto del tablero de `/admin` sigue con textos de la versión anterior (Etapa 5).
 
 ### 2026-11-12 22:45, aviso cuando el correo no sale, enlaces de la vista previa y pasos del despliegue
 

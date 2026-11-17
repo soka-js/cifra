@@ -575,8 +575,14 @@ export async function saveMerchantFeaturedItemsAction(
     }
   }
 
-  const description = String(formData.get('description') ?? '').trim().slice(0, 240) || access.merchant.description;
-  const hoursText = String(formData.get('hoursText') ?? '').trim().slice(0, 90) || access.merchant.hoursText;
+  // Si la pantalla manda el campo, vale lo que trae: vacío quiere decir "sin presentación" o "sin
+  // horario", y así el tendero puede borrarlos. Si no lo manda, se deja como estaba.
+  const description = formData.has('description')
+    ? String(formData.get('description') ?? '').trim().slice(0, 240) || null
+    : access.merchant.description;
+  const hoursText = formData.has('hoursText')
+    ? String(formData.get('hoursText') ?? '').trim().slice(0, 80) || null
+    : access.merchant.hoursText;
 
   await db
     .update(merchants)

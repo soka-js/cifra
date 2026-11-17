@@ -1153,7 +1153,7 @@ async function ensureV3DemoData(params: {
   if (!existingFlash) {
     await db.insert(offers).values({
       merchantId: params.espigaMerchantId,
-      title: '25 % OFF en horneados de la tarde, antes del cierre',
+      title: '25 % de descuento en horneados de la tarde, antes del cierre',
       description: 'Pan de masa madre y hojaldres recién horneados para cerrar la tarde sin merma.',
       targetCategory: 'comida',
       discountKind: 'percent',

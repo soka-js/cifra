@@ -141,7 +141,7 @@ export async function createStreetMerchant(
   revalidatePath('/admin');
   return {
     status: 'ok',
-    message: `Negocio ${name} registrado en CRM de calle con enlace de activación listo.`,
+    message: `Negocio ${name} registrado. Su enlace de activación está listo.`,
     inviteUrl,
     whatsappHref: `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}`,
   };
@@ -315,7 +315,7 @@ export async function createPartnerWithKey(
   revalidatePath('/admin');
   return {
     status: 'ok',
-    message: `Aliado B2B2C «${name}» creado con reparto del ${sharePct} %. Copia la llave secreta ahora (solo se muestra una vez).`,
+    message: `Aliado «${name}» creado con reparto del ${sharePct} %. Copia la llave secreta ahora (solo se muestra una vez).`,
     apiKeyPlain: rawKey,
   };
 }

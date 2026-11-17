@@ -330,15 +330,29 @@ let code = '';
 await step('E1. un tendero sin cuenta abre /negocio y registra su negocio él solo', async () => {
   await s.goto(`${BASE}/negocio`, { waitUntil: 'networkidle' });
   assert.equal(finalPath(s), '/negocio/unirse');
+  // Paso 1: el negocio. No deja seguir sin la compra promedio.
   await s.fill('#businessName', shopName);
   await s.selectOption('#businessCategory', 'cafeteria');
-  await s.fill('#ownerName', 'Carlos Tendero');
-  await s.fill('#whatsapp', '3105550000');
   await s.selectOption('#zoneSlug', 'las-aguas');
   await s.fill('#address', 'Cra 3 # 18-45');
+  await s.click('#btn-negocio-seguir');
+  assert.match(await s.locator('form [role="alert"]').innerText(), /compra en promedio/i);
   await s.fill('#typicalTicket', '20000');
+  // "Seguir" cambia de paso sin intentar enviar el formulario: si lo intentara, el navegador
+  // marcaría los campos vacíos del paso 2 (evento "invalid") antes de que la persona los vea.
+  await s.evaluate(() => {
+    window.__invalidos = 0;
+    document.querySelector('form:has(#businessName)').addEventListener('invalid', () => window.__invalidos++, true);
+  });
+  await s.click('#btn-negocio-seguir');
+  await s.locator('#ownerName').waitFor({ state: 'visible' });
+  assert.equal(await s.evaluate(() => window.__invalidos), 0, 'tocar "Seguir" no debe intentar enviar el paso 2');
+  // Paso 2: quién lo atiende, su acceso y su autorización de datos.
+  await s.fill('#ownerName', 'Carlos Tendero');
+  await s.fill('#whatsapp', '3105550000');
   await s.fill('#email', shopEmail);
   await s.fill('#password', PASSWORD);
+  await s.check('#consent');
   await Promise.all([
     s.waitForURL((u) => u.pathname === '/negocio/ofertas', { timeout: 30_000 }),
     s.locator('form button[type="submit"]').last().click(),
@@ -372,7 +386,15 @@ await step('E3. su cuenta no muestra mandatos ni canales de pago inventados', as
 await step('E4. una persona ve la oferta y genera su código', async () => {
   await p.goto(`${BASE}/app/ofertas`, { waitUntil: 'networkidle' });
   assert.ok((await p.locator('main').innerText()).includes(shopName), 'la persona debe ver el negocio nuevo');
-  await p.getByRole('button', { name: /Generar código/ }).first().click();
+  // Puede haber otras ofertas en la zona (por ejemplo, de otro recorrido de prueba): se toca la del negocio de esta prueba.
+  const buttons = p.getByRole('button', { name: /Generar código/ });
+  let mine = -1;
+  for (let i = 0; i < (await buttons.count()) && mine < 0; i++) {
+    const card = await buttons.nth(i).evaluate((el) => el.closest('article, li')?.textContent ?? '');
+    if (card.includes(shopName)) mine = i;
+  }
+  assert.ok(mine >= 0, 'debe haber un botón "Generar código" en la oferta del negocio nuevo');
+  await buttons.nth(mine).click();
   // La acción corre en el servidor: se espera a que el código exista antes de leerlo.
   let row;
   for (let i = 0; i < 40 && !row; i++) {

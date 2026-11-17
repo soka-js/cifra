@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { BackButton } from '@/components/ui/back-button';
 import { LogoMark } from '@/components/logo';
 import { requireMerchantAccess } from '@/lib/auth/session';
-import { cop } from '@/lib/format';
+import { cop, percentFromBps } from '@/lib/format';
 import { currentPeriodMonth, formatPeriodMonth, loadMerchantDashboard } from '@/lib/merchant-data';
 import { ReportActions } from './report-actions';
 
@@ -39,7 +38,6 @@ export default async function MerchantOnePageReport({
 
   return (
     <div className="space-y-5">
-      <BackButton href="/negocio" label="Volver al resumen" className="mb-1 no-print" />
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5">
           {months.map((m) => (
@@ -108,7 +106,7 @@ export default async function MerchantOnePageReport({
               {cop(report.merchantNetKeptMinor)}
             </p>
             <p className="mt-1 text-[13px] text-ink-soft">
-              Después del descuento al vecino y del 5 % de comisión CIFRA.
+              Después del descuento al vecino y del {percentFromBps(access.merchant.commissionBps)} de comisión CIFRA.
             </p>
           </div>
 
