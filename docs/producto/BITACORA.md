@@ -253,6 +253,18 @@ Siguen abiertas la 6 (canales reales de pago) y quién hace el ensayo del guion.
 
 ## Entradas
 
+### 2026-11-17 09:00, el día se elige en un calendario (rama `selector-dia`)
+
+- Quién: Claude en la sesión de la nube de SOKA. Pedido de SOKA (17 nov): "no me gusta el formato de cuando hay que seleccionar día, prefiero que sea como un calendario desplegable y uno le dé al día del mes, para todos los desplegables donde haya que seleccionar día".
+- Qué cambió:
+  - `web/src/components/ui/day-picker.tsx` (nuevo): `DayPicker`, una caja "Día 30" con ícono de calendario que abre una cuadrícula del 1 al 31 en siete columnas. Sin días de la semana arriba, porque es un día que se repite cada mes y su día de la semana cambia. Marca hoy con un marco, se cierra al elegir, con Escape o tocando afuera, y se recorre con las flechas. El valor va en un campo oculto con el mismo `name` de antes (`day1`, `day2`, `fixedDay`), así que `parseQuickForm` y las acciones del servidor reciben lo mismo. `WeekdayPicker`: el día de la semana como una fila Lun a Dom.
+  - Dónde: frecuencia de pago (`income-fields.tsx`: un pago al mes, las dos quincenas con sus mismos límites, 1 a 20 y 15 a 31, y el día de la semana) y el día de cada cobro fijo (`cifra-questions.tsx`). Con eso cubre la prueba sin cuenta en `/`, el modo rápido con cuenta y Ajustes.
+  - Las pruebas de punta a punta eligen el día con `pickDay()` (`e2e/lib.mjs`), y la prueba sin cuenta comprueba que el día quede en el campo del formulario.
+- `docs/producto/FERIA.md`: la Muestra es el **miércoles 18**, de 1:00 a 4:30 p. m., stand 8 (anuncio del profesor del 13 nov en Bloque Neón), no el jueves 19.
+- Verificación (nube): `npm run typecheck` 0 errores; `npm test` 21 archivos, 196 de 196; `npm run build` sin errores; `npm run e2e`: guardar cifra 6 de 6, Hoy 10 de 10 (1,84 pantallas), prueba sin cuenta en verde, recorridos 6 de 6, seguridad 31 de 31. Revisado a ojo en 390 x 844: un pago al mes, quincenas, semana y el renglón de un cobro.
+- Qué revisar en la vista previa de `producto-v1`: en `/`, elegir "Una vez al mes" y tocar el día; en el paso 3, agregar "Arriendo" y tocar "Día".
+- Decisiones que necesito de SOKA: si pasa a `main` hoy.
+
 ### 2026-11-17 08:20, cierre: todo en `main` y en producción; el QR del afiche y el monto por día
 
 - Quién: Claude Code en la carpeta de SOKA, siguiendo el pedido del 16 nov de traer todo a `main`.

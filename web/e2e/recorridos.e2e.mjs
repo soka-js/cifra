@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import postgres from 'postgres';
-import { BASE, PHONE, launch, pesos, shot, stepper } from './lib.mjs';
+import { BASE, PHONE, launch, pesos, pickDay, shot, stepper } from './lib.mjs';
 
 const DB = process.env.TEST_DATABASE_URL;
 assert.ok(DB && /@(127\.0\.0\.1|localhost)[:/].*_test$/.test(DB), 'Esta prueba se corre con `npm run e2e` contra la base local de pruebas.');
@@ -105,7 +105,7 @@ await step('1. del QR a la cifra, sin cuenta', async () => {
   await c.tap(p.getByRole('button', { name: 'Arriendo' }));
   await c.fill(p.locator('li:has(input[name="fixedName"]) input[inputmode="numeric"]').first(), String(IN.rent));
   const tomorrow = await p.evaluate(() => new Date(Date.now() - 5 * 3_600_000 + 86_400_000).getUTCDate());
-  await c.select(p.locator('select[name="fixedDay"]').first(), String(tomorrow));
+  c.m.toques += await pickDay(p, 'fixedDay', tomorrow);
   await c.tap(p.locator('#btn-probar-seguir'));
   await c.pantalla(p, '1d-dia-a-dia');
   await c.fill(p.locator('#pc-daily'), String(IN.daily));

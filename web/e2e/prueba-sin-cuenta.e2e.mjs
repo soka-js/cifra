@@ -15,6 +15,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
+import { pickDay } from './lib.mjs';
 
 const BASE = (process.env.BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 const CHANNEL = process.env.E2E_BROWSER_CHANNEL ?? 'chrome';
@@ -89,7 +90,8 @@ await step('responde las cuatro preguntas', async () => {
   await page.locator('li:has(input[name="fixedName"]) input[inputmode="numeric"]').first().fill(String(IN.rent));
   // Un día de cobro que siempre cae antes del próximo pago: mañana.
   const tomorrow = await page.evaluate(() => new Date(Date.now() - 5 * 3_600_000 + 86_400_000).getUTCDate());
-  await page.locator('select[name="fixedDay"]').first().selectOption(String(tomorrow));
+  await pickDay(page, 'fixedDay', tomorrow);
+  assert.equal(await page.locator('input[type="hidden"][name="fixedDay"]').first().inputValue(), String(tomorrow), 'el calendario deja el día en el campo del formulario');
   await page.click('#btn-probar-seguir');
   await page.fill('#pc-daily', String(IN.daily));
   await page.fill('#pc-guess', String(IN.guess));
