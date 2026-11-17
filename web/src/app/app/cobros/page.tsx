@@ -1,6 +1,5 @@
 import { CheckCircle2, ExternalLink, HelpCircle, PiggyBank, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
-import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { loadCifra, loadMarksDetailed } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
@@ -59,11 +58,10 @@ export default async function CobrosPage() {
 
   return (
     <div className="space-y-6">
-      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div>
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Cobros recurrentes</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
-          Suscripciones, débitos automáticos y servicios que encontramos en tus movimientos, con cuánto llevas pagado en total y cómo cortar los que ya no usas.
+          Lo que se cobra solo cada mes, cuánto llevas pagado y cuáles ya no usas.
         </p>
       </div>
 

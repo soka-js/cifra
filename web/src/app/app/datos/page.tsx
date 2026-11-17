@@ -1,4 +1,4 @@
-import { Building2, Download, FileSpreadsheet, Link2, Plus, ShieldCheck } from 'lucide-react';
+import { Building2, Download, FileSpreadsheet, Link2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
@@ -6,7 +6,7 @@ import { bogotaDate, loadAccessLog, loadSources } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
 import { cop } from '@/lib/format';
 import { toggleAccount } from '../actions';
-import { DeleteAccountForm, ZoneForm } from '../ajustes/forms';
+import { DeleteAccountForm } from '../ajustes/forms';
 import { BalanceForm, DeleteSource, ManualAccountForm } from './forms';
 
 export const metadata = { title: 'Tus datos (Ley 1581)' };
@@ -39,16 +39,13 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
     <div className="space-y-6">
       <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div>
-        <span className="badge-primary">
-          <ShieldCheck size={13} aria-hidden="true" /> Ley 1581 de 2012 · Habeas Data
-        </span>
-        <h1 className="mt-2.5 font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Tus datos</h1>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">Tus datos</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
-          Aquí ves cada fuente que alimenta tu cifra. Puedes descargar una copia completa o borrar cualquier cuenta cuando quieras.
+          De dónde sale tu cifra. Puedes descargar todo o borrarlo cuando quieras (Ley 1581 de 2012).
         </p>
         {sp.borrada && (
           <p role="status" className="mt-3 rounded-xl bg-primary-light px-4 py-3 text-[14px] font-medium text-primary-dark">
-            Borramos la fuente y todos sus movimientos asociados.
+            Listo, borramos esa cuenta y sus movimientos.
           </p>
         )}
       </div>
@@ -63,22 +60,19 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
       {/* Portabilidad en un clic (JSON completo + CSV de movimientos) */}
       <section className="surface-card p-5">
         <h2 className="font-display text-[17px] font-bold text-ink">Descargar una copia de tus datos</h2>
-        <p className="mt-1 text-[13.5px] text-ink-muted">
-          Llévate tus movimientos clasificados, tus reglas personales y tu historial cuando quieras.
-        </p>
         <div className="mt-3.5 flex flex-wrap gap-2.5">
           <a id="btn-export-csv" href="/api/export?format=csv" className="btn-sm border border-line bg-white text-ink hover:bg-paper-warm">
-            <Download size={15} aria-hidden="true" /> Movimientos en CSV (Excel)
+            <Download size={15} aria-hidden="true" /> Movimientos, para Excel
           </a>
           <a id="btn-export-json" href="/api/export?format=json" className="btn-sm border border-line bg-white text-ink hover:bg-paper-warm">
-            <Download size={15} aria-hidden="true" /> Expediente completo en JSON
+            <Download size={15} aria-hidden="true" /> Todo lo que guardamos de ti
           </a>
         </div>
       </section>
 
       {sources.length === 0 && (
         <div className="surface-card p-5 text-[15px] text-ink-muted">
-          Todavía no hay fuentes conectadas. Sube un extracto o escribe tu saldo a mano para empezar.
+          Todavía no hay cuentas. Sube un extracto o escribe tu saldo para empezar.
         </div>
       )}
 
@@ -188,14 +182,6 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
         <ManualAccountForm />
       </div>
 
-      {/* Control de ubicación aproximada */}
-      <section className="surface-card p-5">
-        <h2 className="font-display text-[18px] font-bold text-ink">Zona para beneficios cercanos</h2>
-        <div className="mt-3">
-          <ZoneForm currentZone={user.zoneSlug ?? null} />
-        </div>
-      </section>
-
       <section className="rounded-2xl border border-line bg-paper-warm px-5 py-4 text-[13.5px] leading-relaxed text-ink-muted">
         <h2 className="text-[14.5px] font-semibold text-ink">Sobre Finanzas Abiertas en Colombia</h2>
         <p className="mt-1">
@@ -205,7 +191,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
 
       {log.length > 0 && (
         <section>
-          <h2 className="font-display text-[17px] font-bold text-ink">Bitácora de acceso a tus datos</h2>
+          <h2 className="font-display text-[17px] font-bold text-ink">Quién ha visto tus datos</h2>
           <ul className="mt-2.5 divide-y divide-line rounded-2xl border border-line bg-white text-[13.5px] shadow-card">
             {log.map((l) => (
               <li key={l.id} className="flex justify-between gap-3 px-5 py-2.5">
@@ -221,7 +207,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
       )}
 
       <section className="surface-card p-5">
-        <h2 className="font-display text-[18px] font-bold text-neg">Revocar todo y borrar mi cuenta</h2>
+        <h2 className="font-display text-[18px] font-bold text-neg">Borrar mi cuenta</h2>
         <div className="mt-3">
           <DeleteAccountForm />
         </div>

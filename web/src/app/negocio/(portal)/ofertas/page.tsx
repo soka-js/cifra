@@ -2,7 +2,6 @@ import { and, eq, ne, sql } from 'drizzle-orm';
 import { Pause, Play, RefreshCw, ShieldAlert, Sparkles, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { renewOfferCampaign, toggleOfferStatus } from '@/app/actions/merchant';
-import { BackButton } from '@/components/ui/back-button';
 import { requireMerchantAccess } from '@/lib/auth/session';
 import { db } from '@/lib/db';
 import { merchantInvoices, offers, redemptions } from '@/lib/db/schema';
@@ -45,7 +44,6 @@ export default async function MerchantOffersPage({
 
   return (
     <div className="space-y-6">
-      <BackButton href="/negocio" label="Volver al resumen" className="mb-2" />
       {sp.bienvenida === '1' && (
         <div className="rounded-2xl border border-primary/25 bg-primary-pale px-4 py-3 text-[14px] text-primary-dark">
           <strong>¡Negocio registrado!</strong> Crea abajo tu primera oferta en 1 minuto para empezar a recibir clientes nuevos de tu barrio.
@@ -83,18 +81,17 @@ export default async function MerchantOffersPage({
       )}
 
       <div>
-        <span className="badge-terra">Control total de tus campañas</span>
-        <h1 className="mt-2 font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em] text-ink">
           Mis ofertas en CIFRA
         </h1>
         <p className="mt-1 text-[15px] text-ink-muted">
-          Prende, pausa o renueva tus ofertas cuando quieras. Nunca hay cláusulas de permanencia.
+          Prende, pausa o renueva tus ofertas cuando quieras. Sin permanencia.
         </p>
       </div>
 
       {sortedOffers.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-display text-[19px] font-bold text-ink">Campañas creadas</h2>
+          <h2 className="font-display text-[19px] font-bold text-ink">Tus ofertas</h2>
           <ul className="space-y-3">
             {sortedOffers.map((o) => {
               const used = usedMap.get(o.id) ?? 0;

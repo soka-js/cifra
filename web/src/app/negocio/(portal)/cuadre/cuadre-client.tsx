@@ -149,7 +149,7 @@ export function CuadreClient({
                 <Flame size={12} aria-hidden="true" />
                 {summary.reachedBreakEven
                   ? '¡Punto de equilibrio del día superado!'
-                  : 'Termómetro de ventas de hoy'}
+                  : 'Ventas de hoy'}
               </span>
               {activeFlashCount > 0 && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-900">

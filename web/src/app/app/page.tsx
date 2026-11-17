@@ -121,6 +121,19 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
     <div className="space-y-4">
       <TrackView name="view_cifra" props={{ status: c.status, ready: c.ready, daily: c.dailySource }} />
       {sp.listo === 'rapido' && <GaOnce name="quick_start" />}
+      {sp.listo === 'rapido' && (
+        <section aria-label="Bienvenida" data-testid="bienvenida-hoy" className="rounded-2xl border border-primary/25 bg-primary-pale/70 px-5 py-4">
+          <p className="text-[15.5px] font-semibold text-ink">Listo. Esta es tu cifra.</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-snug text-ink-soft">
+            <li>Es lo que puedes gastar hasta tu próximo pago. Debajo ves de dónde sale.</li>
+            <li>Antes de comprar, escribe el valor en "¿Puedo gastar?".</li>
+            <li>En el menú de abajo están tus gastos, las ofertas cerca y tus cobros.</li>
+          </ul>
+          <Link href="/app" className="mt-2.5 inline-block text-[14px] font-semibold text-primary-dark underline underline-offset-2">
+            Entendido
+          </Link>
+        </section>
+      )}
 
       <CifraHero
         availableMinor={c.availableMinor}

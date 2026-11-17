@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { BackButton } from '@/components/ui/back-button';
 import { requireUser } from '@/lib/auth/session';
 import { loadCifra, loadRankedOffersForUser } from '@/lib/data';
 import { shortDate } from '@/lib/engine/dates';
@@ -18,13 +17,12 @@ export default async function GastoPage() {
   ]);
   return (
     <div className="space-y-5">
-      <BackButton href="/app" label="Volver a Hoy" className="mb-2" />
       <div>
         <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.025em]">¿Puedo hacer este gasto?</h1>
         {c.ready && (
           <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
-            Lo cruzamos al instante con tus <span className="tnum font-semibold text-ink">{cop(c.availableMinor)}</span> libres hasta el{' '}
-            {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'}), calculamos el costo real si lo difieres a cuotas y te mostramos alternativas más baratas en tu cuadra.
+            Escribe el gasto y te decimos si te alcanza. Tienes <span className="tnum font-semibold text-ink">{cop(c.availableMinor)}</span> hasta el{' '}
+            {shortDate(c.nextIncomeOn)} ({c.daysLeft} {c.daysLeft === 1 ? 'día' : 'días'}).
           </p>
         )}
       </div>

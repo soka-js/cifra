@@ -386,7 +386,15 @@ await step('E3. su cuenta no muestra mandatos ni canales de pago inventados', as
 await step('E4. una persona ve la oferta y genera su código', async () => {
   await p.goto(`${BASE}/app/ofertas`, { waitUntil: 'networkidle' });
   assert.ok((await p.locator('main').innerText()).includes(shopName), 'la persona debe ver el negocio nuevo');
-  await p.getByRole('button', { name: /Generar código/ }).first().click();
+  // Puede haber otras ofertas en la zona (por ejemplo, de otro recorrido de prueba): se toca la del negocio de esta prueba.
+  const buttons = p.getByRole('button', { name: /Generar código/ });
+  let mine = -1;
+  for (let i = 0; i < (await buttons.count()) && mine < 0; i++) {
+    const card = await buttons.nth(i).evaluate((el) => el.closest('article, li')?.textContent ?? '');
+    if (card.includes(shopName)) mine = i;
+  }
+  assert.ok(mine >= 0, 'debe haber un botón "Generar código" en la oferta del negocio nuevo');
+  await buttons.nth(mine).click();
   // La acción corre en el servidor: se espera a que el código exista antes de leerlo.
   let row;
   for (let i = 0; i < 40 && !row; i++) {
