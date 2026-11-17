@@ -142,7 +142,7 @@ await step('2b. lo que encuentra la persona en el menú', async () => {
     abajo: [...document.querySelectorAll('nav[aria-label="Secciones principales"] a')].map((a) => a.textContent.trim()),
     arriba: [...document.querySelectorAll('[data-testid="app-top-bar"] a')].map((a) => a.getAttribute('aria-label') ?? a.textContent.trim()).filter(Boolean),
   }));
-  const rutas = ['/app', '/app/gasto', '/app/movimientos', '/app/ofertas', '/app/cobros', '/app/avisos', '/app/ajustes', '/app/datos', '/app/cierre', '/app/datos/importar'];
+  const rutas = ['/app', '/app/gasto', '/app/movimientos', '/app/ofertas', '/app/mas', '/app/cobros', '/app/avisos', '/app/ajustes', '/app/datos', '/app/cierre', '/app/datos/importar'];
   for (const ruta of rutas) {
     const m = await medir(p, ruta);
     medidas.pantallas.push({ quien: 'persona', ...m });

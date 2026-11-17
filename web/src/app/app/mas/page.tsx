@@ -1,10 +1,9 @@
 import { Bell, CalendarCheck2, Repeat, Shield, ShieldCheck, Store, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { logout } from '@/app/actions/auth';
 import { MenuGroup, MenuRow } from '@/components/app/menu-list';
 import { InstallCard } from '@/components/install';
-import { getMerchantAccess, getSessionContext, isAdmin } from '@/lib/auth/session';
+import { getMerchantAccess, getSessionContext, isAdmin, requireUser } from '@/lib/auth/session';
 import { loadUnreadNotificationsCount } from '@/lib/data';
 
 export const metadata = { title: 'Más' };
@@ -14,9 +13,9 @@ export const metadata = { title: 'Más' };
  * Aquí no hay ningún número de plata: solo a dónde ir.
  */
 export default async function MasPage() {
+  const user = await requireUser();
+  // Misma sesión ya leída (getSessionContext va en cache()): solo para saber si quien entró es admin real.
   const ctx = await getSessionContext();
-  if (!ctx) redirect('/entrar');
-  const user = ctx.user;
   const [unread, merchantAccess] = await Promise.all([loadUnreadNotificationsCount(user.id), getMerchantAccess()]);
   const initial = (user.name ?? user.email ?? 'C').trim().charAt(0).toUpperCase();
 
@@ -48,7 +47,7 @@ export default async function MasPage() {
         ) : (
           <MenuRow href="/negocio/unirse" icon={Store} label="Tengo un negocio" hint="Publica una oferta y cobra con un código" tone="terra" />
         )}
-        {isAdmin(ctx.realUser) && <MenuRow href="/admin" icon={Shield} label="Administración" tone="neutral" />}
+        {isAdmin(ctx?.realUser) && <MenuRow href="/admin" icon={Shield} label="Administración" tone="neutral" />}
       </MenuGroup>
 
       <InstallCard />

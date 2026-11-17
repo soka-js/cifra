@@ -42,7 +42,8 @@ export function MenuRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-semibold text-ink">{label}</span>
-        {hint && <span className="block truncate text-[13px] text-ink-muted">{hint}</span>}
+        {/* La línea de ayuda se parte en dos renglones antes que cortarse: es lo que dice para qué sirve. */}
+        {hint && <span className="mt-0.5 block text-[13px] leading-snug text-ink-muted">{hint}</span>}
       </span>
       {badge !== null && badge !== undefined && badge !== 0 && (
         <span className="tnum inline-flex min-w-5 items-center justify-center rounded-full bg-terra px-1.5 py-0.5 text-[11.5px] font-bold text-white">
